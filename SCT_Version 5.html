@@ -272,16 +272,16 @@
         // --- GAME CONFIGURATION ---
         const INITIAL_CASH = 2000;
         const INITIAL_DAYS = 30;
-        const MIN_PRICE_MULTIPLIER = 0.7;
-        const MAX_PRICE_MULTIPLIER = 1.5;
-        const MIN_AVAILABILITY = 3;
-        const MAX_AVAILABILITY = 15;
+        const MIN_PRICE_MULTIPLIER = 0.4;
+        const MAX_PRICE_MULTIPLIER = 2;
+        const MIN_AVAILABILITY = 0;
+        const MAX_AVAILABILITY = 20;
         const BOOSTER_PACK_PRICE = 250;
         const BOOSTER_PACK_DAILY_LIMIT = 3;
         const BOOSTER_CHANCE_PER_DAY = 0.8; 
         const PRICE_GUIDE_COST = 1000;
         const EVENT_CHANCE_ON_TRAVEL = 0.30;
-        const RARE_CARD_THRESHOLD = 300;
+        const RARE_CARD_THRESHOLD = 200;
 
         const LOCATIONS = [
             { id: 'toots_and_rips', name: 'Toots and Rips', description: 'High-end collectibles and rare finds.', priceBias: 1.15, availabilityBias: 0.85 },
@@ -302,11 +302,11 @@
         };
 
         const CARDS = [
-            { id: 'autographed_jersey', name: 'Autographed Jersey Card', basePrice: 350, description: 'Features a piece of player-worn jersey and a signature.' },
+            { id: 'autographed_jersey', name: 'Autographed Jersey Card', basePrice: 650, description: 'Features a piece of player-worn jersey and a signature.' },
             { id: 'numbered_rookie_auto', name: 'Numbered Rookie Auto', basePrice: 500, description: 'A rookie card with a signature, serial numbered to 99.' },
             { id: 'holo_legend', name: 'Holo Legend Card', basePrice: 220, description: 'A holographic card of an iconic player from the past.' },
             { id: 'numbered_legend', name: 'Numbered Legend', basePrice: 420, description: 'A card of a legendary player numbered to 25.' },
-            { id: 'game_worn_relic', name: 'Game-Worn Relic', basePrice: 180, description: 'Contains a piece of a game-used ball or cleat.' },
+            { id: 'game_worn_relic', name: 'Game-Worn Relic', basePrice: 180, description: 'Contains a piece of a game-used, jesery, ball, net or cleat.' },
             { id: 'prized_rookie_card', name: 'Prized Rookie Card', basePrice: 120, description: 'A highly sought-after rookie card of a top prospect.' },
             { id: 'favorite_player', name: 'Favorite Player Card', basePrice: 75, description: 'A standard card of a fan-favorite player.' },
             { id: 'autographed_common', name: 'Autographed Common Card', basePrice: 95, description: 'A common card, now with a valuable signature.' },
