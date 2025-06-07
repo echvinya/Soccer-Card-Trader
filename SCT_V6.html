@@ -156,9 +156,15 @@
         import { getFirestore, doc, collection, onSnapshot, getDoc, setDoc, addDoc, deleteDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- FIREBASE CONFIG & INITIALIZATION ---
-        // These global variables are provided by the environment.
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyB_FFY3omc51DkkBNmIftcuy0kiRKuNj1Q",
+  authDomain: "soccer-card-trader.firebaseapp.com",
+  projectId: "soccer-card-trader",
+  storageBucket: "soccer-card-trader.firebasestorage.app",
+  messagingSenderId: "858390637557",
+  appId: "1:858390637557:web:aa032482ae46f4acb94ebc"
+};
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
