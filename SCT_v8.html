@@ -1,3 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collectible Trader Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* Tailwind gray-900 */
+            color: #d1d5db; /* Tailwind gray-300 */
+        }
+        .card {
+            background-color: #1f2937; /* Tailwind gray-800 */
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid #374151; /* Tailwind gray-700 */
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .btn-primary {
+            background-color: #991b1b; /* red-800 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #7f1d1d; /* red-900 */
+        }
+        .btn-secondary {
+            background-color: #4b5563; /* Tailwind gray-600 */
+            color: #e5e7eb; /* Tailwind gray-200 */
+        }
+        .btn-secondary:hover {
+            background-color: #374151; /* Tailwind gray-700 */
+        }
+        .btn-success {
+            background-color: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #059669;
+        }
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+        .btn-special {
+            background: linear-gradient(to right, #9f1239, #be185d); /* Rose-800 to Pink-700 */
+            color: white;
+        }
+        .btn-special:hover {
+            background: linear-gradient(to right, #881337, #9d174d); /* Rose-900 to Pink-800 */
+        }
+        .btn:disabled {
+            background-color: #4b5563; /* Tailwind gray-600 */
+            color: #9ca3af; /* Tailwind gray-400 */
+            cursor: not-allowed;
+        }
+        input[type="text"], input[type="number"] {
+            width: 4rem;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #4b5563; /* Tailwind gray-600 */
+            border-radius: 0.375rem;
+            text-align: center;
+            background-color: #374151; /* Tailwind gray-700 */
+            color: #e5e7eb; /* Tailwind gray-200 */
+        }
+        .table-cell { padding: 0.5rem 0.75rem; text-align: left; }
+        .log-message { padding: 0.25rem 0.5rem; border-bottom: 1px solid #374151; }
+        .pack-item { font-weight: 500; }
+        .modal { position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; }
+        .modal-content { background-color: #1f2937; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); width: 90%; max-width: 500px; text-align: center; border: 1px solid #374151; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+        @keyframes sparkle { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .sparkle { background: linear-gradient(45deg, #fef9c3, #fee2e2, #fde68a, #fee2e2, #fef9c3); background-size: 400% 400%; animation: sparkle 4s ease infinite; border: 2px solid #f87171; opacity: 1 !important; }
+        .holo { background: linear-gradient(-45deg, #374151, #4b5563, #374151, #1f2937); background-size: 400% 400%; animation: sparkle 6s ease infinite; opacity: 1 !important; }
+        .scribble-bg { background-color: #374151; background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234b5563' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div id="game-container" class="container mx-auto max-w-6xl">
+        <header class="mb-6 text-center">
+            <h1 class="text-4xl font-bold text-red-400">Soccer Card Trader</h1>
+        </header>
+
+        <div id="player-stats-container" class="card mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+             <div><p class="text-sm text-gray-400">Cash</p><p id="cash" class="text-2xl font-semibold text-green-400">$0</p></div>
+             <div><p class="text-sm text-gray-400">Days Remaining</p><p id="days" class="text-2xl font-semibold text-amber-400">0</p></div>
+             <div><p class="text-sm text-gray-400">Current Location</p><p id="current-location-name" class="text-xl font-semibold text-gray-300">-</p></div>
+             <div><button id="restart-game-btn" class="btn btn-danger w-full mt-2 md:mt-0">Restart Game</button></div>
+        </div>
+
+       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div id="market-section" class="card lg:col-span-2">
+                <div class="flex justify-between items-start mb-3"><h2 class="text-2xl font-semibold" id="market-location-name">-</h2><div id="special-actions-container" class="flex flex-col sm:flex-row gap-2 items-center"></div></div>
+                <div class="overflow-x-auto"><table class="w-full min-w-max"><thead class="bg-gray-700/50"><tr><th class="table-cell">Card Type</th><th class="table-cell">Price</th><th class="table-cell">Available</th><th class="table-cell">Quantity</th><th class="table-cell">Action</th></tr></thead><tbody id="market-items"></tbody></table></div>
+            </div>
+
+            <div class="space-y-6">
+                <div id="travel-section" class="card"><h2 class="text-2xl font-semibold mb-3">Travel To:</h2><div id="travel-options" class="space-y-2"></div></div>
+                <div id="log-section" class="card"><h2 class="text-2xl font-semibold mb-3">Game Log</h2><div id="log-messages" class="h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-md p-2 text-sm"></div></div>
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <div id="inventory-section" class="card"><h2 class="text-2xl font-semibold mb-3">Your Inventory</h2><div class="overflow-x-auto"><table class="w-full min-w-max"><thead class="bg-gray-700/50"><tr><th class="table-cell">Card Type</th><th class="table-cell">Quantity</th><th class="table-cell">Avg. Buy Price</th><th class="table-cell">Current Sell Price</th><th class="table-cell">Quantity</th><th class="table-cell">Action</th></tr></thead><tbody id="inventory-items"></tbody></table></div></div>
+        </div>
+        
+        <div class="mt-6">
+            <div id="leaderboard-section" class="card">
+                <h2 id="in-game-leaderboard-title" class="text-2xl font-semibold mb-3 text-amber-400">Global Top 3</h2>
+                <div id="leaderboard-list" class="space-y-2">
+                    <p class="text-gray-500">Loading leaderboard...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-6 text-center"><label class="flex items-center justify-center space-x-2"><input type="checkbox" id="help-text-toggle" class="form-checkbox h-5 w-5 bg-gray-700 border-gray-600 text-red-500 focus:ring-red-500" checked><span class="text-gray-400">Show Help Text</span></label></div>
+    </div>
+
+    <div id="game-over-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="game-over-title" class="text-3xl font-bold mb-4">Game Over!</h2>
+            <p id="game-over-message" class="text-lg mb-2">You've completed your trading journey.</p>
+            <p class="text-xl mb-4">Your Final Score: <span id="final-score" class="text-2xl font-bold text-green-400">$0</span></p>
+            <hr class="border-gray-600 my-4">
+            <h3 class="text-2xl font-semibold mb-3 text-amber-400">Global Top 10</h3>
+            <div id="game-over-leaderboard-list" class="space-y-2 text-left max-h-64 overflow-y-auto"></div>
+            <button id="play-again-btn" class="btn btn-primary text-lg px-8 py-3 mt-6">Try Again</button>
+        </div>
+    </div>
+    
+    <div id="booster-pack-modal" class="modal hidden"><div class="modal-content"><h2 class="text-3xl font-bold mb-4">Your Haul!</h2><div id="pack-summary-area" class="grid grid-cols-3 gap-2 justify-items-center my-6 min-h-[144px]"></div><div class="text-center"><button id="close-pack-modal-btn" class="btn btn-primary mt-4">Awesome!</button></div></div></div>
+    <div id="event-modal" class="modal hidden"><div class="modal-content"><h2 id="event-title" class="text-3xl font-bold mb-4 text-red-400">Random Event!</h2><p id="event-message" class="text-lg mb-6">Something unexpected happened...</p><button id="close-event-modal-btn" class="btn btn-primary">Continue</button></div></div>
+
+    <div id="high-score-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="text-3xl font-bold mb-2 text-amber-400">New High Score!</h2>
+            <p class="text-lg mb-4">You made the global leaderboard!</p>
+            <p class="text-xl mb-2">Final Score:</p>
+            <p id="high-score-final-score" class="text-4xl font-bold text-green-400 mb-6">$0</p>
+            <div class="mb-6">
+                <label for="player-initials" class="block text-lg mb-2">Enter Your Initials (3 letters)</label>
+                <input type="text" id="player-initials" maxlength="3" class="mx-auto w-24 text-2xl font-bold uppercase p-2 tracking-widest">
+            </div>
+            <button id="submit-score-btn" class="btn btn-success text-lg px-8 py-3">Submit Score</button>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -127,7 +289,6 @@
         const submitScoreBtn = document.getElementById('submit-score-btn');
 
         // --- FIREBASE FUNCTIONS ---
-        // UPDATED: All functions now use the namespaced path for robustness
         const getLeaderboardCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
 
         async function listenForLeaderboardUpdates() {
@@ -490,28 +651,34 @@
             return false; 
         }
 
-        // --- EVENT LISTENERS ---
-        marketItemsEl.addEventListener('click', (e) => { const btn = e.target.closest('button[data-action="buy"]'); if (btn) buyItem(btn.dataset.cardId); });
-        inventoryItemsEl.addEventListener('click', (e) => { const btn = e.target.closest('button[data-action="sell"]'); if (btn) sellItem(btn.dataset.cardId); });
-        restartGameBtn.addEventListener('click', () => { addLogMessage("Restarting game..."); initializeGame(); });
-        playAgainBtn.addEventListener('click', () => { gameOverModalEl.classList.add('hidden'); initializeGame(); });
-        closePackModalBtn.addEventListener('click', () => { boosterPackModalEl.classList.add('hidden'); });
-        closeEventModalBtn.addEventListener('click', () => { eventModalEl.classList.add('hidden'); });
-        helpTextToggleEl.addEventListener('change', (e) => { toggleHelpText(e.target.checked); });
-        submitScoreBtn.addEventListener('click', submitHighScore)
-
-        // --- INITIALIZE ---
+        // --- EVENT LISTENERS and INITIALIZE ---
+        // BUGFIX: Moved event listeners inside the onAuthStateChanged success block.
+        // This ensures the elements exist before we try to attach listeners to them,
+        // especially in cases where the initial sign-in fails and the UI is replaced.
         onAuthStateChanged(auth, user => {
             if (user) {
                 console.log("User is signed in:", user.uid);
+                
+                // Attach Event Listeners now that UI is guaranteed to be present
+                marketItemsEl.addEventListener('click', (e) => { const btn = e.target.closest('button[data-action="buy"]'); if (btn) buyItem(btn.dataset.cardId); });
+                inventoryItemsEl.addEventListener('click', (e) => { const btn = e.target.closest('button[data-action="sell"]'); if (btn) sellItem(btn.dataset.cardId); });
+                restartGameBtn.addEventListener('click', () => { addLogMessage("Restarting game..."); initializeGame(); });
+                playAgainBtn.addEventListener('click', () => { gameOverModalEl.classList.add('hidden'); initializeGame(); });
+                closePackModalBtn.addEventListener('click', () => { boosterPackModalEl.classList.add('hidden'); });
+                closeEventModalBtn.addEventListener('click', () => { eventModalEl.classList.add('hidden'); });
+                helpTextToggleEl.addEventListener('change', (e) => { toggleHelpText(e.target.checked); });
+                submitScoreBtn.addEventListener('click', submitHighScore);
+
+                // Initialize the game
                 initializeGame();
                 listenForLeaderboardUpdates();
             } else {
                 console.log("User is signed out, signing in anonymously.");
                 signInAnonymously(auth).catch(error => {
                     console.error("Anonymous sign-in failed: ", error);
-                    document.getElementById('game-container').innerHTML = `
-                        <div class="min-h-screen flex items-center justify-center">
+                    // Display a user-friendly error message on the page itself.
+                    document.body.innerHTML = `
+                        <div class="min-h-screen flex items-center justify-center p-4">
                             <div class="max-w-2xl text-center p-8 rounded-lg bg-gray-800 border border-red-500">
                                 <h1 class="text-3xl font-bold text-red-400 mb-4">Connection Error</h1>
                                 <p class="text-lg mb-2">Could not connect to the game server (Firebase).</p>
