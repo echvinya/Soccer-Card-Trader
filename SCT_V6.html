@@ -560,7 +560,7 @@
         closePackModalBtn.addEventListener('click', () => { boosterPackModalEl.classList.add('hidden'); });
         closeEventModalBtn.addEventListener('click', () => { eventModalEl.classList.add('hidden'); });
         helpTextToggleEl.addEventListener('change', (e) => { toggleHelpText(e.target.checked); });
-        submitScoreBtn.addEventListener('click', submitHighScore);
+        submitScoreBtn.addEventListener('click', submitHighScore)
 
         // --- INITIALIZE ---
         onAuthStateChanged(auth, user => {
