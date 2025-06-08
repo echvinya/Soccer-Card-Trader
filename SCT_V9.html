@@ -76,7 +76,7 @@
             background-color: #374151; /* Tailwind gray-700 */
             color: #e5e7eb; /* Tailwind gray-200 */
         }
-        .table-cell { padding: 0.5rem 0.75rem; text-align: left; }
+        .table-cell { padding: 0.5rem 0.75rem; text-align: left; vertical-align: middle; }
         .log-message { padding: 0.25rem 0.5rem; border-bottom: 1px solid #374151; }
         .pack-item { font-weight: 500; }
         .modal { position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; }
@@ -106,7 +106,7 @@
        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div id="market-section" class="card lg:col-span-2">
                 <div class="flex justify-between items-start mb-3"><h2 class="text-2xl font-semibold" id="market-location-name">-</h2><div id="special-actions-container" class="flex flex-col sm:flex-row gap-2 items-center"></div></div>
-                <div class="overflow-x-auto"><table class="w-full min-w-max"><thead class="bg-gray-700/50"><tr><th class="table-cell">Card Type</th><th class="table-cell">Price</th><th class="table-cell">Available</th><th class="table-cell">Quantity</th><th class="table-cell">Action</th></tr></thead><tbody id="market-items"></tbody></table></div>
+                <div class="overflow-x-auto"><table class="w-full min-w-max"><thead class="bg-gray-700/50"><tr><th class="table-cell">Card Type</th><th class="table-cell">Price</th><th class="table-cell">Available</th><th class="table-cell">Owned</th><th class="table-cell">Quantity</th><th class="table-cell">Actions</th></tr></thead><tbody id="market-items"></tbody></table></div>
             </div>
 
             <div class="space-y-6">
@@ -116,7 +116,7 @@
         </div>
 
         <div class="mt-6">
-            <div id="inventory-section" class="card"><h2 class="text-2xl font-semibold mb-3">Your Inventory</h2><div class="overflow-x-auto"><table class="w-full min-w-max"><thead class="bg-gray-700/50"><tr><th class="table-cell">Card Type</th><th class="table-cell">Quantity</th><th class="table-cell">Avg. Buy Price</th><th class="table-cell">Current Sell Price</th><th class="table-cell">Quantity</th><th class="table-cell">Action</th></tr></thead><tbody id="inventory-items"></tbody></table></div></div>
+            <div id="inventory-section" class="card"><h2 class="text-2xl font-semibold mb-3">Your Portfolio & Selling</h2><div class="overflow-x-auto"><table class="w-full min-w-max"><thead class="bg-gray-700/50"><tr><th class="table-cell">Card Type</th><th class="table-cell">Quantity</th><th class="table-cell">Avg. Buy Price</th><th class="table-cell">Current Sell Price</th><th class="table-cell">Quantity</th><th class="table-cell">Actions</th></tr></thead><tbody id="inventory-items"></tbody></table></div></div>
         </div>
         
         <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -150,7 +150,7 @@
             <div id="game-over-cabinet-section" class="mt-4">
                 <h3 class="text-xl font-semibold text-cyan-400">Your Final Cabinet</h3>
                 <div id="game-over-cabinet-list" class="grid grid-cols-3 gap-4 mt-2">
-                    </div>
+                </div>
             </div>
 
             <hr class="border-gray-600 my-4">
@@ -194,7 +194,7 @@
         <div class="modal-content">
             <h2 id="view-cabinet-title" class="text-3xl font-bold mb-4 text-cyan-400">Player's Cabinet</h2>
             <div id="view-cabinet-list" class="grid grid-cols-3 gap-4 my-6">
-                </div>
+            </div>
             <button id="close-view-cabinet-btn" class="btn btn-primary">Close</button>
         </div>
     </div>
@@ -280,8 +280,7 @@
 
         let gameState = {};
         let marketState = {};
-        let packState = { cards: [], isRevealing: false };
-        let leaderboardScores = []; // --- NEW --- State variable to hold full leaderboard data
+        let leaderboardScores = [];
 
         const cashEl = document.getElementById('cash');
         const daysEl = document.getElementById('days');
@@ -326,14 +325,13 @@
                 snapshot.forEach(doc => {
                     scores.push({ id: doc.id, ...doc.data() });
                 });
-                leaderboardScores = scores.sort((a, b) => b.score - a.score); // --- MODIFIED --- Store sorted scores globally
+                leaderboardScores = scores.sort((a, b) => b.score - a.score);
                 const topScores = leaderboardScores.slice(0, IN_GAME_LEADERBOARD_SIZE);
                 inGameLeaderboardTitleEl.textContent = `Global Top ${IN_GAME_LEADERBOARD_SIZE}`;
                 renderLeaderboard(topScores, leaderboardListEl); 
             });
         }
         
-        // --- MODIFIED --- Now saves the display cabinet along with the score
         async function submitHighScore() {
             const initials = document.getElementById('player-initials').value.trim().toUpperCase();
             if (initials.length !== 3) { alert("Please enter 3 initials."); return; }
@@ -344,7 +342,7 @@
                 initials: initials,
                 score: gameState.cash,
                 timestamp: new Date(),
-                cabinet: gameState.displayCabinet // Save the cabinet
+                cabinet: gameState.displayCabinet
             };
 
             try {
@@ -442,7 +440,6 @@
             return indices;
         }
         
-        // --- Centralized function for creating all card visuals.
         function createCardVisual(cabinetItem) {
             const card = cabinetItem.card;
             const visualContainer = document.createElement('div');
@@ -471,7 +468,6 @@
              document.getElementById('market-location-name').textContent = location.name;
         }
 
-        // --- MODIFIED --- Now adds a "View Cabinet" button
         function renderLeaderboard(scores, targetElement) {
             targetElement.innerHTML = '';
             if (scores.length === 0) {
@@ -497,31 +493,14 @@
             });
         }
 
+        // --- MODIFIED --- Renders the new market table layout
         function renderMarket() {
             marketItemsEl.innerHTML = '';
             specialActionsContainerEl.innerHTML = '';
+            
             const locationMarket = marketState[gameState.currentLocationId];
-            if (!locationMarket) { marketItemsEl.innerHTML = '<tr><td colspan="5" class="table-cell text-center py-4">Market data not available.</td></tr>'; return; }
-            TRADABLE_CARDS.forEach(card => {
-                const marketInfo = locationMarket[card.id];
-                if (!marketInfo) return;
-                let priceIndicatorHtml = '';
-                if (gameState.hasPriceGuide) {
-                    if (marketInfo.price > card.basePrice) priceIndicatorHtml = `<span class="ml-2 text-green-400" title="Price is above base value">▲</span>`;
-                    else if (marketInfo.price < card.basePrice) priceIndicatorHtml = `<span class="ml-2 text-red-400" title="Price is below base value">▼</span>`;
-                    else priceIndicatorHtml = `<span class="ml-2 text-gray-500" title="Price is at base value">●</span>`;
-                }
-                const priceColorClass = gameState.hasPriceGuide ? (marketInfo.price > card.basePrice ? 'text-green-400' : 'text-red-400') : 'text-gray-300';
-                const tr = document.createElement('tr');
-                tr.className = 'border-b border-gray-700 hover:bg-gray-700/50';
-                tr.innerHTML = `
-                    <td class="table-cell"><div class="font-medium">${card.name}</div><div class="text-xs text-gray-400">${card.description}</div></td>
-                    <td class="table-cell"><div class="flex items-center"><span class="font-semibold ${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div></td>
-                    <td class="table-cell">${marketInfo.available}</td>
-                    <td class="table-cell"><input type="number" id="buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1" class="text-sm"></td>
-                    <td class="table-cell"><button class="btn btn-success btn-sm text-xs" data-card-id="${card.id}" data-action="buy" ${marketInfo.available === 0 ? 'disabled' : ''}>Buy</button></td>`;
-                marketItemsEl.appendChild(tr);
-            });
+            if (!locationMarket) { marketItemsEl.innerHTML = '<tr><td colspan="6" class="table-cell text-center py-4">Market data not available.</td></tr>'; return; }
+
             if (!gameState.hasPriceGuide) {
                 const priceGuideBtn = document.createElement('button');
                 priceGuideBtn.className = 'btn btn-secondary';
@@ -544,28 +523,66 @@
                 boosterPackBtn.onclick = buyBoosterPack;
             }
             specialActionsContainerEl.appendChild(boosterPackBtn);
+
+            TRADABLE_CARDS.forEach(card => {
+                const marketInfo = locationMarket[card.id];
+                if (!marketInfo) return;
+
+                const inventoryItem = gameState.inventory.find(item => item.cardId === card.id);
+                const ownedCount = inventoryItem ? inventoryItem.quantity : 0;
+
+                let priceIndicatorHtml = '';
+                if (gameState.hasPriceGuide) {
+                    if (marketInfo.price > card.basePrice) priceIndicatorHtml = `<span class="ml-2 text-green-400" title="Price is above base value">▲</span>`;
+                    else if (marketInfo.price < card.basePrice) priceIndicatorHtml = `<span class="ml-2 text-red-400" title="Price is below base value">▼</span>`;
+                }
+                const priceColorClass = gameState.hasPriceGuide ? (marketInfo.price > card.basePrice ? 'text-green-400' : 'text-red-400') : 'text-gray-300';
+                
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-700';
+                
+                tr.innerHTML = `
+                    <td class="table-cell"><div class="font-medium">${card.name}</div><div class="text-xs text-gray-400">${card.description}</div></td>
+                    <td class="table-cell"><div class="flex items-center"><span class="font-semibold ${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div></td>
+                    <td class="table-cell">${marketInfo.available}</td>
+                    <td class="table-cell">${ownedCount}</td>
+                    <td class="table-cell"><input type="number" id="buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1"></td>
+                    <td class="table-cell">
+                        <div class="flex flex-col gap-2">
+                            <button class="btn btn-success btn-sm text-xs" data-card-id="${card.id}" data-action="buy-qty" ${marketInfo.available === 0 ? 'disabled' : ''}>Buy</button>
+                            <button class="btn btn-success btn-sm text-xs" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>Buy All</button>
+                        </div>
+                    </td>`;
+                marketItemsEl.appendChild(tr);
+            });
         }
 
+        // --- MODIFIED --- Renders the new inventory table layout
         function renderInventory() {
             inventoryItemsEl.innerHTML = '';
             if (gameState.inventory.length === 0) {
-                inventoryItemsEl.innerHTML = '<tr><td colspan="6" class="table-cell text-center py-4">Your inventory is empty.</td></tr>';
+                inventoryItemsEl.innerHTML = '<tr><td colspan="6" class="table-cell text-center py-4">Your portfolio is empty.</td></tr>';
                 return;
             }
             gameState.inventory.forEach(item => {
                 const card = getCardDetails(item.cardId);
                 const currentMarketPrice = marketState[gameState.currentLocationId]?.[item.cardId]?.price || 0;
-                const averageBuyPrice = item.quantity > 0 ? (item.totalCost / item.quantity).toFixed(2) : 0;
-                const sellPriceColorClass = parseFloat(averageBuyPrice) > 0 ? (currentMarketPrice > averageBuyPrice ? 'text-green-400' : 'text-red-400') : 'text-gray-300';
+                const averageBuyPrice = item.quantity > 0 ? (item.totalCost / item.quantity) : 0;
+
                 const tr = document.createElement('tr');
-                tr.className = 'border-b border-gray-700 hover:bg-gray-700/50';
+                tr.className = 'border-b border-gray-700';
                 tr.innerHTML = `
                     <td class="table-cell"><div class="font-medium">${card.name}</div></td>
                     <td class="table-cell">${item.quantity}</td>
-                    <td class="table-cell">$${parseFloat(averageBuyPrice).toLocaleString()}</td>
-                    <td class="table-cell font-semibold ${sellPriceColorClass}">$${currentMarketPrice.toLocaleString()}</td>
-                    <td class="table-cell"><input type="number" id="sell-qty-${card.id}" min="1" max="${item.quantity}" value="1" class="text-sm"></td>
-                    <td class="table-cell"><button class="btn btn-danger btn-sm text-xs" data-card-id="${card.id}" data-action="sell">Sell</button></td>`;
+                    <td class="table-cell">$${averageBuyPrice.toFixed(2)}</td>
+                    <td class="table-cell font-semibold text-green-400">$${currentMarketPrice.toLocaleString()}</td>
+                    <td class="table-cell"><input type="number" id="sell-qty-${card.id}" min="1" max="${item.quantity}" value="1"></td>
+                    <td class="table-cell">
+                        <div class="flex flex-col gap-2">
+                            <button class="btn btn-danger btn-sm text-xs" data-card-id="${card.id}" data-action="sell-qty">Sell</button>
+                            <button class="btn btn-danger btn-sm text-xs" data-card-id="${card.id}" data-action="sell-all">Sell All</button>
+                        </div>
+                    </td>`;
                 inventoryItemsEl.appendChild(tr);
             });
         }
@@ -597,7 +614,7 @@
                 placeholderEl.style.display = 'block';
                 manageCabinetBtn.style.display = 'none';
             } else {
-                if (cabinetListEl.contains(placeholderEl)) placeholderEl.style.display = 'none';
+                if (cabinetListEl.contains(placeholderEl)) cabinetListEl.style.display = 'none';
                 manageCabinetBtn.style.display = 'inline-block';
                 gameState.displayCabinet.forEach(cabinetItem => {
                     const cardVisual = createCardVisual(cabinetItem);
@@ -768,15 +785,18 @@
             revealNext();
         }
 
-        function buyItem(cardId) {
+        // --- NEW --- Functions to handle specific buy/sell actions
+        function buyItemQty(cardId) {
+            const quantity = parseInt(document.getElementById(`buy-qty-${cardId}`).value);
+            if(isNaN(quantity) || quantity <= 0) { addLogMessage(`Invalid quantity.`); return; }
+            
             const card = getCardDetails(cardId);
-            const locationMarket = marketState[gameState.currentLocationId];
-            const marketInfo = locationMarket[cardId];
-            const quantity = parseInt(document.getElementById(`buy-qty-${card.id}`).value);
-            if(isNaN(quantity)||quantity<=0){addLogMessage(`Invalid quantity.`);return;}
-            if(quantity>marketInfo.available){addLogMessage(`Not enough available.`);return;}
+            const marketInfo = marketState[gameState.currentLocationId]?.[cardId];
+            if (!marketInfo || quantity > marketInfo.available) { addLogMessage(`Not enough available to buy.`); return; }
+
             const totalCost = marketInfo.price * quantity;
-            if (totalCost > gameState.cash) { addLogMessage(`Not enough cash.`); return; }
+            if (totalCost > gameState.cash) { addLogMessage(`Not enough cash. Need $${totalCost.toLocaleString()}.`); return; }
+            
             gameState.cash -= totalCost;
             marketInfo.available -= quantity;
             let inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
@@ -790,24 +810,43 @@
             renderAll();
         }
 
-        function sellItem(cardId) {
-            const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
+        function buyAllItems(cardId) {
+            const marketInfo = marketState[gameState.currentLocationId]?.[cardId];
+            if (!marketInfo || marketInfo.available <= 0) { addLogMessage(`None available to buy.`); return; }
+            document.getElementById(`buy-qty-${cardId}`).value = marketInfo.available;
+            buyItemQty(cardId);
+        }
+
+        function sellItemQty(cardId) {
             const quantity = parseInt(document.getElementById(`sell-qty-${cardId}`).value);
-            if(!inventoryItem||inventoryItem.quantity===0){addLogMessage(`You don't have any.`);return;}
-            if(isNaN(quantity)||quantity<=0){addLogMessage(`Invalid quantity.`);return;}
-            if(quantity>inventoryItem.quantity){addLogMessage(`Not enough to sell.`);return;}
+            const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
+
+            if(isNaN(quantity) || quantity <= 0) { addLogMessage(`Invalid quantity.`); return; }
+            if (!inventoryItem || quantity > inventoryItem.quantity) { addLogMessage(`You don't have that many to sell.`); return; }
+
+            const card = getCardDetails(cardId);
             const currentMarketPrice = marketState[gameState.currentLocationId]?.[cardId]?.price;
-            if(currentMarketPrice===undefined){addLogMessage(`Cannot determine sell price.`);return;}
+            if(currentMarketPrice === undefined){ addLogMessage(`Cannot determine sell price.`); return; }
+
             const totalSaleValue = currentMarketPrice * quantity;
             const costOfSoldItems = (inventoryItem.totalCost / inventoryItem.quantity) * quantity;
+            
             gameState.cash += totalSaleValue;
             inventoryItem.quantity -= quantity;
             inventoryItem.totalCost -= isNaN(costOfSoldItems) ? 0 : costOfSoldItems;
+
             if (inventoryItem.quantity <= 0) {
                 gameState.inventory = gameState.inventory.filter(item => item.cardId !== cardId);
             }
-            addLogMessage(`Sold ${getCardDetails(cardId).name} for $${totalSaleValue.toLocaleString()}.`);
+            addLogMessage(`Sold ${quantity} ${card.name} for $${totalSaleValue.toLocaleString()}.`);
             renderAll();
+        }
+
+        function sellAllItems(cardId) {
+            const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
+            if (!inventoryItem || inventoryItem.quantity <= 0) { addLogMessage(`None to sell.`); return; }
+            document.getElementById(`sell-qty-${cardId}`).value = inventoryItem.quantity;
+            sellItemQty(cardId);
         }
 
         async function travelTo(destinationLocationId) {
@@ -829,7 +868,6 @@
             renderAll(); 
         }
         
-        // --- MODIFIED --- Also renders the player's final cabinet
         async function showGameOverScreen() {
             const gameOverCabinetList = document.getElementById('game-over-cabinet-list');
             gameOverCabinetList.innerHTML = '';
@@ -864,10 +902,10 @@
             return false; 
         }
 
-        // --- NEW --- Shows the selected player's cabinet
         function showPlayerCabinet(cabinet) {
             viewCabinetListEl.innerHTML = '';
             if (cabinet && cabinet.length > 0) {
+                document.getElementById('view-cabinet-title').textContent = "Player's Cabinet";
                 cabinet.forEach(cabinetItem => {
                     const cardVisual = createCardVisual(cabinetItem);
                     viewCabinetListEl.appendChild(cardVisual);
@@ -880,8 +918,45 @@
 
         onAuthStateChanged(auth, user => {
             if (user) {
-                marketItemsEl.addEventListener('click', (e) => { const btn = e.target.closest('button[data-action="buy"]'); if (btn) buyItem(btn.dataset.cardId); });
-                inventoryItemsEl.addEventListener('click', (e) => { const btn = e.target.closest('button[data-action="sell"]'); if (btn) sellItem(btn.dataset.cardId); });
+                // --- MODIFIED --- Consolidated event listeners
+                const handleMarketClick = (e) => {
+                    const button = e.target.closest('button');
+                    if (!button) return;
+                    const action = button.dataset.action;
+                    const cardId = button.dataset.cardId;
+                    if (!action || !cardId) return;
+
+                    if (action === 'buy-qty') buyItemQty(cardId);
+                    else if (action === 'buy-all') buyAllItems(cardId);
+                };
+                
+                const handleInventoryClick = (e) => {
+                    const button = e.target.closest('button');
+                    if (!button) return;
+                    const action = button.dataset.action;
+                    const cardId = button.dataset.cardId;
+                    if (!action || !cardId) return;
+
+                    if (action === 'sell-qty') sellItemQty(cardId);
+                    else if (action === 'sell-all') sellAllItems(cardId);
+                };
+
+                const handleLeaderboardClick = (e) => {
+                    const button = e.target.closest('button[data-action="view-cabinet"]');
+                    if (button) {
+                        const scoreId = button.dataset.scoreId;
+                        const score = leaderboardScores.find(s => s.id === scoreId);
+                        if (score && score.cabinet) {
+                            showPlayerCabinet(score.cabinet);
+                        }
+                    }
+                };
+                
+                marketItemsEl.addEventListener('click', handleMarketClick);
+                inventoryItemsEl.addEventListener('click', handleInventoryClick);
+                leaderboardListEl.addEventListener('click', handleLeaderboardClick);
+                gameOverLeaderboardListEl.addEventListener('click', handleLeaderboardClick);
+
                 restartGameBtn.addEventListener('click', () => { addLogMessage("Restarting game..."); initializeGame(); });
                 playAgainBtn.addEventListener('click', () => { gameOverModalEl.classList.add('hidden'); initializeGame(); });
                 closePackModalBtn.addEventListener('click', () => { boosterPackModalEl.classList.add('hidden'); });
@@ -892,20 +967,6 @@
                 manageCabinetBtn.addEventListener('click', showManageCabinetModal);
                 closeViewCabinetBtn.addEventListener('click', () => { viewCabinetModalEl.classList.add('hidden')});
                 
-                // --- NEW --- Event listener for viewing cabinets from leaderboards
-                const handleViewCabinetClick = (e) => {
-                    const button = e.target.closest('button[data-action="view-cabinet"]');
-                    if (button) {
-                        const scoreId = button.dataset.scoreId;
-                        const score = leaderboardScores.find(s => s.id === scoreId);
-                        if (score && score.cabinet) {
-                            showPlayerCabinet(score.cabinet);
-                        }
-                    }
-                };
-                leaderboardListEl.addEventListener('click', handleViewCabinetClick);
-                gameOverLeaderboardListEl.addEventListener('click', handleViewCabinetClick);
-
                 initializeGame();
                 listenForLeaderboardUpdates();
             } else {
