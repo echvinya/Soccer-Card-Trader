@@ -87,6 +87,21 @@
         .sparkle { background: linear-gradient(45deg, #fef9c3, #fee2e2, #fde68a, #fee2e2, #fef9c3); background-size: 400% 400%; animation: sparkle 4s ease infinite; border: 2px solid #f87171; opacity: 1 !important; }
         .holo { background: linear-gradient(-45deg, #374151, #4b5563, #374151, #1f2937); background-size: 400% 400%; animation: sparkle 6s ease infinite; opacity: 1 !important; }
         .scribble-bg { background-color: #374151; background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234b5563' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+
+        /* --- NEW --- CSS for maintaining card aspect ratio */
+        .card-aspect-ratio {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-top: 140%; /* This creates a 5:7 aspect ratio (width:height) */
+        }
+        .card-aspect-ratio-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
@@ -121,7 +136,10 @@
         
         <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div id="display-cabinet-section" class="card lg:col-span-2">
-                <h2 class="text-2xl font-semibold mb-3 text-cyan-400">Display Cabinet</h2>
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-2xl font-semibold text-cyan-400">Display Cabinet</h2>
+                    <button id="manage-cabinet-btn" class="btn btn-secondary">Manage</button>
+                </div>
                 <div id="display-cabinet-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4">
                     <p id="display-cabinet-placeholder" class="text-gray-500 col-span-full">Your best pulls will be shown here. Open a booster pack to add cards!</p>
                 </div>
@@ -150,7 +168,7 @@
         </div>
     </div>
     
-    <div id="booster-pack-modal" class="modal hidden"><div class="modal-content"><h2 class="text-3xl font-bold mb-4">Your Haul!</h2><div id="pack-summary-area" class="grid grid-cols-3 gap-2 justify-items-center my-6 min-h-[144px]"></div><div class="text-center"><button id="close-pack-modal-btn" class="btn btn-primary mt-4">Awesome!</button></div></div></div>
+    <div id="booster-pack-modal" class="modal hidden"><div class="modal-content"><h2 class="text-3xl font-bold mb-4">Your Haul!</h2><div id="pack-summary-area" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 justify-items-center my-6 min-h-[144px]"></div><div class="text-center"><button id="close-pack-modal-btn" class="btn btn-primary mt-4">Awesome!</button></div></div></div>
     <div id="event-modal" class="modal hidden"><div class="modal-content"><h2 id="event-title" class="text-3xl font-bold mb-4 text-red-400">Random Event!</h2><p id="event-message" class="text-lg mb-6">Something unexpected happened...</p><button id="close-event-modal-btn" class="btn btn-primary">Continue</button></div></div>
 
     <div id="high-score-modal" class="modal hidden">
@@ -167,13 +185,13 @@
         </div>
     </div>
 
-    <div id="replace-cabinet-modal" class="modal hidden">
+    <div id="cabinet-modal" class="modal hidden">
         <div class="modal-content">
-            <h2 class="text-3xl font-bold mb-2 text-cyan-400">Cabinet Full!</h2>
-            <p class="text-lg mb-4">Choose a card to replace with your new pull.</p>
-            <div id="replace-cabinet-options" class="grid grid-cols-3 gap-4 my-6">
+            <h2 id="cabinet-modal-title" class="text-3xl font-bold mb-2 text-cyan-400">Cabinet Full!</h2>
+            <p id="cabinet-modal-message" class="text-lg mb-4">Choose a card to replace with your new pull.</p>
+            <div id="cabinet-modal-options" class="grid grid-cols-3 gap-4 my-6">
             </div>
-            <button id="cancel-replace-btn" class="btn btn-danger">Cancel</button>
+            <button id="cancel-cabinet-modal-btn" class="btn btn-danger">Cancel</button>
         </div>
     </div>
 
@@ -284,9 +302,14 @@
         const closeEventModalBtn = document.getElementById('close-event-modal-btn');
         const highScoreModalEl = document.getElementById('high-score-modal');
         const submitScoreBtn = document.getElementById('submit-score-btn');
-        const replaceCabinetModalEl = document.getElementById('replace-cabinet-modal');
-        const replaceCabinetOptionsEl = document.getElementById('replace-cabinet-options');
-        const cancelReplaceBtn = document.getElementById('cancel-replace-btn');
+        // --- MODIFIED --- References for the combined cabinet modal
+        const cabinetModalEl = document.getElementById('cabinet-modal');
+        const cabinetModalTitleEl = document.getElementById('cabinet-modal-title');
+        const cabinetModalMessageEl = document.getElementById('cabinet-modal-message');
+        const cabinetModalOptionsEl = document.getElementById('cabinet-modal-options');
+        const cancelCabinetModalBtn = document.getElementById('cancel-cabinet-modal-btn');
+        const manageCabinetBtn = document.getElementById('manage-cabinet-btn');
+
 
         const getLeaderboardCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
 
@@ -378,7 +401,7 @@
         }
         function toggleHelpText(show) { gameState.showHelpText = show; renderAll(); }
 
-        // --- MODIFIED --- This is the fix for the squished images.
+        // --- FIX --- Added object-fit: 'contain' to prevent image squishing
         function createCardImageLayers(targetDiv, layerIndices = []) {
             const indices = [];
             if (layerIndices.length === 0) {
@@ -392,11 +415,7 @@
             COMMON_CARD_ASSETS.layers.forEach((layer, i) => {
                 const img = document.createElement('img');
                 img.src = `${COMMON_CARD_ASSETS.base_url}${layer.folder}/${indices[i]}.png`;
-                img.style.position = 'absolute';
-                img.style.left = '0';
-                img.style.top = '0';
-                img.style.width = '100%';
-                img.style.height = '100%';
+                img.className = "card-aspect-ratio-content"; // Use the class for positioning
                 img.style.objectFit = 'contain'; // This is the magic line that prevents squishing.
                 targetDiv.appendChild(img);
             });
@@ -516,21 +535,31 @@
         }
 
         function renderLog() { logMessagesEl.innerHTML = gameState.log.map(msg => `<div class="log-message">${msg}</div>`).join(''); }
-
+        
+        // --- FIX & MODIFIED --- This function now correctly renders cards and uses the aspect ratio CSS
         function renderDisplayCabinet() {
             const cabinetListEl = document.getElementById('display-cabinet-list');
             const placeholderEl = document.getElementById('display-cabinet-placeholder');
             cabinetListEl.innerHTML = ''; 
 
             if (gameState.displayCabinet.length === 0) {
-                cabinetListEl.appendChild(placeholderEl);
+                // Ensure placeholder is a direct child if the list is empty
+                if (!cabinetListEl.contains(placeholderEl)) {
+                    cabinetListEl.appendChild(placeholderEl);
+                }
                 placeholderEl.style.display = 'block';
+                manageCabinetBtn.style.display = 'none'; // Hide manage button when empty
             } else {
                 placeholderEl.style.display = 'none';
+                manageCabinetBtn.style.display = 'inline-block'; // Show manage button when not empty
                 gameState.displayCabinet.forEach(cabinetItem => {
                     const card = cabinetItem.card;
+                    
+                    const aspectContainer = document.createElement('div');
+                    aspectContainer.className = 'card-aspect-ratio';
+
                     const cardDiv = document.createElement('div');
-                    cardDiv.className = 'w-full h-36 rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden';
+                    cardDiv.className = 'card-aspect-ratio-content rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden';
                     
                     if (card.id === 'common_single') {
                         createCardImageLayers(cardDiv, cabinetItem.layers);
@@ -541,17 +570,26 @@
                         else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
                         else cardDiv.style.backgroundColor = '#374151';
                     }
-                    cabinetListEl.appendChild(cardDiv);
+                    aspectContainer.appendChild(cardDiv)
+                    cabinetListEl.appendChild(aspectContainer);
                 });
             }
         }
         
-        function showReplaceCabinetModal(newCard, fromButton) {
-            replaceCabinetOptionsEl.innerHTML = '';
+        // --- NEW --- Modal for managing (removing) cabinet cards
+        function showManageCabinetModal() {
+            cabinetModalTitleEl.textContent = 'Manage Cabinet';
+            cabinetModalMessageEl.textContent = 'Select a card to return to your inventory.';
+            cabinetModalOptionsEl.innerHTML = '';
+            
             gameState.displayCabinet.forEach((cabinetItem, index) => {
                 const card = cabinetItem.card;
+                const aspectContainer = document.createElement('div');
+                aspectContainer.className = 'card-aspect-ratio cursor-pointer';
+                aspectContainer.onclick = () => returnCabinetCardToInventory(index);
+
                 const cardDiv = document.createElement('div');
-                cardDiv.className = 'w-full h-36 rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden cursor-pointer hover:border-cyan-400';
+                cardDiv.className = 'card-aspect-ratio-content rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden hover:border-cyan-400';
                 
                 if (card.id === 'common_single') {
                     createCardImageLayers(cardDiv, cabinetItem.layers);
@@ -563,14 +601,17 @@
                     else cardDiv.style.backgroundColor = '#374151';
                 }
                 
-                cardDiv.onclick = () => replaceCabinetCard(index, newCard, fromButton);
-                replaceCabinetOptionsEl.appendChild(cardDiv);
+                aspectContainer.appendChild(cardDiv);
+                cabinetModalOptionsEl.appendChild(aspectContainer);
             });
-            replaceCabinetModalEl.classList.remove('hidden');
+            cabinetModalEl.classList.remove('hidden');
         }
-        
-        function replaceCabinetCard(indexToRemove, newCard, fromButton) {
+
+        // --- NEW --- Function to return a selected card to inventory
+        function returnCabinetCardToInventory(indexToRemove) {
             const removedCabinetItem = gameState.displayCabinet[indexToRemove];
+            if (!removedCabinetItem) return;
+
             const removedCard = removedCabinetItem.card;
             let inventoryItem = gameState.inventory.find(item => item.cardId === removedCard.id);
             if (inventoryItem) {
@@ -578,28 +619,52 @@
             } else {
                 gameState.inventory.push({ cardId: removedCard.id, quantity: 1, totalCost: 0 });
             }
+            
+            gameState.displayCabinet.splice(indexToRemove, 1);
+            
             addLogMessage(`Moved a ${removedCard.name} from the cabinet back to inventory.`);
-
-            gameState.displayCabinet.splice(indexToRemove, 1, newCard);
-            
-            const newCardInventoryItem = gameState.inventory.find(item => item.cardId === newCard.card.id);
-            newCardInventoryItem.quantity--;
-            const costOfOneItem = newCardInventoryItem.quantity > 0 ? (newCardInventoryItem.totalCost / (newCardInventoryItem.quantity + 1)) : newCardInventoryItem.totalCost;
-            newCardInventoryItem.totalCost -= isNaN(costOfOneItem) ? 0 : costOfOneItem;
-            
-            if (newCardInventoryItem.quantity <= 0) {
-                 gameState.inventory = gameState.inventory.filter(i => i.cardId !== newCard.card.id);
-            }
-
-            addLogMessage(`Added a ${newCard.card.name} to the Display Cabinet!`);
-            fromButton.textContent = 'Added!';
-            fromButton.disabled = true;
-
-            replaceCabinetModalEl.classList.add('hidden');
+            cabinetModalEl.classList.add('hidden');
             renderAll();
         }
 
-        function addToDisplayCabinet(cardId, buttonElement) {
+        function showReplaceCabinetModal(newCard, fromButton) {
+            cabinetModalTitleEl.textContent = 'Cabinet Full!';
+            cabinetModalMessageEl.textContent = 'Choose a card to replace with your new pull.';
+            cabinetModalOptionsEl.innerHTML = '';
+
+            gameState.displayCabinet.forEach((cabinetItem, index) => {
+                const card = cabinetItem.card;
+                const aspectContainer = document.createElement('div');
+                aspectContainer.className = 'card-aspect-ratio cursor-pointer';
+                aspectContainer.onclick = () => replaceCabinetCard(index, newCard, fromButton);
+
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card-aspect-ratio-content rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden hover:border-cyan-400';
+                
+                if (card.id === 'common_single') {
+                    createCardImageLayers(cardDiv, cabinetItem.layers);
+                } else {
+                    cardDiv.textContent = card.name;
+                    if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
+                    else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
+                    else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
+                    else cardDiv.style.backgroundColor = '#374151';
+                }
+                
+                aspectContainer.appendChild(cardDiv);
+                cabinetModalOptionsEl.appendChild(aspectContainer);
+            });
+            cabinetModalEl.classList.remove('hidden');
+        }
+        
+        function replaceCabinetCard(indexToRemove, newCard, fromButton) {
+            returnCabinetCardToInventory(indexToRemove); // Reuse the remove logic
+            addToDisplayCabinet(newCard.card.id, fromButton, true); // Add the new card
+            cabinetModalEl.classList.add('hidden');
+        }
+
+        // --- MODIFIED --- Now accepts a flag to bypass inventory check, used for replacing.
+        function addToDisplayCabinet(cardId, buttonElement, isReplacing = false) {
             const cardLayers = buttonElement.dataset.layers ? JSON.parse(buttonElement.dataset.layers) : null;
             const newCabinetItem = {
                 card: getCardDetails(cardId),
@@ -607,7 +672,7 @@
             };
 
             const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
-            if (!inventoryItem || inventoryItem.quantity < 1) {
+            if (!isReplacing && (!inventoryItem || inventoryItem.quantity < 1)) {
                 addLogMessage(`Error: Card not found in inventory.`);
                 return;
             }
@@ -616,8 +681,6 @@
                 gameState.displayCabinet.push(newCabinetItem);
 
                 inventoryItem.quantity--;
-                const costOfOneItem = inventoryItem.quantity > 0 ? (inventoryItem.totalCost / (inventoryItem.quantity + 1)) : inventoryItem.totalCost;
-                inventoryItem.totalCost -= isNaN(costOfOneItem) ? 0 : costOfOneItem;
                 if (inventoryItem.quantity <= 0) {
                     gameState.inventory = gameState.inventory.filter(i => i.cardId !== cardId);
                 }
@@ -627,7 +690,7 @@
                 buttonElement.disabled = true;
                 
                 renderAll();
-            } else {
+            } else if (!isReplacing) {
                 showReplaceCabinetModal(newCabinetItem, buttonElement);
             }
         }
@@ -677,9 +740,14 @@
                         gameState.inventory.push({ cardId: card.id, quantity: 1, totalCost: 0 });
                     }
                     const wrapperDiv = document.createElement('div');
-                    wrapperDiv.className = 'flex flex-col items-center opacity-0 animate-fade-in';
+                    wrapperDiv.className = 'flex flex-col items-center opacity-0 animate-fade-in w-24'; // Set fixed width on wrapper
+                    
+                    const aspectContainer = document.createElement('div');
+                    aspectContainer.className = 'card-aspect-ratio';
+
                     const cardDiv = document.createElement('div');
-                    cardDiv.className = 'w-24 h-36 rounded-lg flex items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden';
+                    cardDiv.className = 'card-aspect-ratio-content rounded-lg flex items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden';
+                    
                     const cabinetButton = document.createElement('button');
                     cabinetButton.className = 'btn btn-secondary btn-sm text-xs mt-2 w-full';
                     cabinetButton.textContent = 'To Cabinet';
@@ -697,12 +765,13 @@
                         else cardDiv.style.backgroundColor = '#374151';
                     }
                     
-                    wrapperDiv.appendChild(cardDiv);
+                    aspectContainer.appendChild(cardDiv);
+                    wrapperDiv.appendChild(aspectContainer);
                     wrapperDiv.appendChild(cabinetButton);
                     packSummaryAreaEl.appendChild(wrapperDiv);
 
                     revealIndex++;
-                    setTimeout(revealNext, 1200);
+                    setTimeout(revealNext, 500); // sped up slightly
                 } else {
                     closePackModalBtn.style.display = 'inline-block';
                     const summaryLog = packState.cards.map(c => `<li class="ml-4 list-disc pack-item">${c.name}</li>`).join('');
@@ -814,7 +883,9 @@
                 closeEventModalBtn.addEventListener('click', () => { eventModalEl.classList.add('hidden'); });
                 helpTextToggleEl.addEventListener('change', (e) => { toggleHelpText(e.target.checked); });
                 submitScoreBtn.addEventListener('click', submitHighScore);
-                cancelReplaceBtn.addEventListener('click', () => { replaceCabinetModalEl.classList.add('hidden'); });
+                cancelCabinetModalBtn.addEventListener('click', () => { cabinetModalEl.classList.add('hidden'); });
+                manageCabinetBtn.addEventListener('click', showManageCabinetModal);
+
                 initializeGame();
                 listenForLeaderboardUpdates();
             } else {
