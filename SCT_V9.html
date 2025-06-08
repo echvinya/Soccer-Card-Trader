@@ -146,6 +146,13 @@
             <h2 id="game-over-title" class="text-3xl font-bold mb-4">Game Over!</h2>
             <p id="game-over-message" class="text-lg mb-2">You've completed your trading journey.</p>
             <p class="text-xl mb-4">Your Final Score: <span id="final-score" class="text-2xl font-bold text-green-400">$0</span></p>
+            
+            <div id="game-over-cabinet-section" class="mt-4">
+                <h3 class="text-xl font-semibold text-cyan-400">Your Final Cabinet</h3>
+                <div id="game-over-cabinet-list" class="grid grid-cols-3 gap-4 mt-2">
+                    </div>
+            </div>
+
             <hr class="border-gray-600 my-4">
             <h3 class="text-2xl font-semibold mb-3 text-amber-400">Global Top 10</h3>
             <div id="game-over-leaderboard-list" class="space-y-2 text-left max-h-64 overflow-y-auto"></div>
@@ -180,6 +187,15 @@
             <div id="cabinet-modal-options" class="grid grid-cols-3 gap-4 my-6">
             </div>
             <button id="cancel-cabinet-modal-btn" class="btn btn-danger">Cancel</button>
+        </div>
+    </div>
+
+    <div id="view-cabinet-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="view-cabinet-title" class="text-3xl font-bold mb-4 text-cyan-400">Player's Cabinet</h2>
+            <div id="view-cabinet-list" class="grid grid-cols-3 gap-4 my-6">
+                </div>
+            <button id="close-view-cabinet-btn" class="btn btn-primary">Close</button>
         </div>
     </div>
 
@@ -265,6 +281,7 @@
         let gameState = {};
         let marketState = {};
         let packState = { cards: [], isRevealing: false };
+        let leaderboardScores = []; // --- NEW --- State variable to hold full leaderboard data
 
         const cashEl = document.getElementById('cash');
         const daysEl = document.getElementById('days');
@@ -296,6 +313,9 @@
         const cabinetModalOptionsEl = document.getElementById('cabinet-modal-options');
         const cancelCabinetModalBtn = document.getElementById('cancel-cabinet-modal-btn');
         const manageCabinetBtn = document.getElementById('manage-cabinet-btn');
+        const viewCabinetModalEl = document.getElementById('view-cabinet-modal');
+        const viewCabinetListEl = document.getElementById('view-cabinet-list');
+        const closeViewCabinetBtn = document.getElementById('close-view-cabinet-btn');
 
 
         const getLeaderboardCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
@@ -303,26 +323,37 @@
         async function listenForLeaderboardUpdates() {
             onSnapshot(getLeaderboardCollection(), (snapshot) => {
                 const scores = [];
-                snapshot.forEach(doc => scores.push({ id: doc.id, ...doc.data() }));
-                const sortedScores = scores.sort((a, b) => b.score - a.score).slice(0, IN_GAME_LEADERBOARD_SIZE);
+                snapshot.forEach(doc => {
+                    scores.push({ id: doc.id, ...doc.data() });
+                });
+                leaderboardScores = scores.sort((a, b) => b.score - a.score); // --- MODIFIED --- Store sorted scores globally
+                const topScores = leaderboardScores.slice(0, IN_GAME_LEADERBOARD_SIZE);
                 inGameLeaderboardTitleEl.textContent = `Global Top ${IN_GAME_LEADERBOARD_SIZE}`;
-                renderLeaderboard(sortedScores, leaderboardListEl); 
+                renderLeaderboard(topScores, leaderboardListEl); 
             });
         }
-
+        
+        // --- MODIFIED --- Now saves the display cabinet along with the score
         async function submitHighScore() {
             const initials = document.getElementById('player-initials').value.trim().toUpperCase();
             if (initials.length !== 3) { alert("Please enter 3 initials."); return; }
             submitScoreBtn.disabled = true;
             submitScoreBtn.textContent = "Submitting...";
+            
+            const scoreData = {
+                initials: initials,
+                score: gameState.cash,
+                timestamp: new Date(),
+                cabinet: gameState.displayCabinet // Save the cabinet
+            };
+
             try {
-                await addDoc(getLeaderboardCollection(), { initials: initials, score: gameState.cash, timestamp: new Date() });
+                await addDoc(getLeaderboardCollection(), scoreData);
                 const snapshot = await getDocs(getLeaderboardCollection());
-                let scores = [];
-                snapshot.forEach(doc => scores.push({ id: doc.id, ...doc.data() }));
-                if (scores.length > LEADERBOARD_SIZE) {
-                    scores.sort((a, b) => b.score - a.score);
-                    const scoresToDelete = scores.slice(LEADERBOARD_SIZE);
+                if (snapshot.docs.length > LEADERBOARD_SIZE) {
+                    const allScores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allScores.sort((a, b) => b.score - a.score);
+                    const scoresToDelete = allScores.slice(LEADERBOARD_SIZE);
                     for (const score of scoresToDelete) {
                         await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', score.id));
                     }
@@ -410,7 +441,8 @@
             });
             return indices;
         }
-
+        
+        // --- Centralized function for creating all card visuals.
         function createCardVisual(cabinetItem) {
             const card = cabinetItem.card;
             const visualContainer = document.createElement('div');
@@ -439,6 +471,7 @@
              document.getElementById('market-location-name').textContent = location.name;
         }
 
+        // --- MODIFIED --- Now adds a "View Cabinet" button
         function renderLeaderboard(scores, targetElement) {
             targetElement.innerHTML = '';
             if (scores.length === 0) {
@@ -449,7 +482,17 @@
                 const div = document.createElement('div');
                 div.className = 'flex justify-between items-center text-lg p-1 rounded';
                 if (index === 0) div.classList.add('bg-amber-500/20');
-                div.innerHTML = `<span class="font-bold">${index + 1}. ${entry.initials}</span><span class="text-green-400 font-semibold">$${entry.score.toLocaleString()}</span>`;
+                
+                const cabinetButton = (entry.cabinet && entry.cabinet.length > 0) 
+                    ? `<button class="btn btn-secondary btn-sm text-xs" data-score-id="${entry.id}" data-action="view-cabinet">Cabinet</button>`
+                    : '';
+
+                div.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="font-bold mr-3">${index + 1}. ${entry.initials}</span>
+                        ${cabinetButton}
+                    </div>
+                    <span class="text-green-400 font-semibold">$${entry.score.toLocaleString()}</span>`;
                 targetElement.appendChild(div);
             });
         }
@@ -554,7 +597,7 @@
                 placeholderEl.style.display = 'block';
                 manageCabinetBtn.style.display = 'none';
             } else {
-                if (cabinetListEl.contains(placeholderEl)) cabinetListEl.style.display = 'none';
+                if (cabinetListEl.contains(placeholderEl)) placeholderEl.style.display = 'none';
                 manageCabinetBtn.style.display = 'inline-block';
                 gameState.displayCabinet.forEach(cabinetItem => {
                     const cardVisual = createCardVisual(cabinetItem);
@@ -786,12 +829,21 @@
             renderAll(); 
         }
         
+        // --- MODIFIED --- Also renders the player's final cabinet
         async function showGameOverScreen() {
-            const snapshot = await getDocs(getLeaderboardCollection());
-            let scores = [];
-            snapshot.forEach(doc => { scores.push(doc.data()); });
-            scores.sort((a, b) => b.score - a.score);
-            const topScores = scores.slice(0, LEADERBOARD_SIZE);
+            const gameOverCabinetList = document.getElementById('game-over-cabinet-list');
+            gameOverCabinetList.innerHTML = '';
+            if (gameState.displayCabinet.length > 0) {
+                gameState.displayCabinet.forEach(cabinetItem => {
+                    const cardVisual = createCardVisual(cabinetItem);
+                    gameOverCabinetList.appendChild(cardVisual);
+                });
+                document.getElementById('game-over-cabinet-section').style.display = 'block';
+            } else {
+                document.getElementById('game-over-cabinet-section').style.display = 'none';
+            }
+
+            const topScores = leaderboardScores.slice(0, LEADERBOARD_SIZE);
             document.getElementById('final-score').textContent = `$${gameState.cash.toLocaleString()}`;
             renderLeaderboard(topScores, document.getElementById('game-over-leaderboard-list'));
             gameOverModalEl.classList.remove('hidden');
@@ -800,12 +852,8 @@
         async function checkGameOver() {
             if (gameState.daysRemaining <= 0) {
                 addLogMessage(`Game Over! Final cash: $${gameState.cash.toLocaleString()}.`);
-                const snapshot = await getDocs(getLeaderboardCollection());
-                let scores = [];
-                snapshot.forEach(doc => scores.push(doc.data()));
-                scores.sort((a, b) => b.score - a.score);
-                const lowestHighScore = scores.length > 0 ? scores[Math.min(scores.length - 1, LEADERBOARD_SIZE - 1)].score : 0;
-                if (gameState.cash > lowestHighScore || scores.length < LEADERBOARD_SIZE) {
+                const lowestHighScore = leaderboardScores.length > 0 ? leaderboardScores[Math.min(leaderboardScores.length - 1, LEADERBOARD_SIZE - 1)].score : 0;
+                if (gameState.cash > lowestHighScore || leaderboardScores.length < LEADERBOARD_SIZE) {
                     document.getElementById('high-score-final-score').textContent = `$${gameState.cash.toLocaleString()}`;
                     highScoreModalEl.classList.remove('hidden');
                 } else {
@@ -814,6 +862,20 @@
                 return true; 
             }
             return false; 
+        }
+
+        // --- NEW --- Shows the selected player's cabinet
+        function showPlayerCabinet(cabinet) {
+            viewCabinetListEl.innerHTML = '';
+            if (cabinet && cabinet.length > 0) {
+                cabinet.forEach(cabinetItem => {
+                    const cardVisual = createCardVisual(cabinetItem);
+                    viewCabinetListEl.appendChild(cardVisual);
+                });
+            } else {
+                viewCabinetListEl.innerHTML = '<p class="text-gray-500 col-span-full">This player had an empty cabinet.</p>';
+            }
+            viewCabinetModalEl.classList.remove('hidden');
         }
 
         onAuthStateChanged(auth, user => {
@@ -828,6 +890,21 @@
                 submitScoreBtn.addEventListener('click', submitHighScore);
                 cancelCabinetModalBtn.addEventListener('click', () => { cabinetModalEl.classList.add('hidden'); });
                 manageCabinetBtn.addEventListener('click', showManageCabinetModal);
+                closeViewCabinetBtn.addEventListener('click', () => { viewCabinetModalEl.classList.add('hidden')});
+                
+                // --- NEW --- Event listener for viewing cabinets from leaderboards
+                const handleViewCabinetClick = (e) => {
+                    const button = e.target.closest('button[data-action="view-cabinet"]');
+                    if (button) {
+                        const scoreId = button.dataset.scoreId;
+                        const score = leaderboardScores.find(s => s.id === scoreId);
+                        if (score && score.cabinet) {
+                            showPlayerCabinet(score.cabinet);
+                        }
+                    }
+                };
+                leaderboardListEl.addEventListener('click', handleViewCabinetClick);
+                gameOverLeaderboardListEl.addEventListener('click', handleViewCabinetClick);
 
                 initializeGame();
                 listenForLeaderboardUpdates();
