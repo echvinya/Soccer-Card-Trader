@@ -153,7 +153,10 @@
         </div>
     </div>
     
-    <div id="booster-pack-modal" class="modal hidden"><div class="modal-content"><h2 class="text-3xl font-bold mb-4">Your Haul!</h2><div id="pack-summary-area" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 justify-items-center my-6 min-h-[144px]"></div><div class="text-center"><button id="close-pack-modal-btn" class="btn btn-primary mt-4">Awesome!</button></div></div></div>
+    <div id="booster-pack-modal" class="modal hidden"><div class="modal-content"><h2 class="text-3xl font-bold mb-4">Your Haul!</h2>
+        <div id="pack-summary-area" class="flex flex-row flex-wrap justify-center items-center gap-4 my-6 min-h-[144px]"></div>
+        <div class="text-center"><button id="close-pack-modal-btn" class="btn btn-primary mt-4">Awesome!</button></div>
+    </div></div>
     <div id="event-modal" class="modal hidden"><div class="modal-content"><h2 id="event-title" class="text-3xl font-bold mb-4 text-red-400">Random Event!</h2><p id="event-message" class="text-lg mb-6">Something unexpected happened...</p><button id="close-event-modal-btn" class="btn btn-primary">Continue</button></div></div>
 
     <div id="high-score-modal" class="modal hidden">
@@ -408,12 +411,9 @@
             return indices;
         }
 
-        // --- DEFINITIVE FIX --- Centralized function for creating all card visuals.
         function createCardVisual(cabinetItem) {
             const card = cabinetItem.card;
-            // The main container forces the aspect ratio using Tailwind's aspect-ratio property.
             const visualContainer = document.createElement('div');
-            // --- MODIFIED --- Aspect ratio updated to 3:4
             visualContainer.className = 'relative aspect-[3/4] w-full';
 
             if (card.id === 'common_single') {
@@ -554,7 +554,7 @@
                 placeholderEl.style.display = 'block';
                 manageCabinetBtn.style.display = 'none';
             } else {
-                if (cabinetListEl.contains(placeholderEl)) placeholderEl.style.display = 'none';
+                if (cabinetListEl.contains(placeholderEl)) cabinetListEl.style.display = 'none';
                 manageCabinetBtn.style.display = 'inline-block';
                 gameState.displayCabinet.forEach(cabinetItem => {
                     const cardVisual = createCardVisual(cabinetItem);
@@ -703,12 +703,10 @@
                     
                     const tempCabinetItem = { card: card, layers: null };
                     if (card.id === 'common_single') {
-                        // Generate layers and save them to the button
                         tempCabinetItem.layers = createCardImageLayers(document.createElement('div'));
                         cabinetButton.dataset.layers = JSON.stringify(tempCabinetItem.layers);
                     }
                     
-                    // Use the new helper function to create the visual
                     const cardVisual = createCardVisual(tempCabinetItem);
                     
                     wrapperDiv.appendChild(cardVisual);
