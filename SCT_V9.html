@@ -233,7 +233,6 @@
         const BOOSTER_PACK_DAILY_LIMIT = 3;
         const BOOSTER_CHANCE_PER_DAY = 0.8; 
         const PRICE_GUIDE_COST = 1000;
-        const EVENT_CHANCE_ON_TRAVEL = 0.30;
         const RARE_CARD_THRESHOLD = 200;
         const LEADERBOARD_SIZE = 10;
         const IN_GAME_LEADERBOARD_SIZE = 3; 
@@ -497,7 +496,6 @@
             });
         }
 
-        // --- MODIFIED --- Renders the new market table layout
         function renderMarket() {
             marketItemsEl.innerHTML = '';
             specialActionsContainerEl.innerHTML = '';
@@ -557,7 +555,6 @@
             });
         }
 
-        // --- MODIFIED --- Renders the new inventory table layout
         function renderInventory() {
             inventoryItemsEl.innerHTML = '';
             if (gameState.inventory.length === 0) {
@@ -709,7 +706,6 @@
 
         function buyPriceGuide() { if(gameState.cash<PRICE_GUIDE_COST){addLogMessage(`Not enough cash.`);return;}gameState.cash-=PRICE_GUIDE_COST;gameState.hasPriceGuide=true;addLogMessage(`Purchased Price Guide!`);renderAll(); }
         
-        // --- MODIFIED --- Now calls renderAll() immediately to fix UI update bug.
         function buyBoosterPack() { 
             if(gameState.cash<BOOSTER_PACK_PRICE){addLogMessage(`Not enough cash.`);return;}
             if(gameState.boosterPacksPurchasedToday>=BOOSTER_PACK_DAILY_LIMIT){addLogMessage(`Daily pack limit reached.`);return;}
@@ -719,7 +715,7 @@
             gameState.cash-=BOOSTER_PACK_PRICE;
             gameState.boosterPacksPurchasedToday++;
             
-            renderAll(); // FIX: Update UI immediately
+            renderAll(); 
 
             const packSize = Math.floor(Math.random()*3)+3;
             const pulledCards = [];
@@ -790,7 +786,6 @@
             revealNext();
         }
 
-        // --- NEW/MODIFIED --- Functions to handle specific buy/sell actions
         function buyItemQty(cardId) {
             const quantity = parseInt(document.getElementById(`buy-qty-${cardId}`).value);
             if(isNaN(quantity) || quantity <= 0) { addLogMessage(`Invalid quantity.`); return; }
@@ -854,21 +849,18 @@
             sellItemQty(cardId);
         }
 
+        // --- MODIFIED --- Removed the broken random event calls
         async function travelTo(destinationLocationId) {
             const travelCostDays = travelDurations[gameState.currentLocationId]?.[destinationLocationId];
             if (travelCostDays === undefined) { addLogMessage("Error: Travel route not defined."); return; }
             if (gameState.daysRemaining < travelCostDays) { addLogMessage("Not enough days left to travel!"); await checkGameOver(); return; }
+            
             gameState.daysRemaining -= travelCostDays;
             gameState.currentLocationId = destinationLocationId;
             addLogMessage(`Traveled to ${getCurrentLocation().name}. Lost ${travelCostDays} day${travelCostDays > 1 ? 's' : ''}.`);
             gameState.boosterPacksPurchasedToday = 0;
             updateMarketForCurrentLocation(); 
-            if (Math.random() < EVENT_CHANCE_ON_TRAVEL) {
-                const eventType = Math.random();
-                if (eventType < 0.33) triggerCardShowEvent();
-                else if (eventType < 0.66) triggerMeetAndGreetEvent();
-                else triggerMarketFloodEvent();
-            }
+
             if (await checkGameOver()) return;
             renderAll(); 
         }
@@ -923,7 +915,6 @@
 
         onAuthStateChanged(auth, user => {
             if (user) {
-                // --- MODIFIED --- Event listeners updated for new actions
                 const handleMarketClick = (e) => {
                     const button = e.target.closest('button[data-action]');
                     if (!button) return;
