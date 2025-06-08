@@ -26,6 +26,10 @@
             font-weight: 600;
             cursor: pointer;
             transition: background-color 0.2s ease-in-out;
+            line-height: 1; /* Tighter line height for small buttons */
+        }
+        .btn-compact {
+            padding: 0.5rem 0.75rem; /* Make buttons smaller */
         }
         .btn-primary {
             background-color: #991b1b; /* red-800 */
@@ -106,7 +110,7 @@
        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div id="market-section" class="card lg:col-span-2">
                 <div class="flex justify-between items-start mb-3"><h2 class="text-2xl font-semibold" id="market-location-name">-</h2><div id="special-actions-container" class="flex flex-col sm:flex-row gap-2 items-center"></div></div>
-                <div class="overflow-x-auto"><table class="w-full min-w-max"><thead class="bg-gray-700/50"><tr><th class="table-cell">Card Type</th><th class="table-cell">Price</th><th class="table-cell">Available</th><th class="table-cell">Owned</th><th class="table-cell">Quantity</th><th class="table-cell">Actions</th></tr></thead><tbody id="market-items"></tbody></table></div>
+                <div class="overflow-x-auto"><table class="w-full min-w-max"><thead class="bg-gray-700/50"><tr><th class="table-cell">Card Type</th><th class="table-cell">Price</th><th class="table-cell">Supply</th><th class="table-cell">Quantity</th><th class="table-cell">Actions</th></tr></thead><tbody id="market-items"></tbody></table></div>
             </div>
 
             <div class="space-y-6">
@@ -116,7 +120,7 @@
         </div>
 
         <div class="mt-6">
-            <div id="inventory-section" class="card"><h2 class="text-2xl font-semibold mb-3">Your Portfolio & Selling</h2><div class="overflow-x-auto"><table class="w-full min-w-max"><thead class="bg-gray-700/50"><tr><th class="table-cell">Card Type</th><th class="table-cell">Quantity</th><th class="table-cell">Avg. Buy Price</th><th class="table-cell">Current Sell Price</th><th class="table-cell">Quantity</th><th class="table-cell">Actions</th></tr></thead><tbody id="inventory-items"></tbody></table></div></div>
+            <div id="inventory-section" class="card"><h2 class="text-2xl font-semibold mb-3">Your Portfolio & Selling</h2><div class="overflow-x-auto"><table class="w-full min-w-max"><thead class="bg-gray-700/50"><tr><th class="table-cell">Card Type</th><th class="table-cell">Held</th><th class="table-cell">Avg. Buy Price</th><th class="table-cell">Current Sell Price</th><th class="table-cell">Quantity</th><th class="table-cell">Actions</th></tr></thead><tbody id="inventory-items"></tbody></table></div></div>
         </div>
         
         <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -499,7 +503,7 @@
             specialActionsContainerEl.innerHTML = '';
             
             const locationMarket = marketState[gameState.currentLocationId];
-            if (!locationMarket) { marketItemsEl.innerHTML = '<tr><td colspan="6" class="table-cell text-center py-4">Market data not available.</td></tr>'; return; }
+            if (!locationMarket) { marketItemsEl.innerHTML = '<tr><td colspan="5" class="table-cell text-center py-4">Market data not available.</td></tr>'; return; }
 
             if (!gameState.hasPriceGuide) {
                 const priceGuideBtn = document.createElement('button');
@@ -528,9 +532,6 @@
                 const marketInfo = locationMarket[card.id];
                 if (!marketInfo) return;
 
-                const inventoryItem = gameState.inventory.find(item => item.cardId === card.id);
-                const ownedCount = inventoryItem ? inventoryItem.quantity : 0;
-
                 let priceIndicatorHtml = '';
                 if (gameState.hasPriceGuide) {
                     if (marketInfo.price > card.basePrice) priceIndicatorHtml = `<span class="ml-2 text-green-400" title="Price is above base value">▲</span>`;
@@ -545,12 +546,11 @@
                     <td class="table-cell"><div class="font-medium">${card.name}</div><div class="text-xs text-gray-400">${card.description}</div></td>
                     <td class="table-cell"><div class="flex items-center"><span class="font-semibold ${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div></td>
                     <td class="table-cell">${marketInfo.available}</td>
-                    <td class="table-cell">${ownedCount}</td>
                     <td class="table-cell"><input type="number" id="buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1"></td>
                     <td class="table-cell">
-                        <div class="flex flex-col gap-2">
-                            <button class="btn btn-success btn-sm text-xs" data-card-id="${card.id}" data-action="buy-qty" ${marketInfo.available === 0 ? 'disabled' : ''}>Buy</button>
-                            <button class="btn btn-success btn-sm text-xs" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>Buy All</button>
+                        <div class="flex items-center gap-2">
+                            <button class="btn btn-success btn-compact" data-card-id="${card.id}" data-action="buy-qty" ${marketInfo.available === 0 ? 'disabled' : ''}>$</button>
+                            <button class="btn btn-success btn-compact" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>A</button>
                         </div>
                     </td>`;
                 marketItemsEl.appendChild(tr);
@@ -578,9 +578,9 @@
                     <td class="table-cell font-semibold text-green-400">$${currentMarketPrice.toLocaleString()}</td>
                     <td class="table-cell"><input type="number" id="sell-qty-${card.id}" min="1" max="${item.quantity}" value="1"></td>
                     <td class="table-cell">
-                        <div class="flex flex-col gap-2">
-                            <button class="btn btn-danger btn-sm text-xs" data-card-id="${card.id}" data-action="sell-qty">Sell</button>
-                            <button class="btn btn-danger btn-sm text-xs" data-card-id="${card.id}" data-action="sell-all">Sell All</button>
+                        <div class="flex items-center gap-2">
+                            <button class="btn btn-danger btn-compact" data-card-id="${card.id}" data-action="sell-qty">$</button>
+                            <button class="btn btn-danger btn-compact" data-card-id="${card.id}" data-action="sell-all">A</button>
                         </div>
                     </td>`;
                 inventoryItemsEl.appendChild(tr);
@@ -614,7 +614,7 @@
                 placeholderEl.style.display = 'block';
                 manageCabinetBtn.style.display = 'none';
             } else {
-                if (cabinetListEl.contains(placeholderEl)) cabinetListEl.style.display = 'none';
+                if (cabinetListEl.contains(placeholderEl)) placeholderEl.style.display = 'none';
                 manageCabinetBtn.style.display = 'inline-block';
                 gameState.displayCabinet.forEach(cabinetItem => {
                     const cardVisual = createCardVisual(cabinetItem);
@@ -785,7 +785,7 @@
             revealNext();
         }
 
-        // --- NEW --- Functions to handle specific buy/sell actions
+        // --- NEW/MODIFIED --- Functions to handle specific buy/sell actions
         function buyItemQty(cardId) {
             const quantity = parseInt(document.getElementById(`buy-qty-${cardId}`).value);
             if(isNaN(quantity) || quantity <= 0) { addLogMessage(`Invalid quantity.`); return; }
@@ -918,9 +918,9 @@
 
         onAuthStateChanged(auth, user => {
             if (user) {
-                // --- MODIFIED --- Consolidated event listeners
+                // --- MODIFIED --- Event listeners updated for new actions
                 const handleMarketClick = (e) => {
-                    const button = e.target.closest('button');
+                    const button = e.target.closest('button[data-action]');
                     if (!button) return;
                     const action = button.dataset.action;
                     const cardId = button.dataset.cardId;
@@ -931,7 +931,7 @@
                 };
                 
                 const handleInventoryClick = (e) => {
-                    const button = e.target.closest('button');
+                    const button = e.target.closest('button[data-action]');
                     if (!button) return;
                     const action = button.dataset.action;
                     const cardId = button.dataset.cardId;
