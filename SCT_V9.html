@@ -255,17 +255,8 @@
             { id: 'booster_pack', name: 'Booster Pack', basePrice: BOOSTER_PACK_PRICE, special: true },
         ];
         const TRADABLE_CARDS = CARDS.filter(card => !card.special);
-
-        const TEAM_COLORS = [
-            { style: { background: "repeating-linear-gradient(90deg, #000000, #000000 15px, #FFFFFF 15px, #FFFFFF 30px)", color: "#E6E6E6", textShadow: "1px 1px 2px black" } },
-            { style: { background: "repeating-linear-gradient(90deg, #CE1141, #CE1141 15px, #000000 15px, #000000 30px)", color: "white", textShadow: "1px 1px 2px black" } },
-            { style: { background: "repeating-linear-gradient(90deg, #74ACDF, #74ACDF 15px, #FFFFFF 15px, #FFFFFF 30px)", color: "black" } },
-            { style: { background: "repeating-linear-gradient(0deg, #009B48, #009B48 20px, #FFFFFF 20px, #FFFFFF 40px)", color: "black" } },
-            { style: { background: "repeating-linear-gradient(90deg, #004D98, #004D98 20px, #A50044 20px, #A50044 40px)", color: "white", textShadow: "1px 1px 2px black" } },
-            { style: { backgroundColor: "#DA291C", color: "white" } }, { style: { backgroundColor: "#034694", color: "white" } }, { style: { backgroundColor: "#EF0107", color: "white" } },
-            { style: { backgroundColor: "#53122E", color: "#F3A500" } }, { style: { backgroundColor: "#6CABDD", color: "black" } }, { style: { backgroundColor: "#DC1F29", color: "white" } },
-            { style: { backgroundColor: "#FDE100", color: "#000000" } }, { style: { backgroundColor: "#FFFFFF", color: "black", border: '1px solid #ddd'} }, { style: { backgroundColor: "#F47925", color: "white" } },
-        ];
+        
+        // --- REMOVED --- The TEAM_COLORS array is no longer needed.
 
         let gameState = {};
         let marketState = {};
@@ -389,7 +380,6 @@
         }
         function toggleHelpText(show) { gameState.showHelpText = show; renderAll(); }
 
-        // --- NEW/MODIFIED --- Reusable function to create card visuals
         function createCardImageLayers(targetDiv) {
             COMMON_CARD_ASSETS.layers.forEach(layer => {
                 const img = document.createElement('img');
@@ -518,7 +508,6 @@
 
         function renderLog() { logMessagesEl.innerHTML = gameState.log.map(msg => `<div class="log-message">${msg}</div>`).join(''); }
 
-        // --- MODIFIED --- This function now correctly renders the layered common card images
         function renderDisplayCabinet() {
             const cabinetListEl = document.getElementById('display-cabinet-list');
             const placeholderEl = document.getElementById('display-cabinet-placeholder');
@@ -534,13 +523,16 @@
                     cardDiv.className = 'h-36 rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden';
                     
                     if (card.id === 'common_single') {
-                        createCardImageLayers(cardDiv); // Use the reusable function
+                        createCardImageLayers(cardDiv);
                     } else {
                         cardDiv.textContent = card.name;
                         if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
                         else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
                         else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
-                        else Object.assign(cardDiv.style, getRandomTeamStyle());
+                        else {
+                            // --- REMOVED --- Call to the missing getRandomTeamStyle function
+                            cardDiv.style.backgroundColor = '#374151'; // Default background for other cards
+                        }
                     }
                     cabinetListEl.appendChild(cardDiv);
                 });
@@ -554,13 +546,16 @@
                 cardDiv.className = 'h-32 rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden cursor-pointer hover:border-cyan-400';
                 
                 if (card.id === 'common_single') {
-                    createCardImageLayers(cardDiv); // Use the reusable function here too
+                    createCardImageLayers(cardDiv);
                 } else {
                     cardDiv.textContent = card.name;
                     if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
                     else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
                     else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
-                    else Object.assign(cardDiv.style, getRandomTeamStyle());
+                    else {
+                        // --- REMOVED --- Call to the missing getRandomTeamStyle function
+                        cardDiv.style.backgroundColor = '#374151'; // Default background
+                    }
                 }
                 
                 cardDiv.onclick = () => replaceCabinetCard(index, newCardId, fromButton);
@@ -664,7 +659,6 @@
             revealCardsSequentially(pulledCards);
         }
         
-        // --- MODIFIED --- This function now uses the reusable image creation function
         function revealCardsSequentially(cards) {
             packState.cards = cards; packSummaryAreaEl.innerHTML = ''; closePackModalBtn.style.display = 'none'; boosterPackModalEl.classList.remove('hidden'); let revealIndex = 0;
             function revealNext() {
@@ -686,14 +680,17 @@
                     cabinetButton.onclick = () => addToDisplayCabinet(card.id, cabinetButton);
 
                     if (card.id === 'common_single') {
-                        createCardImageLayers(cardDiv); // Use the reusable function
+                        createCardImageLayers(cardDiv);
                     } else {
                         cardDiv.textContent = card.name;
                         cardDiv.classList.add('text-lg');
                         if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
                         else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
                         else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
-                        else Object.assign(cardDiv.style, getRandomTeamStyle());
+                        else {
+                           // --- REMOVED --- Call to the missing getRandomTeamStyle function
+                           cardDiv.style.backgroundColor = '#374151'; // Default background
+                        }
                     }
                     
                     wrapperDiv.appendChild(cardDiv);
@@ -750,7 +747,7 @@
             if (inventoryItem.quantity <= 0) {
                 gameState.inventory = gameState.inventory.filter(item => item.cardId !== cardId);
             }
-            addLogMessage(`Sold ${quantity} ${getCardDetails(cardId).name} for $${totalSaleValue.toLocaleString()}.`);
+            addLogMessage(`Sold ${getCardDetails(cardId).name} for $${totalSaleValue.toLocaleString()}.`);
             renderAll();
         }
 
@@ -803,6 +800,8 @@
             return false; 
         }
 
+        // --- REMOVED --- The triggerMeetAndGreetEvent function as it is not being used
+        
         onAuthStateChanged(auth, user => {
             if (user) {
                 marketItemsEl.addEventListener('click', (e) => { const btn = e.target.closest('button[data-action="buy"]'); if (btn) buyItem(btn.dataset.cardId); });
