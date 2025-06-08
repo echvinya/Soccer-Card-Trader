@@ -87,21 +87,8 @@
         .sparkle { background: linear-gradient(45deg, #fef9c3, #fee2e2, #fde68a, #fee2e2, #fef9c3); background-size: 400% 400%; animation: sparkle 4s ease infinite; border: 2px solid #f87171; opacity: 1 !important; }
         .holo { background: linear-gradient(-45deg, #374151, #4b5563, #374151, #1f2937); background-size: 400% 400%; animation: sparkle 6s ease infinite; opacity: 1 !important; }
         .scribble-bg { background-color: #374151; background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234b5563' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
-
-        /* --- NEW --- CSS for maintaining card aspect ratio */
-        .card-aspect-ratio {
-            position: relative;
-            width: 100%;
-            height: 0;
-            padding-top: 140%; /* This creates a 5:7 aspect ratio (width:height) */
-        }
-        .card-aspect-ratio-content {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
+        
+        /* --- REMOVED --- Deleted the complex .card-aspect-ratio classes */
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
@@ -168,7 +155,7 @@
         </div>
     </div>
     
-    <div id="booster-pack-modal" class="modal hidden"><div class="modal-content"><h2 class="text-3xl font-bold mb-4">Your Haul!</h2><div id="pack-summary-area" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 justify-items-center my-6 min-h-[144px]"></div><div class="text-center"><button id="close-pack-modal-btn" class="btn btn-primary mt-4">Awesome!</button></div></div></div>
+    <div id="booster-pack-modal" class="modal hidden"><div class="modal-content"><h2 class="text-3xl font-bold mb-4">Your Haul!</h2><div id="pack-summary-area" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 justify-items-center my-6 min-h-[144px]"></div><div class="text-center"><button id="close-pack-modal-btn" class="btn btn-primary mt-4">Awesome!</button></div></div></div>
     <div id="event-modal" class="modal hidden"><div class="modal-content"><h2 id="event-title" class="text-3xl font-bold mb-4 text-red-400">Random Event!</h2><p id="event-message" class="text-lg mb-6">Something unexpected happened...</p><button id="close-event-modal-btn" class="btn btn-primary">Continue</button></div></div>
 
     <div id="high-score-modal" class="modal hidden">
@@ -302,7 +289,6 @@
         const closeEventModalBtn = document.getElementById('close-event-modal-btn');
         const highScoreModalEl = document.getElementById('high-score-modal');
         const submitScoreBtn = document.getElementById('submit-score-btn');
-        // --- MODIFIED --- References for the combined cabinet modal
         const cabinetModalEl = document.getElementById('cabinet-modal');
         const cabinetModalTitleEl = document.getElementById('cabinet-modal-title');
         const cabinetModalMessageEl = document.getElementById('cabinet-modal-message');
@@ -401,7 +387,7 @@
         }
         function toggleHelpText(show) { gameState.showHelpText = show; renderAll(); }
 
-        // --- FIX --- Added object-fit: 'contain' to prevent image squishing
+        // --- FIX --- Simplified the image creation. No absolute positioning needed on the images themselves.
         function createCardImageLayers(targetDiv, layerIndices = []) {
             const indices = [];
             if (layerIndices.length === 0) {
@@ -412,13 +398,22 @@
                 indices.push(...layerIndices);
             }
 
+            // The 'targetDiv' is now a flex container that will hold and center the image.
+            const imageWrapper = document.createElement('div');
+            imageWrapper.className = 'relative w-full h-full'; // Relative for stacking images inside.
+
             COMMON_CARD_ASSETS.layers.forEach((layer, i) => {
                 const img = document.createElement('img');
                 img.src = `${COMMON_CARD_ASSETS.base_url}${layer.folder}/${indices[i]}.png`;
-                img.className = "card-aspect-ratio-content"; // Use the class for positioning
-                img.style.objectFit = 'contain'; // This is the magic line that prevents squishing.
-                targetDiv.appendChild(img);
+                img.style.position = 'absolute'; // Stack images on top of each other
+                img.style.left = '0';
+                img.style.top = '0';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                imageWrapper.appendChild(img);
             });
+
+            targetDiv.appendChild(imageWrapper);
             return indices;
         }
         
@@ -536,47 +531,45 @@
 
         function renderLog() { logMessagesEl.innerHTML = gameState.log.map(msg => `<div class="log-message">${msg}</div>`).join(''); }
         
-        // --- FIX & MODIFIED --- This function now correctly renders cards and uses the aspect ratio CSS
+        // --- FIX & MODIFIED --- This function now correctly renders cards without squishing.
         function renderDisplayCabinet() {
             const cabinetListEl = document.getElementById('display-cabinet-list');
             const placeholderEl = document.getElementById('display-cabinet-placeholder');
             cabinetListEl.innerHTML = ''; 
 
             if (gameState.displayCabinet.length === 0) {
-                // Ensure placeholder is a direct child if the list is empty
-                if (!cabinetListEl.contains(placeholderEl)) {
-                    cabinetListEl.appendChild(placeholderEl);
-                }
+                if (!cabinetListEl.contains(placeholderEl)) cabinetListEl.appendChild(placeholderEl);
                 placeholderEl.style.display = 'block';
-                manageCabinetBtn.style.display = 'none'; // Hide manage button when empty
+                manageCabinetBtn.style.display = 'none';
             } else {
                 placeholderEl.style.display = 'none';
-                manageCabinetBtn.style.display = 'inline-block'; // Show manage button when not empty
+                manageCabinetBtn.style.display = 'inline-block';
                 gameState.displayCabinet.forEach(cabinetItem => {
                     const card = cabinetItem.card;
+                    const cardContainer = document.createElement('div');
+                    // This container will have a fixed aspect ratio of approx 5:7
+                    cardContainer.className = 'w-full h-40 flex items-center justify-center'; 
                     
-                    const aspectContainer = document.createElement('div');
-                    aspectContainer.className = 'card-aspect-ratio';
-
-                    const cardDiv = document.createElement('div');
-                    cardDiv.className = 'card-aspect-ratio-content rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden';
+                    const cardVisual = document.createElement('div');
+                    cardVisual.className = 'h-full w-auto relative'; // Height 100%, width auto
                     
                     if (card.id === 'common_single') {
-                        createCardImageLayers(cardDiv, cabinetItem.layers);
+                        createCardImageLayers(cardVisual, cabinetItem.layers);
                     } else {
-                        cardDiv.textContent = card.name;
-                        if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
-                        else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
-                        else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
-                        else cardDiv.style.backgroundColor = '#374151';
+                        // Fallback for non-image cards
+                        cardVisual.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center';
+                        cardVisual.textContent = card.name;
+                        if (card.basePrice > RARE_CARD_THRESHOLD) cardVisual.classList.add('sparkle', 'text-black');
+                        else if (card.name.includes('Autographed')) cardVisual.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
+                        else if (card.id === 'holo_legend') cardVisual.classList.add('holo', 'text-gray-100');
+                        else cardVisual.style.backgroundColor = '#374151';
                     }
-                    aspectContainer.appendChild(cardDiv)
-                    cabinetListEl.appendChild(aspectContainer);
+                    cardContainer.appendChild(cardVisual);
+                    cabinetListEl.appendChild(cardContainer);
                 });
             }
         }
         
-        // --- NEW --- Modal for managing (removing) cabinet cards
         function showManageCabinetModal() {
             cabinetModalTitleEl.textContent = 'Manage Cabinet';
             cabinetModalMessageEl.textContent = 'Select a card to return to your inventory.';
@@ -584,30 +577,30 @@
             
             gameState.displayCabinet.forEach((cabinetItem, index) => {
                 const card = cabinetItem.card;
-                const aspectContainer = document.createElement('div');
-                aspectContainer.className = 'card-aspect-ratio cursor-pointer';
-                aspectContainer.onclick = () => returnCabinetCardToInventory(index);
+                const cardContainer = document.createElement('div');
+                cardContainer.className = 'w-full h-40 flex items-center justify-center cursor-pointer';
+                cardContainer.onclick = () => returnCabinetCardToInventory(index);
 
-                const cardDiv = document.createElement('div');
-                cardDiv.className = 'card-aspect-ratio-content rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden hover:border-cyan-400';
+                const cardVisual = document.createElement('div');
+                cardVisual.className = 'h-full w-auto relative hover:border-cyan-400';
                 
                 if (card.id === 'common_single') {
-                    createCardImageLayers(cardDiv, cabinetItem.layers);
+                    createCardImageLayers(cardVisual, cabinetItem.layers);
                 } else {
-                    cardDiv.textContent = card.name;
-                    if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
-                    else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
-                    else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
-                    else cardDiv.style.backgroundColor = '#374151';
+                    cardVisual.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center';
+                    cardVisual.textContent = card.name;
+                    if (card.basePrice > RARE_CARD_THRESHOLD) cardVisual.classList.add('sparkle', 'text-black');
+                    else if (card.name.includes('Autographed')) cardVisual.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
+                    else if (card.id === 'holo_legend') cardVisual.classList.add('holo', 'text-gray-100');
+                    else cardVisual.style.backgroundColor = '#374151';
                 }
                 
-                aspectContainer.appendChild(cardDiv);
-                cabinetModalOptionsEl.appendChild(aspectContainer);
+                cardContainer.appendChild(cardVisual);
+                cabinetModalOptionsEl.appendChild(cardContainer);
             });
             cabinetModalEl.classList.remove('hidden');
         }
 
-        // --- NEW --- Function to return a selected card to inventory
         function returnCabinetCardToInventory(indexToRemove) {
             const removedCabinetItem = gameState.displayCabinet[indexToRemove];
             if (!removedCabinetItem) return;
@@ -634,36 +627,38 @@
 
             gameState.displayCabinet.forEach((cabinetItem, index) => {
                 const card = cabinetItem.card;
-                const aspectContainer = document.createElement('div');
-                aspectContainer.className = 'card-aspect-ratio cursor-pointer';
-                aspectContainer.onclick = () => replaceCabinetCard(index, newCard, fromButton);
+                const cardContainer = document.createElement('div');
+                cardContainer.className = 'w-full h-40 flex items-center justify-center cursor-pointer';
+                cardContainer.onclick = () => replaceCabinetCard(index, newCard, fromButton);
 
-                const cardDiv = document.createElement('div');
-                cardDiv.className = 'card-aspect-ratio-content rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden hover:border-cyan-400';
+                const cardVisual = document.createElement('div');
+                cardVisual.className = 'h-full w-auto relative hover:border-cyan-400';
                 
                 if (card.id === 'common_single') {
-                    createCardImageLayers(cardDiv, cabinetItem.layers);
+                    createCardImageLayers(cardVisual, cabinetItem.layers);
                 } else {
-                    cardDiv.textContent = card.name;
-                    if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
-                    else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
-                    else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
-                    else cardDiv.style.backgroundColor = '#374151';
+                    cardVisual.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center';
+                    cardVisual.textContent = card.name;
+                    if (card.basePrice > RARE_CARD_THRESHOLD) cardVisual.classList.add('sparkle', 'text-black');
+                    else if (card.name.includes('Autographed')) cardVisual.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
+                    else if (card.id === 'holo_legend') cardVisual.classList.add('holo', 'text-gray-100');
+                    else cardVisual.style.backgroundColor = '#374151';
                 }
                 
-                aspectContainer.appendChild(cardDiv);
-                cabinetModalOptionsEl.appendChild(aspectContainer);
+                cardContainer.appendChild(cardVisual);
+                cabinetModalOptionsEl.appendChild(cardContainer);
             });
             cabinetModalEl.classList.remove('hidden');
         }
         
         function replaceCabinetCard(indexToRemove, newCard, fromButton) {
-            returnCabinetCardToInventory(indexToRemove); // Reuse the remove logic
-            addToDisplayCabinet(newCard.card.id, fromButton, true); // Add the new card
+            const removedItem = gameState.displayCabinet[indexToRemove];
+            returnCabinetCardToInventory(indexToRemove);
+            addToDisplayCabinet(newCard.card.id, fromButton, true);
             cabinetModalEl.classList.add('hidden');
         }
-
-        // --- MODIFIED --- Now accepts a flag to bypass inventory check, used for replacing.
+        
+        // --- FIX --- Logic simplified and made more robust
         function addToDisplayCabinet(cardId, buttonElement, isReplacing = false) {
             const cardLayers = buttonElement.dataset.layers ? JSON.parse(buttonElement.dataset.layers) : null;
             const newCabinetItem = {
@@ -671,24 +666,23 @@
                 layers: cardLayers
             };
 
-            const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
-            if (!isReplacing && (!inventoryItem || inventoryItem.quantity < 1)) {
-                addLogMessage(`Error: Card not found in inventory.`);
-                return;
-            }
-
-            if (gameState.displayCabinet.length < DISPLAY_CABINET_LIMIT) {
-                gameState.displayCabinet.push(newCabinetItem);
-
-                inventoryItem.quantity--;
+            if (!isReplacing) {
+                const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
+                if (!inventoryItem || inventoryItem.quantity < 1) {
+                    addLogMessage(`Error: Card not found in inventory.`);
+                    return;
+                }
+                 inventoryItem.quantity--;
                 if (inventoryItem.quantity <= 0) {
                     gameState.inventory = gameState.inventory.filter(i => i.cardId !== cardId);
                 }
-
+            }
+            
+            if (gameState.displayCabinet.length < DISPLAY_CABINET_LIMIT) {
+                gameState.displayCabinet.push(newCabinetItem);
                 addLogMessage(`Added a ${newCabinetItem.card.name} to the Display Cabinet!`);
                 buttonElement.textContent = 'Added!';
                 buttonElement.disabled = true;
-                
                 renderAll();
             } else if (!isReplacing) {
                 showReplaceCabinetModal(newCabinetItem, buttonElement);
@@ -728,6 +722,7 @@
             revealCardsSequentially(pulledCards);
         }
         
+        // --- FIX & MODIFIED --- Card reveal now uses the simpler, non-distorting container.
         function revealCardsSequentially(cards) {
             packState.cards = cards; packSummaryAreaEl.innerHTML = ''; closePackModalBtn.style.display = 'none'; boosterPackModalEl.classList.remove('hidden'); let revealIndex = 0;
             function revealNext() {
@@ -740,13 +735,13 @@
                         gameState.inventory.push({ cardId: card.id, quantity: 1, totalCost: 0 });
                     }
                     const wrapperDiv = document.createElement('div');
-                    wrapperDiv.className = 'flex flex-col items-center opacity-0 animate-fade-in w-24'; // Set fixed width on wrapper
+                    wrapperDiv.className = 'flex flex-col items-center opacity-0 animate-fade-in w-24';
                     
-                    const aspectContainer = document.createElement('div');
-                    aspectContainer.className = 'card-aspect-ratio';
+                    const cardContainer = document.createElement('div');
+                    cardContainer.className = 'w-full h-36 flex items-center justify-center'; // Set fixed height
 
-                    const cardDiv = document.createElement('div');
-                    cardDiv.className = 'card-aspect-ratio-content rounded-lg flex items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden';
+                    const cardVisual = document.createElement('div');
+                    cardVisual.className = 'h-full w-auto relative'; // Height 100%, width auto preserves ratio
                     
                     const cabinetButton = document.createElement('button');
                     cabinetButton.className = 'btn btn-secondary btn-sm text-xs mt-2 w-full';
@@ -754,24 +749,25 @@
                     cabinetButton.onclick = () => addToDisplayCabinet(card.id, cabinetButton);
 
                     if (card.id === 'common_single') {
-                        const generatedLayers = createCardImageLayers(cardDiv);
+                        const generatedLayers = createCardImageLayers(cardVisual);
                         cabinetButton.dataset.layers = JSON.stringify(generatedLayers);
                     } else {
-                        cardDiv.textContent = card.name;
-                        cardDiv.classList.add('text-lg');
-                        if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
-                        else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
-                        else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
-                        else cardDiv.style.backgroundColor = '#374151';
+                        cardVisual.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center';
+                        cardVisual.textContent = card.name;
+                        cardVisual.classList.add('text-lg');
+                        if (card.basePrice > RARE_CARD_THRESHOLD) cardVisual.classList.add('sparkle', 'text-black');
+                        else if (card.name.includes('Autographed')) cardVisual.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
+                        else if (card.id === 'holo_legend') cardVisual.classList.add('holo', 'text-gray-100');
+                        else cardVisual.style.backgroundColor = '#374151';
                     }
                     
-                    aspectContainer.appendChild(cardDiv);
-                    wrapperDiv.appendChild(aspectContainer);
+                    cardContainer.appendChild(cardVisual);
+                    wrapperDiv.appendChild(cardContainer);
                     wrapperDiv.appendChild(cabinetButton);
                     packSummaryAreaEl.appendChild(wrapperDiv);
 
                     revealIndex++;
-                    setTimeout(revealNext, 500); // sped up slightly
+                    setTimeout(revealNext, 500);
                 } else {
                     closePackModalBtn.style.display = 'inline-block';
                     const summaryLog = packState.cards.map(c => `<li class="ml-4 list-disc pack-item">${c.name}</li>`).join('');
