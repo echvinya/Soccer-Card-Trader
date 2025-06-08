@@ -255,8 +255,6 @@
             { id: 'booster_pack', name: 'Booster Pack', basePrice: BOOSTER_PACK_PRICE, special: true },
         ];
         const TRADABLE_CARDS = CARDS.filter(card => !card.special);
-        
-        // --- REMOVED --- The TEAM_COLORS array is no longer needed.
 
         let gameState = {};
         let marketState = {};
@@ -380,11 +378,21 @@
         }
         function toggleHelpText(show) { gameState.showHelpText = show; renderAll(); }
 
-        function createCardImageLayers(targetDiv) {
-            COMMON_CARD_ASSETS.layers.forEach(layer => {
+        // --- MODIFIED --- This function can now take specific layers to render, or generate new ones
+        function createCardImageLayers(targetDiv, layerIndices = []) {
+            const indices = [];
+            // If specific layer indices aren't provided, generate new random ones.
+            if (layerIndices.length === 0) {
+                COMMON_CARD_ASSETS.layers.forEach(layer => {
+                    indices.push(Math.floor(Math.random() * layer.count) + 1);
+                });
+            } else {
+                indices.push(...layerIndices);
+            }
+
+            COMMON_CARD_ASSETS.layers.forEach((layer, i) => {
                 const img = document.createElement('img');
-                const randomIndex = Math.floor(Math.random() * layer.count) + 1;
-                img.src = `${COMMON_CARD_ASSETS.base_url}${layer.folder}/${randomIndex}.png`;
+                img.src = `${COMMON_CARD_ASSETS.base_url}${layer.folder}/${indices[i]}.png`;
                 img.style.position = 'absolute';
                 img.style.left = '0';
                 img.style.top = '0';
@@ -392,6 +400,8 @@
                 img.style.height = '100%';
                 targetDiv.appendChild(img);
             });
+            // Return the indices used, so they can be saved.
+            return indices;
         }
         
         function renderAll() { renderPlayerStats(); renderMarket(); renderInventory(); renderTravelOptions(); renderLog(); renderDisplayCabinet(); }
@@ -518,54 +528,55 @@
                 placeholderEl.style.display = 'block';
             } else {
                 placeholderEl.style.display = 'none';
-                gameState.displayCabinet.forEach(card => {
+                // --- MODIFIED --- Now renders the cabinet card with its saved layers
+                gameState.displayCabinet.forEach(cabinetItem => {
+                    const card = cabinetItem.card;
                     const cardDiv = document.createElement('div');
-                    cardDiv.className = 'h-36 rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden';
+                    // --- MODIFIED --- Standardized height to h-36 to prevent squishing
+                    cardDiv.className = 'w-full h-36 rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden';
                     
                     if (card.id === 'common_single') {
-                        createCardImageLayers(cardDiv);
+                        createCardImageLayers(cardDiv, cabinetItem.layers); // Use saved layers
                     } else {
                         cardDiv.textContent = card.name;
                         if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
                         else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
                         else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
-                        else {
-                            // --- REMOVED --- Call to the missing getRandomTeamStyle function
-                            cardDiv.style.backgroundColor = '#374151'; // Default background for other cards
-                        }
+                        else cardDiv.style.backgroundColor = '#374151';
                     }
                     cabinetListEl.appendChild(cardDiv);
                 });
             }
         }
         
-        function showReplaceCabinetModal(newCardId, fromButton) {
+        function showReplaceCabinetModal(newCard, fromButton) {
             replaceCabinetOptionsEl.innerHTML = '';
-            gameState.displayCabinet.forEach((card, index) => {
+            gameState.displayCabinet.forEach((cabinetItem, index) => {
+                const card = cabinetItem.card;
                 const cardDiv = document.createElement('div');
-                cardDiv.className = 'h-32 rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden cursor-pointer hover:border-cyan-400';
+                // --- MODIFIED --- Standardized height to h-36
+                cardDiv.className = 'w-full h-36 rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden cursor-pointer hover:border-cyan-400';
                 
                 if (card.id === 'common_single') {
-                    createCardImageLayers(cardDiv);
+                    createCardImageLayers(cardDiv, cabinetItem.layers);
                 } else {
                     cardDiv.textContent = card.name;
                     if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
                     else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
                     else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
-                    else {
-                        // --- REMOVED --- Call to the missing getRandomTeamStyle function
-                        cardDiv.style.backgroundColor = '#374151'; // Default background
-                    }
+                    else cardDiv.style.backgroundColor = '#374151';
                 }
                 
-                cardDiv.onclick = () => replaceCabinetCard(index, newCardId, fromButton);
+                cardDiv.onclick = () => replaceCabinetCard(index, newCard, fromButton);
                 replaceCabinetOptionsEl.appendChild(cardDiv);
             });
             replaceCabinetModalEl.classList.remove('hidden');
         }
         
-        function replaceCabinetCard(indexToRemove, newCardId, fromButton) {
-            const removedCard = gameState.displayCabinet[indexToRemove];
+        // --- MODIFIED --- This function now handles the new data structure for cabinet items
+        function replaceCabinetCard(indexToRemove, newCard, fromButton) {
+            const removedCabinetItem = gameState.displayCabinet[indexToRemove];
+            const removedCard = removedCabinetItem.card;
             let inventoryItem = gameState.inventory.find(item => item.cardId === removedCard.id);
             if (inventoryItem) {
                 inventoryItem.quantity++;
@@ -574,21 +585,18 @@
             }
             addLogMessage(`Moved a ${removedCard.name} from the cabinet back to inventory.`);
 
-            gameState.displayCabinet.splice(indexToRemove, 1);
+            gameState.displayCabinet.splice(indexToRemove, 1, newCard); // Replace item at index
             
-            const newCardDetails = getCardDetails(newCardId);
-            const newCardInventoryItem = gameState.inventory.find(item => item.cardId === newCardId);
-            
+            const newCardInventoryItem = gameState.inventory.find(item => item.cardId === newCard.card.id);
             newCardInventoryItem.quantity--;
             const costOfOneItem = newCardInventoryItem.quantity > 0 ? (newCardInventoryItem.totalCost / (newCardInventoryItem.quantity + 1)) : newCardInventoryItem.totalCost;
             newCardInventoryItem.totalCost -= isNaN(costOfOneItem) ? 0 : costOfOneItem;
             
-            gameState.displayCabinet.push(newCardDetails);
             if (newCardInventoryItem.quantity <= 0) {
-                 gameState.inventory = gameState.inventory.filter(i => i.cardId !== newCardId);
+                 gameState.inventory = gameState.inventory.filter(i => i.cardId !== newCard.card.id);
             }
 
-            addLogMessage(`Added a ${newCardDetails.name} to the Display Cabinet!`);
+            addLogMessage(`Added a ${newCard.card.name} to the Display Cabinet!`);
             fromButton.textContent = 'Added!';
             fromButton.disabled = true;
 
@@ -596,7 +604,14 @@
             renderAll();
         }
 
+        // --- MODIFIED --- This function now creates the cabinet item with layers
         function addToDisplayCabinet(cardId, buttonElement) {
+            const cardLayers = buttonElement.dataset.layers ? JSON.parse(buttonElement.dataset.layers) : null;
+            const newCabinetItem = {
+                card: getCardDetails(cardId),
+                layers: cardLayers
+            };
+
             const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
             if (!inventoryItem || inventoryItem.quantity < 1) {
                 addLogMessage(`Error: Card not found in inventory.`);
@@ -604,25 +619,22 @@
             }
 
             if (gameState.displayCabinet.length < DISPLAY_CABINET_LIMIT) {
+                gameState.displayCabinet.push(newCabinetItem);
+
                 inventoryItem.quantity--;
                 const costOfOneItem = inventoryItem.quantity > 0 ? (inventoryItem.totalCost / (inventoryItem.quantity + 1)) : inventoryItem.totalCost;
                 inventoryItem.totalCost -= isNaN(costOfOneItem) ? 0 : costOfOneItem;
-                
-                const cardDetails = getCardDetails(cardId);
-                gameState.displayCabinet.push(cardDetails);
-                
                 if (inventoryItem.quantity <= 0) {
                     gameState.inventory = gameState.inventory.filter(i => i.cardId !== cardId);
                 }
 
-                addLogMessage(`Added a ${cardDetails.name} to the Display Cabinet!`);
+                addLogMessage(`Added a ${newCabinetItem.card.name} to the Display Cabinet!`);
                 buttonElement.textContent = 'Added!';
                 buttonElement.disabled = true;
                 
-                renderDisplayCabinet();
-                renderInventory();
+                renderAll();
             } else {
-                showReplaceCabinetModal(cardId, buttonElement);
+                showReplaceCabinetModal(newCabinetItem, buttonElement);
             }
         }
 
@@ -673,24 +685,24 @@
                     const wrapperDiv = document.createElement('div');
                     wrapperDiv.className = 'flex flex-col items-center opacity-0 animate-fade-in';
                     const cardDiv = document.createElement('div');
-                    cardDiv.className = 'w-24 h-32 rounded-lg flex items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden';
+                    // --- MODIFIED --- Standardized height
+                    cardDiv.className = 'w-24 h-36 rounded-lg flex items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden';
                     const cabinetButton = document.createElement('button');
                     cabinetButton.className = 'btn btn-secondary btn-sm text-xs mt-2 w-full';
                     cabinetButton.textContent = 'To Cabinet';
                     cabinetButton.onclick = () => addToDisplayCabinet(card.id, cabinetButton);
 
                     if (card.id === 'common_single') {
-                        createCardImageLayers(cardDiv);
+                        // --- MODIFIED --- Save the generated layers to the button's dataset
+                        const generatedLayers = createCardImageLayers(cardDiv);
+                        cabinetButton.dataset.layers = JSON.stringify(generatedLayers);
                     } else {
                         cardDiv.textContent = card.name;
                         cardDiv.classList.add('text-lg');
                         if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
                         else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
                         else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
-                        else {
-                           // --- REMOVED --- Call to the missing getRandomTeamStyle function
-                           cardDiv.style.backgroundColor = '#374151'; // Default background
-                        }
+                        else cardDiv.style.backgroundColor = '#374151';
                     }
                     
                     wrapperDiv.appendChild(cardDiv);
@@ -800,8 +812,6 @@
             return false; 
         }
 
-        // --- REMOVED --- The triggerMeetAndGreetEvent function as it is not being used
-        
         onAuthStateChanged(auth, user => {
             if (user) {
                 marketItemsEl.addEventListener('click', (e) => { const btn = e.target.closest('button[data-action="buy"]'); if (btn) buyItem(btn.dataset.cardId); });
