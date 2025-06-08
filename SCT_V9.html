@@ -172,7 +172,7 @@
             <h2 class="text-3xl font-bold mb-2 text-cyan-400">Cabinet Full!</h2>
             <p class="text-lg mb-4">Choose a card to replace with your new pull.</p>
             <div id="replace-cabinet-options" class="grid grid-cols-3 gap-4 my-6">
-                </div>
+            </div>
             <button id="cancel-replace-btn" class="btn btn-danger">Cancel</button>
         </div>
     </div>
@@ -183,7 +183,6 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot, getDoc, setDoc, addDoc, deleteDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- FIREBASE CONFIG & INITIALIZATION ---
         const firebaseConfig = {
           apiKey: "AIzaSyB_FFY3omc51DkkBNmIftcuy0kiRKuNj1Q",
           authDomain: "soccer-card-trader.firebaseapp.com",
@@ -192,13 +191,12 @@
           messagingSenderId: "858390637557",
           appId: "1:858390637557:web:64e33c6339e666b3b94ebc"
         };
-        const appId = 'sct-global'; // Use a static, unique ID for your app's data
+        const appId = 'sct-global';
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // --- GAME CONFIGURATION ---
         const INITIAL_CASH = 2000;
         const INITIAL_DAYS = 30;
         const MIN_PRICE_MULTIPLIER = 0.4;
@@ -213,7 +211,7 @@
         const RARE_CARD_THRESHOLD = 200;
         const LEADERBOARD_SIZE = 10;
         const IN_GAME_LEADERBOARD_SIZE = 3; 
-        const DISPLAY_CABINET_LIMIT = 3; // --- NEW --- Cabinet size limit
+        const DISPLAY_CABINET_LIMIT = 3;
 
         const COMMON_CARD_ASSETS = {
             base_url: '/Soccer-Card-Trader/',
@@ -269,12 +267,10 @@
             { style: { backgroundColor: "#FDE100", color: "#000000" } }, { style: { backgroundColor: "#FFFFFF", color: "black", border: '1px solid #ddd'} }, { style: { backgroundColor: "#F47925", color: "white" } },
         ];
 
-        // --- GAME STATE ---
         let gameState = {};
         let marketState = {};
         let packState = { cards: [], isRevealing: false };
 
-        // --- UI ELEMENTS ---
         const cashEl = document.getElementById('cash');
         const daysEl = document.getElementById('days');
         const currentLocationNameEl = document.getElementById('current-location-name');
@@ -288,10 +284,7 @@
         const helpTextToggleEl = document.getElementById('help-text-toggle');
         const leaderboardListEl = document.getElementById('leaderboard-list');
         const inGameLeaderboardTitleEl = document.getElementById('in-game-leaderboard-title');
-        // Modals
         const gameOverModalEl = document.getElementById('game-over-modal');
-        const gameOverTitleEl = document.getElementById('game-over-title');
-        const gameOverMessageEl = document.getElementById('game-over-message');
         const finalScoreEl = document.getElementById('final-score');
         const playAgainBtn = document.getElementById('play-again-btn');
         const gameOverLeaderboardListEl = document.getElementById('game-over-leaderboard-list');
@@ -299,28 +292,19 @@
         const packSummaryAreaEl = document.getElementById('pack-summary-area');
         const closePackModalBtn = document.getElementById('close-pack-modal-btn');
         const eventModalEl = document.getElementById('event-modal');
-        const eventTitleEl = document.getElementById('event-title');
-        const eventMessageEl = document.getElementById('event-message');
         const closeEventModalBtn = document.getElementById('close-event-modal-btn');
         const highScoreModalEl = document.getElementById('high-score-modal');
-        const highScoreFinalScoreEl = document.getElementById('high-score-final-score');
-        const playerInitialsInput = document.getElementById('player-initials');
         const submitScoreBtn = document.getElementById('submit-score-btn');
-        // --- NEW --- Cabinet Replacement Modal elements
         const replaceCabinetModalEl = document.getElementById('replace-cabinet-modal');
         const replaceCabinetOptionsEl = document.getElementById('replace-cabinet-options');
         const cancelReplaceBtn = document.getElementById('cancel-replace-btn');
 
-
-        // --- FIREBASE FUNCTIONS ---
         const getLeaderboardCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
 
         async function listenForLeaderboardUpdates() {
             onSnapshot(getLeaderboardCollection(), (snapshot) => {
                 const scores = [];
-                snapshot.forEach(doc => {
-                    scores.push({ id: doc.id, ...doc.data() });
-                });
+                snapshot.forEach(doc => scores.push({ id: doc.id, ...doc.data() }));
                 const sortedScores = scores.sort((a, b) => b.score - a.score).slice(0, IN_GAME_LEADERBOARD_SIZE);
                 inGameLeaderboardTitleEl.textContent = `Global Top ${IN_GAME_LEADERBOARD_SIZE}`;
                 renderLeaderboard(sortedScores, leaderboardListEl); 
@@ -328,27 +312,15 @@
         }
 
         async function submitHighScore() {
-            const initials = playerInitialsInput.value.trim().toUpperCase();
-            if (initials.length !== 3) {
-                alert("Please enter 3 initials.");
-                return;
-            }
-
+            const initials = document.getElementById('player-initials').value.trim().toUpperCase();
+            if (initials.length !== 3) { alert("Please enter 3 initials."); return; }
             submitScoreBtn.disabled = true;
             submitScoreBtn.textContent = "Submitting...";
-
             try {
-                const leaderboardCollection = getLeaderboardCollection();
-                await addDoc(leaderboardCollection, {
-                    initials: initials,
-                    score: gameState.cash,
-                    timestamp: new Date()
-                });
-
-                const snapshot = await getDocs(leaderboardCollection);
+                await addDoc(getLeaderboardCollection(), { initials: initials, score: gameState.cash, timestamp: new Date() });
+                const snapshot = await getDocs(getLeaderboardCollection());
                 let scores = [];
                 snapshot.forEach(doc => scores.push({ id: doc.id, ...doc.data() }));
-
                 if (scores.length > LEADERBOARD_SIZE) {
                     scores.sort((a, b) => b.score - a.score);
                     const scoresToDelete = scores.slice(LEADERBOARD_SIZE);
@@ -356,10 +328,8 @@
                         await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', score.id));
                     }
                 }
-                
                 addLogMessage(`High score of $${gameState.cash.toLocaleString()} submitted for ${initials}!`);
                 await showGameOverScreen();
-
             } catch (error) {
                 console.error("Error submitting high score: ", error);
                 addLogMessage("Error: Could not submit high score.");
@@ -371,12 +341,11 @@
             }
         }
 
-        // --- GAME LOGIC FUNCTIONS ---
         function initializeGame() {
             gameState = {
                 cash: INITIAL_CASH, daysRemaining: INITIAL_DAYS, currentLocationId: LOCATIONS[0].id,
                 inventory: [], log: [], hasPriceGuide: false, boosterPacksPurchasedToday: 0, showHelpText: true,
-                displayCabinet: [] // --- MODIFIED --- Cabinet array
+                displayCabinet: []
             };
             marketState = {};
             generateAllMarketPrices();
@@ -420,11 +389,28 @@
         }
         function toggleHelpText(show) { gameState.showHelpText = show; renderAll(); }
 
-        // --- RENDERING FUNCTIONS ---
-        function renderAll() { renderPlayerStats(); renderMarket(); renderInventory(); renderTravelOptions(); renderLog(); renderDisplayCabinet(); } // --- MODIFIED --- Added renderDisplayCabinet
+        // --- NEW/MODIFIED --- Reusable function to create card visuals
+        function createCardImageLayers(targetDiv) {
+            COMMON_CARD_ASSETS.layers.forEach(layer => {
+                const img = document.createElement('img');
+                const randomIndex = Math.floor(Math.random() * layer.count) + 1;
+                img.src = `${COMMON_CARD_ASSETS.base_url}${layer.folder}/${randomIndex}.png`;
+                img.style.position = 'absolute';
+                img.style.left = '0';
+                img.style.top = '0';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                targetDiv.appendChild(img);
+            });
+        }
+        
+        function renderAll() { renderPlayerStats(); renderMarket(); renderInventory(); renderTravelOptions(); renderLog(); renderDisplayCabinet(); }
         function renderPlayerStats() {
-             cashEl.textContent = `$${gameState.cash.toLocaleString()}`; daysEl.textContent = gameState.daysRemaining;
-             const location = getCurrentLocation(); currentLocationNameEl.textContent = location.name; marketLocationNameEl.textContent = location.name;
+             document.getElementById('cash').textContent = `$${gameState.cash.toLocaleString()}`;
+             document.getElementById('days').textContent = gameState.daysRemaining;
+             const location = getCurrentLocation();
+             document.getElementById('current-location-name').textContent = location.name;
+             document.getElementById('market-location-name').textContent = location.name;
         }
 
         function renderLeaderboard(scores, targetElement) {
@@ -437,24 +423,28 @@
                 const div = document.createElement('div');
                 div.className = 'flex justify-between items-center text-lg p-1 rounded';
                 if (index === 0) div.classList.add('bg-amber-500/20');
-                
-                div.innerHTML = `
-                    <span class="font-bold">${index + 1}. ${entry.initials}</span>
-                    <span class="text-green-400 font-semibold">$${entry.score.toLocaleString()}</span>
-                `;
+                div.innerHTML = `<span class="font-bold">${index + 1}. ${entry.initials}</span><span class="text-green-400 font-semibold">$${entry.score.toLocaleString()}</span>`;
                 targetElement.appendChild(div);
             });
         }
 
         function renderMarket() {
-             marketItemsEl.innerHTML = ''; specialActionsContainerEl.innerHTML = '';
+            marketItemsEl.innerHTML = '';
+            specialActionsContainerEl.innerHTML = '';
             const locationMarket = marketState[gameState.currentLocationId];
-            if (!locationMarket) { marketItemsEl.innerHTML = '<tr><td colspan="5" class="table-cell text-center py-4">Market data not available. Try traveling.</td></tr>'; return; }
+            if (!locationMarket) { marketItemsEl.innerHTML = '<tr><td colspan="5" class="table-cell text-center py-4">Market data not available.</td></tr>'; return; }
             TRADABLE_CARDS.forEach(card => {
-                const marketInfo = locationMarket[card.id]; if (!marketInfo) return; let priceIndicatorHtml = '';
-                if (gameState.hasPriceGuide) { if (marketInfo.price > card.basePrice) { priceIndicatorHtml = `<span class="ml-2 text-green-400" ${gameState.showHelpText ? 'title="Price is above base value"' : ''}>▲</span>`; } else if (marketInfo.price < card.basePrice) { priceIndicatorHtml = `<span class="ml-2 text-red-400" ${gameState.showHelpText ? 'title="Price is below base value"' : ''}>▼</span>`; } else { priceIndicatorHtml = `<span class="ml-2 text-gray-500" ${gameState.showHelpText ? 'title="Price is at base value"' : ''}>●</span>`; } }
-                const priceColorClass = gameState.hasPriceGuide ? (marketInfo.price > card.basePrice ? 'text-green-400' : (marketInfo.price < card.basePrice ? 'text-red-400' : 'text-gray-300')) : 'text-gray-300';
-                const tr = document.createElement('tr'); tr.className = 'border-b border-gray-700 hover:bg-gray-700/50';
+                const marketInfo = locationMarket[card.id];
+                if (!marketInfo) return;
+                let priceIndicatorHtml = '';
+                if (gameState.hasPriceGuide) {
+                    if (marketInfo.price > card.basePrice) priceIndicatorHtml = `<span class="ml-2 text-green-400" title="Price is above base value">▲</span>`;
+                    else if (marketInfo.price < card.basePrice) priceIndicatorHtml = `<span class="ml-2 text-red-400" title="Price is below base value">▼</span>`;
+                    else priceIndicatorHtml = `<span class="ml-2 text-gray-500" title="Price is at base value">●</span>`;
+                }
+                const priceColorClass = gameState.hasPriceGuide ? (marketInfo.price > card.basePrice ? 'text-green-400' : 'text-red-400') : 'text-gray-300';
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-700 hover:bg-gray-700/50';
                 tr.innerHTML = `
                     <td class="table-cell"><div class="font-medium">${card.name}</div><div class="text-xs text-gray-400">${card.description}</div></td>
                     <td class="table-cell"><div class="flex items-center"><span class="font-semibold ${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div></td>
@@ -463,37 +453,72 @@
                     <td class="table-cell"><button class="btn btn-success btn-sm text-xs" data-card-id="${card.id}" data-action="buy" ${marketInfo.available === 0 ? 'disabled' : ''}>Buy</button></td>`;
                 marketItemsEl.appendChild(tr);
             });
-            if (!gameState.hasPriceGuide) { const priceGuideBtn = document.createElement('button'); priceGuideBtn.className = 'btn btn-secondary'; priceGuideBtn.innerHTML = `Buy Price Guide <span class="font-bold ml-2">$${PRICE_GUIDE_COST}</span>`; if(gameState.showHelpText) priceGuideBtn.title = `Reveals if a card's current price is above or below its base value.`; priceGuideBtn.onclick = buyPriceGuide; specialActionsContainerEl.appendChild(priceGuideBtn); }
-            const boosterPackBtn = document.createElement('button'); boosterPackBtn.className = 'btn btn-special'; boosterPackBtn.innerHTML = `Buy Booster Pack <span class="font-bold ml-2">$${BOOSTER_PACK_PRICE}</span>`; if(gameState.showHelpText) boosterPackBtn.title = 'Get 3-5 random cards. A high-risk, high-reward gamble!';
-            if (!locationMarket.boosterAvailable) { boosterPackBtn.disabled = true; boosterPackBtn.textContent = 'Boosters Sold Out Today'; } else if (gameState.boosterPacksPurchasedToday >= BOOSTER_PACK_DAILY_LIMIT) { boosterPackBtn.disabled = true; boosterPackBtn.textContent = `Daily Limit Reached (${BOOSTER_PACK_DAILY_LIMIT})`; } else { boosterPackBtn.onclick = buyBoosterPack; }
+            if (!gameState.hasPriceGuide) {
+                const priceGuideBtn = document.createElement('button');
+                priceGuideBtn.className = 'btn btn-secondary';
+                priceGuideBtn.innerHTML = `Buy Price Guide <span class="font-bold ml-2">$${PRICE_GUIDE_COST}</span>`;
+                priceGuideBtn.title = `Reveals if a card's current price is above or below its base value.`;
+                priceGuideBtn.onclick = buyPriceGuide;
+                specialActionsContainerEl.appendChild(priceGuideBtn);
+            }
+            const boosterPackBtn = document.createElement('button');
+            boosterPackBtn.className = 'btn btn-special';
+            boosterPackBtn.innerHTML = `Buy Booster Pack <span class="font-bold ml-2">$${BOOSTER_PACK_PRICE}</span>`;
+            boosterPackBtn.title = 'Get 3-5 random cards. A high-risk, high-reward gamble!';
+            if (!locationMarket.boosterAvailable) {
+                boosterPackBtn.disabled = true;
+                boosterPackBtn.textContent = 'Boosters Sold Out Today';
+            } else if (gameState.boosterPacksPurchasedToday >= BOOSTER_PACK_DAILY_LIMIT) {
+                boosterPackBtn.disabled = true;
+                boosterPackBtn.textContent = `Daily Limit Reached (${BOOSTER_PACK_DAILY_LIMIT})`;
+            } else {
+                boosterPackBtn.onclick = buyBoosterPack;
+            }
             specialActionsContainerEl.appendChild(boosterPackBtn);
         }
+
         function renderInventory() {
-            inventoryItemsEl.innerHTML = ''; if (gameState.inventory.length === 0) { inventoryItemsEl.innerHTML = '<tr><td colspan="6" class="table-cell text-center py-4">Your inventory is empty.</td></tr>'; return; }
+            inventoryItemsEl.innerHTML = '';
+            if (gameState.inventory.length === 0) {
+                inventoryItemsEl.innerHTML = '<tr><td colspan="6" class="table-cell text-center py-4">Your inventory is empty.</td></tr>';
+                return;
+            }
             gameState.inventory.forEach(item => {
-                const card = getCardDetails(item.cardId); const currentMarketPrice = marketState[gameState.currentLocationId]?.[item.cardId]?.price || 0; const averageBuyPrice = item.quantity > 0 ? (item.totalCost / item.quantity).toFixed(2) : 0;
+                const card = getCardDetails(item.cardId);
+                const currentMarketPrice = marketState[gameState.currentLocationId]?.[item.cardId]?.price || 0;
+                const averageBuyPrice = item.quantity > 0 ? (item.totalCost / item.quantity).toFixed(2) : 0;
                 const sellPriceColorClass = parseFloat(averageBuyPrice) > 0 ? (currentMarketPrice > averageBuyPrice ? 'text-green-400' : 'text-red-400') : 'text-gray-300';
-                const tr = document.createElement('tr'); tr.className = 'border-b border-gray-700 hover:bg-gray-700/50';
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-700 hover:bg-gray-700/50';
                 tr.innerHTML = `
-                    <td class="table-cell"><div class="font-medium">${card.name}</div></td><td class="table-cell">${item.quantity}</td>
-                    <td class="table-cell">$${parseFloat(averageBuyPrice).toLocaleString()}</td><td class="table-cell font-semibold ${sellPriceColorClass}">$${currentMarketPrice.toLocaleString()}</td>
+                    <td class="table-cell"><div class="font-medium">${card.name}</div></td>
+                    <td class="table-cell">${item.quantity}</td>
+                    <td class="table-cell">$${parseFloat(averageBuyPrice).toLocaleString()}</td>
+                    <td class="table-cell font-semibold ${sellPriceColorClass}">$${currentMarketPrice.toLocaleString()}</td>
                     <td class="table-cell"><input type="number" id="sell-qty-${card.id}" min="1" max="${item.quantity}" value="1" class="text-sm"></td>
                     <td class="table-cell"><button class="btn btn-danger btn-sm text-xs" data-card-id="${card.id}" data-action="sell">Sell</button></td>`;
                 inventoryItemsEl.appendChild(tr);
             });
         }
+
         function renderTravelOptions() { 
-            travelOptionsEl.innerHTML = ''; const currentLocationId = gameState.currentLocationId;
+            travelOptionsEl.innerHTML = '';
+            const currentLocationId = gameState.currentLocationId;
             LOCATIONS.forEach(location => {
-                if (location.id === currentLocationId) return; const travelCost = travelDurations[currentLocationId]?.[location.id] || 99;
-                const button = document.createElement('button'); button.className = 'btn btn-primary w-full text-left'; button.textContent = `${location.name} (${travelCost} day${travelCost > 1 ? 's' : ''})`;
-                if (gameState.showHelpText) { button.title = location.description; } else { button.removeAttribute('title'); }
-                button.onclick = () => travelTo(location.id); travelOptionsEl.appendChild(button);
+                if (location.id === currentLocationId) return;
+                const travelCost = travelDurations[currentLocationId]?.[location.id] || 99;
+                const button = document.createElement('button');
+                button.className = 'btn btn-primary w-full text-left';
+                button.textContent = `${location.name} (${travelCost} day${travelCost > 1 ? 's' : ''})`;
+                button.title = location.description;
+                button.onclick = () => travelTo(location.id);
+                travelOptionsEl.appendChild(button);
             });
         }
+
         function renderLog() { logMessagesEl.innerHTML = gameState.log.map(msg => `<div class="log-message">${msg}</div>`).join(''); }
 
-        // --- NEW --- Renders the display cabinet
+        // --- MODIFIED --- This function now correctly renders the layered common card images
         function renderDisplayCabinet() {
             const cabinetListEl = document.getElementById('display-cabinet-list');
             const placeholderEl = document.getElementById('display-cabinet-placeholder');
@@ -509,60 +534,34 @@
                     cardDiv.className = 'h-36 rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden';
                     
                     if (card.id === 'common_single') {
-                        cardDiv.textContent = card.name;
-                        cardDiv.style.backgroundColor = '#374151';
+                        createCardImageLayers(cardDiv); // Use the reusable function
                     } else {
                         cardDiv.textContent = card.name;
                         if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
                         else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
                         else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
-                        else {
-                             const style = getRandomTeamStyle();
-                             Object.assign(cardDiv.style, style);
-                        }
+                        else Object.assign(cardDiv.style, getRandomTeamStyle());
                     }
                     cabinetListEl.appendChild(cardDiv);
                 });
             }
         }
         
-        // --- MODAL & EVENT FUNCTIONS ---
-        function showEventModal(title, message) { eventTitleEl.textContent = title; eventMessageEl.innerHTML = message; eventModalEl.classList.remove('hidden'); }
-        function triggerMarketFloodEvent() {
-             const cardToAffect = TRADABLE_CARDS[Math.floor(Math.random()*TRADABLE_CARDS.length)]; const market = marketState[gameState.currentLocationId][cardToAffect.id];
-             if(market){ const oldPrice = market.price; const priceMultiplier = 1-(0.4+Math.random()*0.3); market.price = Math.max(1,Math.round(oldPrice*priceMultiplier)); const message = `A warehouse find has flooded the market! The price of <b>${cardToAffect.name}</b> has plummeted from $${oldPrice} to $${market.price}.`; showEventModal("Market Flood!", message); addLogMessage("A market flood event decreased a card price!"); }
-        }
-        function triggerCardShowEvent() { 
-            const affectedCards = []; const cardsToAffect = TRADABLE_CARDS.sort(()=>0.5-Math.random()).slice(0,3);
-            cardsToAffect.forEach(card => { const market = marketState[gameState.currentLocationId][card.id]; if(market){ const oldPrice = market.price; const priceMultiplier = 1.5+Math.random(); market.price = Math.round(oldPrice*priceMultiplier); affectedCards.push(`<li><b>${card.name}</b> prices surged from $${oldPrice} to $${market.price}!</li>`); } });
-            if(affectedCards.length > 0){ const message = `A major card show is in town!<ul>${affectedCards.join('')}</ul>`; showEventModal("Card Show!", message); addLogMessage("A card show boosted prices!"); }
-        }
-        function triggerMeetAndGreetEvent() { 
-            const autographable = gameState.inventory.filter(item => item.cardId === 'common_single' || item.cardId === 'favorite_player'); if(autographable.length === 0){ addLogMessage("Heard about a meet & greet, but had no cards to sign."); return; }
-            const itemToAutograph = autographable[Math.floor(Math.random()*autographable.length)]; const cardDetails = getCardDetails(itemToAutograph.cardId); const numToAutograph = Math.min(itemToAutograph.quantity, Math.ceil(Math.random()*3));
-            const costPerCard = itemToAutograph.quantity > 0 ? itemToAutograph.totalCost / itemToAutograph.quantity : 0; const transferredCost = costPerCard * numToAutograph;
-            itemToAutograph.quantity -= numToAutograph; itemToAutograph.totalCost -= transferredCost;
-            let autographedItem = gameState.inventory.find(item => item.cardId === 'autographed_common');
-            if (autographedItem) { autographedItem.quantity += numToAutograph; autographedItem.totalCost += transferredCost; } else { gameState.inventory.push({ cardId: 'autographed_common', quantity: numToAutograph, totalCost: transferredCost }); }
-            if (itemToAutograph.quantity <= 0) { gameState.inventory = gameState.inventory.filter(i => i.cardId !== itemToAutograph.cardId); }
-            const message = `You ran into a player! They signed <b>${numToAutograph}</b> of your <b>${cardDetails.name}</b> cards, making them more valuable.`; showEventModal("Player Meet & Greet!", message); addLogMessage("A meet & greet upgraded your cards!");
-        }
-        function getRandomTeamStyle() { return TEAM_COLORS[Math.floor(Math.random() * TEAM_COLORS.length)].style; }
-        
-        // --- PLAYER ACTIONS ---
-
-        // --- NEW --- Show the modal to choose which cabinet card to replace
         function showReplaceCabinetModal(newCardId, fromButton) {
             replaceCabinetOptionsEl.innerHTML = '';
             gameState.displayCabinet.forEach((card, index) => {
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'h-32 rounded-lg flex flex-col items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden cursor-pointer hover:border-cyan-400';
-                cardDiv.textContent = card.name;
-                // Apply styling to match the cabinet render
-                if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
-                else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
-                else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
-                else Object.assign(cardDiv.style, getRandomTeamStyle());
+                
+                if (card.id === 'common_single') {
+                    createCardImageLayers(cardDiv); // Use the reusable function here too
+                } else {
+                    cardDiv.textContent = card.name;
+                    if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
+                    else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
+                    else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
+                    else Object.assign(cardDiv.style, getRandomTeamStyle());
+                }
                 
                 cardDiv.onclick = () => replaceCabinetCard(index, newCardId, fromButton);
                 replaceCabinetOptionsEl.appendChild(cardDiv);
@@ -570,25 +569,18 @@
             replaceCabinetModalEl.classList.remove('hidden');
         }
         
-        // --- NEW --- Handles the actual replacement logic
         function replaceCabinetCard(indexToRemove, newCardId, fromButton) {
-            // Find the card being removed from the cabinet
             const removedCard = gameState.displayCabinet[indexToRemove];
-
-            // Add the removed card back to the main inventory
             let inventoryItem = gameState.inventory.find(item => item.cardId === removedCard.id);
             if (inventoryItem) {
                 inventoryItem.quantity++;
-                // Note: We are not adding cost back. The card returns to inventory for free.
             } else {
                 gameState.inventory.push({ cardId: removedCard.id, quantity: 1, totalCost: 0 });
             }
             addLogMessage(`Moved a ${removedCard.name} from the cabinet back to inventory.`);
 
-            // Remove from cabinet
             gameState.displayCabinet.splice(indexToRemove, 1);
             
-            // Now, add the new card (this code is moved from addToDisplayCabinet)
             const newCardDetails = getCardDetails(newCardId);
             const newCardInventoryItem = gameState.inventory.find(item => item.cardId === newCardId);
             
@@ -609,7 +601,6 @@
             renderAll();
         }
 
-        // --- MODIFIED --- Handles adding a card from a pack to the cabinet
         function addToDisplayCabinet(cardId, buttonElement) {
             const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
             if (!inventoryItem || inventoryItem.quantity < 1) {
@@ -617,7 +608,6 @@
                 return;
             }
 
-            // If cabinet is not full, add directly
             if (gameState.displayCabinet.length < DISPLAY_CABINET_LIMIT) {
                 inventoryItem.quantity--;
                 const costOfOneItem = inventoryItem.quantity > 0 ? (inventoryItem.totalCost / (inventoryItem.quantity + 1)) : inventoryItem.totalCost;
@@ -637,20 +627,44 @@
                 renderDisplayCabinet();
                 renderInventory();
             } else {
-                // If cabinet is full, show the replacement modal
                 showReplaceCabinetModal(cardId, buttonElement);
             }
         }
 
-        function buyPriceGuide() { if(gameState.cash<PRICE_GUIDE_COST){addLogMessage(`Not enough cash for Price Guide.`);return;}gameState.cash-=PRICE_GUIDE_COST;gameState.hasPriceGuide=true;addLogMessage(`Purchased the Price Guide for $${PRICE_GUIDE_COST.toLocaleString()}!`);renderAll(); }
+        function buyPriceGuide() { if(gameState.cash<PRICE_GUIDE_COST){addLogMessage(`Not enough cash.`);return;}gameState.cash-=PRICE_GUIDE_COST;gameState.hasPriceGuide=true;addLogMessage(`Purchased Price Guide!`);renderAll(); }
+        
         function buyBoosterPack() { 
-            if(gameState.cash<BOOSTER_PACK_PRICE){addLogMessage(`Not enough cash.`);return;}if(gameState.boosterPacksPurchasedToday>=BOOSTER_PACK_DAILY_LIMIT){addLogMessage(`Daily pack limit reached.`);return;}if(!marketState[gameState.currentLocationId].boosterAvailable){addLogMessage(`Boosters sold out today.`);return;}if(!boosterPackModalEl.classList.contains('hidden')){return;}gameState.cash-=BOOSTER_PACK_PRICE;gameState.boosterPacksPurchasedToday++;
-            const packSize = Math.floor(Math.random()*3)+3; const pulledCards = []; const lowValueCards = TRADABLE_CARDS.filter(c => c.basePrice <= 250); const lowValueLootTable = []; lowValueCards.forEach(card => { const weight = (card.id === 'common_single') ? 6 : 1; for (let i = 0; i < weight; i++) { lowValueLootTable.push(card); } }); const fullLootTable = []; TRADABLE_CARDS.forEach(card => { let weight = 1; if(card.id === 'common_single') weight = 4; for (let i = 0; i < weight; i++) { fullLootTable.push(card); } });
-            for (let i = 0; i < Math.min(3, packSize); i++) { pulledCards.push(lowValueLootTable[Math.floor(Math.random() * lowValueLootTable.length)]); }
-            if (packSize > 3) { for (let i = 3; i < packSize; i++) { pulledCards.push(fullLootTable[Math.floor(Math.random() * fullLootTable.length)]); } }
+            if(gameState.cash<BOOSTER_PACK_PRICE){addLogMessage(`Not enough cash.`);return;}
+            if(gameState.boosterPacksPurchasedToday>=BOOSTER_PACK_DAILY_LIMIT){addLogMessage(`Daily pack limit reached.`);return;}
+            if(!marketState[gameState.currentLocationId].boosterAvailable){addLogMessage(`Boosters sold out today.`);return;}
+            if(!boosterPackModalEl.classList.contains('hidden')){return;}
+            gameState.cash-=BOOSTER_PACK_PRICE;
+            gameState.boosterPacksPurchasedToday++;
+            const packSize = Math.floor(Math.random()*3)+3;
+            const pulledCards = [];
+            const lowValueCards = TRADABLE_CARDS.filter(c => c.basePrice <= 250);
+            const lowValueLootTable = [];
+            lowValueCards.forEach(card => {
+                const weight = (card.id === 'common_single') ? 6 : 1;
+                for (let i = 0; i < weight; i++) lowValueLootTable.push(card);
+            });
+            const fullLootTable = [];
+            TRADABLE_CARDS.forEach(card => {
+                let weight = 1; if(card.id === 'common_single') weight = 4;
+                for (let i = 0; i < weight; i++) fullLootTable.push(card);
+            });
+            for (let i = 0; i < Math.min(3, packSize); i++) {
+                pulledCards.push(lowValueLootTable[Math.floor(Math.random() * lowValueLootTable.length)]);
+            }
+            if (packSize > 3) {
+                for (let i = 3; i < packSize; i++) {
+                    pulledCards.push(fullLootTable[Math.floor(Math.random() * fullLootTable.length)]);
+                }
+            }
             revealCardsSequentially(pulledCards);
         }
         
+        // --- MODIFIED --- This function now uses the reusable image creation function
         function revealCardsSequentially(cards) {
             packState.cards = cards; packSummaryAreaEl.innerHTML = ''; closePackModalBtn.style.display = 'none'; boosterPackModalEl.classList.remove('hidden'); let revealIndex = 0;
             function revealNext() {
@@ -662,38 +676,24 @@
                     } else {
                         gameState.inventory.push({ cardId: card.id, quantity: 1, totalCost: 0 });
                     }
-
-                    // --- MODIFIED --- Pack reveal logic to add cabinet button
                     const wrapperDiv = document.createElement('div');
                     wrapperDiv.className = 'flex flex-col items-center opacity-0 animate-fade-in';
-
                     const cardDiv = document.createElement('div');
                     cardDiv.className = 'w-24 h-32 rounded-lg flex items-center justify-center p-1 text-center font-bold border-2 border-gray-400 relative overflow-hidden';
-                    
                     const cabinetButton = document.createElement('button');
                     cabinetButton.className = 'btn btn-secondary btn-sm text-xs mt-2 w-full';
                     cabinetButton.textContent = 'To Cabinet';
                     cabinetButton.onclick = () => addToDisplayCabinet(card.id, cabinetButton);
 
                     if (card.id === 'common_single') {
-                        COMMON_CARD_ASSETS.layers.forEach(layer => {
-                            const img = document.createElement('img');
-                            const randomIndex = Math.floor(Math.random() * layer.count) + 1;
-                            img.src = `${COMMON_CARD_ASSETS.base_url}${layer.folder}/${randomIndex}.png`;
-                            img.style.position = 'absolute'; img.style.left = '0'; img.style.top = '0';
-                            img.style.width = '100%'; img.style.height = '100%';
-                            cardDiv.appendChild(img);
-                        });
+                        createCardImageLayers(cardDiv); // Use the reusable function
                     } else {
                         cardDiv.textContent = card.name;
                         cardDiv.classList.add('text-lg');
                         if (card.basePrice > RARE_CARD_THRESHOLD) cardDiv.classList.add('sparkle', 'text-black');
                         else if (card.name.includes('Autographed')) cardDiv.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
                         else if (card.id === 'holo_legend') cardDiv.classList.add('holo', 'text-gray-100');
-                        else {
-                             const style = getRandomTeamStyle();
-                             Object.assign(cardDiv.style, style);
-                        }
+                        else Object.assign(cardDiv.style, getRandomTeamStyle());
                     }
                     
                     wrapperDiv.appendChild(cardDiv);
@@ -713,33 +713,54 @@
         }
 
         function buyItem(cardId) {
-            const card = getCardDetails(cardId); const locationMarket = marketState[gameState.currentLocationId]; const marketInfo = locationMarket[cardId]; const quantityInput = document.getElementById(`buy-qty-${card.id}`); const quantity = parseInt(quantityInput.value);
-            if(isNaN(quantity)||quantity<=0){addLogMessage(`Invalid quantity.`);return;}if(quantity>marketInfo.available){addLogMessage(`Not enough available.`);return;}
-            const totalCost = marketInfo.price * quantity; if (totalCost > gameState.cash) { addLogMessage(`Not enough cash.`); return; }
-            gameState.cash -= totalCost; marketInfo.available -= quantity;
+            const card = getCardDetails(cardId);
+            const locationMarket = marketState[gameState.currentLocationId];
+            const marketInfo = locationMarket[cardId];
+            const quantity = parseInt(document.getElementById(`buy-qty-${card.id}`).value);
+            if(isNaN(quantity)||quantity<=0){addLogMessage(`Invalid quantity.`);return;}
+            if(quantity>marketInfo.available){addLogMessage(`Not enough available.`);return;}
+            const totalCost = marketInfo.price * quantity;
+            if (totalCost > gameState.cash) { addLogMessage(`Not enough cash.`); return; }
+            gameState.cash -= totalCost;
+            marketInfo.available -= quantity;
             let inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
-            if (inventoryItem) { inventoryItem.quantity += quantity; inventoryItem.totalCost += totalCost; } else { gameState.inventory.push({ cardId, quantity, totalCost }); }
-            addLogMessage(`Bought ${quantity} ${card.name} for $${totalCost.toLocaleString()}.`); renderAll();
+            if (inventoryItem) {
+                inventoryItem.quantity += quantity;
+                inventoryItem.totalCost += totalCost;
+            } else {
+                gameState.inventory.push({ cardId, quantity, totalCost });
+            }
+            addLogMessage(`Bought ${quantity} ${card.name} for $${totalCost.toLocaleString()}.`);
+            renderAll();
         }
+
         function sellItem(cardId) {
-            const card = getCardDetails(cardId); const inventoryItem = gameState.inventory.find(item => item.cardId === cardId); const quantityInput = document.getElementById(`sell-qty-${card.id}`); const quantity = parseInt(quantityInput.value);
-            if(!inventoryItem||inventoryItem.quantity===0){addLogMessage(`You don't have any.`);return;}if(isNaN(quantity)||quantity<=0){addLogMessage(`Invalid quantity.`);return;}if(quantity>inventoryItem.quantity){addLogMessage(`Not enough to sell.`);return;}
-            const currentMarketPrice = marketState[gameState.currentLocationId]?.[cardId]?.price; if(currentMarketPrice===undefined){addLogMessage(`Cannot determine sell price.`);return;}
-            const totalSaleValue = currentMarketPrice * quantity; const costOfSoldItems = (inventoryItem.totalCost / inventoryItem.quantity) * quantity;
-            gameState.cash += totalSaleValue; inventoryItem.quantity -= quantity; inventoryItem.totalCost -= isNaN(costOfSoldItems) ? 0 : costOfSoldItems;
-            if (inventoryItem.quantity <= 0) { gameState.inventory = gameState.inventory.filter(item => item.cardId !== cardId); }
-            addLogMessage(`Sold ${quantity} ${card.name} for $${totalSaleValue.toLocaleString()}.`); renderAll();
+            const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
+            const quantity = parseInt(document.getElementById(`sell-qty-${cardId}`).value);
+            if(!inventoryItem||inventoryItem.quantity===0){addLogMessage(`You don't have any.`);return;}
+            if(isNaN(quantity)||quantity<=0){addLogMessage(`Invalid quantity.`);return;}
+            if(quantity>inventoryItem.quantity){addLogMessage(`Not enough to sell.`);return;}
+            const currentMarketPrice = marketState[gameState.currentLocationId]?.[cardId]?.price;
+            if(currentMarketPrice===undefined){addLogMessage(`Cannot determine sell price.`);return;}
+            const totalSaleValue = currentMarketPrice * quantity;
+            const costOfSoldItems = (inventoryItem.totalCost / inventoryItem.quantity) * quantity;
+            gameState.cash += totalSaleValue;
+            inventoryItem.quantity -= quantity;
+            inventoryItem.totalCost -= isNaN(costOfSoldItems) ? 0 : costOfSoldItems;
+            if (inventoryItem.quantity <= 0) {
+                gameState.inventory = gameState.inventory.filter(item => item.cardId !== cardId);
+            }
+            addLogMessage(`Sold ${quantity} ${getCardDetails(cardId).name} for $${totalSaleValue.toLocaleString()}.`);
+            renderAll();
         }
 
         async function travelTo(destinationLocationId) {
-            const currentLocationId = gameState.currentLocationId;
-            const travelCostDays = travelDurations[currentLocationId]?.[destinationLocationId];
+            const travelCostDays = travelDurations[gameState.currentLocationId]?.[destinationLocationId];
             if (travelCostDays === undefined) { addLogMessage("Error: Travel route not defined."); return; }
             if (gameState.daysRemaining < travelCostDays) { addLogMessage("Not enough days left to travel!"); await checkGameOver(); return; }
             gameState.daysRemaining -= travelCostDays;
             gameState.currentLocationId = destinationLocationId;
-            const newLocation = getCurrentLocation();
-            addLogMessage(`Traveled to ${newLocation.name}. Lost ${travelCostDays} day${travelCostDays > 1 ? 's' : ''}.`);
+            addLogMessage(`Traveled to ${getCurrentLocation().name}. Lost ${travelCostDays} day${travelCostDays > 1 ? 's' : ''}.`);
             gameState.boosterPacksPurchasedToday = 0;
             updateMarketForCurrentLocation(); 
             if (Math.random() < EVENT_CHANCE_ON_TRAVEL) {
@@ -748,35 +769,31 @@
                 else if (eventType < 0.66) triggerMeetAndGreetEvent();
                 else triggerMarketFloodEvent();
             }
-            const isGameOver = await checkGameOver(); 
-            if (isGameOver) return;
+            if (await checkGameOver()) return;
             renderAll(); 
         }
         
         async function showGameOverScreen() {
-            const leaderboardCollection = getLeaderboardCollection();
-            const snapshot = await getDocs(leaderboardCollection);
+            const snapshot = await getDocs(getLeaderboardCollection());
             let scores = [];
             snapshot.forEach(doc => { scores.push(doc.data()); });
             scores.sort((a, b) => b.score - a.score);
             const topScores = scores.slice(0, LEADERBOARD_SIZE);
-
-            finalScoreEl.textContent = `$${gameState.cash.toLocaleString()}`;
-            renderLeaderboard(topScores, gameOverLeaderboardListEl);
+            document.getElementById('final-score').textContent = `$${gameState.cash.toLocaleString()}`;
+            renderLeaderboard(topScores, document.getElementById('game-over-leaderboard-list'));
             gameOverModalEl.classList.remove('hidden');
         }
 
         async function checkGameOver() {
             if (gameState.daysRemaining <= 0) {
                 addLogMessage(`Game Over! Final cash: $${gameState.cash.toLocaleString()}.`);
-                const leaderboardCollection = getLeaderboardCollection();
-                const snapshot = await getDocs(leaderboardCollection);
+                const snapshot = await getDocs(getLeaderboardCollection());
                 let scores = [];
                 snapshot.forEach(doc => scores.push(doc.data()));
                 scores.sort((a, b) => b.score - a.score);
                 const lowestHighScore = scores.length > 0 ? scores[Math.min(scores.length - 1, LEADERBOARD_SIZE - 1)].score : 0;
                 if (gameState.cash > lowestHighScore || scores.length < LEADERBOARD_SIZE) {
-                    highScoreFinalScoreEl.textContent = `$${gameState.cash.toLocaleString()}`;
+                    document.getElementById('high-score-final-score').textContent = `$${gameState.cash.toLocaleString()}`;
                     highScoreModalEl.classList.remove('hidden');
                 } else {
                     await showGameOverScreen();
@@ -786,7 +803,6 @@
             return false; 
         }
 
-        // --- EVENT LISTENERS and INITIALIZE ---
         onAuthStateChanged(auth, user => {
             if (user) {
                 marketItemsEl.addEventListener('click', (e) => { const btn = e.target.closest('button[data-action="buy"]'); if (btn) buyItem(btn.dataset.cardId); });
@@ -797,15 +813,13 @@
                 closeEventModalBtn.addEventListener('click', () => { eventModalEl.classList.add('hidden'); });
                 helpTextToggleEl.addEventListener('change', (e) => { toggleHelpText(e.target.checked); });
                 submitScoreBtn.addEventListener('click', submitHighScore);
-                // --- NEW --- Event listener for the cancel button on the replacement modal
                 cancelReplaceBtn.addEventListener('click', () => { replaceCabinetModalEl.classList.add('hidden'); });
-
                 initializeGame();
                 listenForLeaderboardUpdates();
             } else {
                 signInAnonymously(auth).catch(error => {
                     console.error("Anonymous sign-in failed: ", error);
-                    document.body.innerHTML = `<div class="min-h-screen flex items-center justify-center p-4"><div class="max-w-2xl text-center p-8 rounded-lg bg-gray-800 border border-red-500"><h1 class="text-3xl font-bold text-red-400 mb-4">Connection Error</h1><p class="text-lg mb-2">Could not connect to the game server (Firebase).</p><p class="text-md text-gray-400 mb-6">This usually happens when the website's domain is not authorized in the Firebase project settings or the API Key has referrer restrictions.</p><ul class="text-left list-disc list-inside bg-gray-900 p-4 rounded-md mt-4"><li>Check <strong>Authentication -> Settings -> Authorized domains</strong> in Firebase.</li><li>Check your **API Key's HTTP referrer restrictions** in the Google Cloud Console.</li></ul><p class="mt-4 text-xs text-gray-500">Full error: ${error.message}</p></div></div>`;
+                    document.body.innerHTML = `<div class="min-h-screen flex items-center justify-center p-4"><div class="max-w-2xl text-center p-8 rounded-lg bg-gray-800 border border-red-500"><h1 class="text-3xl font-bold text-red-400 mb-4">Connection Error</h1><p class="text-lg mb-2">Could not connect to the game server.</p><p class="text-md text-gray-400 mb-6">This usually happens when the website's domain is not authorized or the API Key has referrer restrictions.</p><p class="mt-4 text-xs text-gray-500">Full error: ${error.message}</p></div></div>`;
                 });
             }
         });
