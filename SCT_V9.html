@@ -242,7 +242,7 @@
         const COMMON_CARD_ASSETS = {
             base_url: '/Soccer-Card-Trader/',
             layers: [
-                { folder: 'Images/Common/Background', count: 45 },
+                { folder: 'Images/Common/Background', count: 5 },
                 { folder: 'Images/Common/Head', count: 5 },
                 { folder: 'Images/Common/Shirt', count: 5 },
                 { folder: 'Images/Common/hair', count: 5 },
@@ -433,7 +433,7 @@
 
             COMMON_CARD_ASSETS.layers.forEach((layer, i) => {
                 const img = document.createElement('img');
-                img.src = `${COMMON_CARD_ASSETS.base_url}${layer.folder}/${indices[i]}.png`;
+                img.src = `<span class="math-inline">\{COMMON\_CARD\_ASSETS\.base\_url\}</span>{layer.folder}/${indices[i]}.png`;
                 img.style.position = 'absolute';
                 img.style.left = '0';
                 img.style.top = '0';
@@ -490,9 +490,9 @@
                 div.innerHTML = `
                     <div class="flex items-center">
                         <span class="font-bold mr-3">${index + 1}. ${entry.initials}</span>
-                        ${cabinetButton}
-                    </div>
-                    <span class="text-green-400 font-semibold">$${entry.score.toLocaleString()}</span>`;
+                        <span class="math-inline">\{cabinetButton\}
+</div\>
+<span class\="text\-green\-400 font\-semibold"\></span>${entry.score.toLocaleString()}</span>`;
                 targetElement.appendChild(div);
             });
         }
@@ -543,14 +543,14 @@
                 tr.className = 'border-b border-gray-700';
                 
                 tr.innerHTML = `
-                    <td class="table-cell"><div class="font-medium">${card.name}</div><div class="text-xs text-gray-400">${card.description}</div></td>
-                    <td class="table-cell"><div class="flex items-center"><span class="font-semibold ${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div></td>
-                    <td class="table-cell">${marketInfo.available}</td>
-                    <td class="table-cell"><input type="number" id="buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1"></td>
-                    <td class="table-cell">
-                        <div class="flex items-center gap-2">
-                            <button class="btn btn-success btn-compact" data-card-id="${card.id}" data-action="buy-qty" ${marketInfo.available === 0 ? 'disabled' : ''}>$</button>
-                            <button class="btn btn-success btn-compact" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>A</button>
+                    <td class="table-cell"><div class="font-medium"><span class="math-inline">\{card\.name\}</div\><div class\="text\-xs text\-gray\-400"\></span>{card.description}</div></td>
+                    <td class="table-cell"><div class="flex items-center"><span class="font-semibold <span class="math-inline">\{priceColorClass\}"\></span><span class="math-inline">\{marketInfo\.price\.toLocaleString\(\)\}</span\></span>{priceIndicatorHtml}</div></td>
+                    <td class="table-cell"><span class="math-inline">\{marketInfo\.available\}</td\>
+<td class\="table\-cell"\><input type\="number" id\="buy\-qty\-</span>{card.id}" min="1" max="<span class="math-inline">\{marketInfo\.available\}" value\="1"\></td\>
+<td class\="table\-cell"\>
+<div class\="flex items\-center gap\-2"\>
+<button class\="btn btn\-success btn\-compact" title\="Buy Quantity" data\-card\-id\="</span>{card.id}" data-action="buy-qty" <span class="math-inline">\{marketInfo\.available \=\=\= 0 ? 'disabled' \: ''\}\></span></button>
+                            <button class="btn btn-success btn-compact" title="Buy All" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>A</button>
                         </div>
                     </td>`;
                 marketItemsEl.appendChild(tr);
@@ -572,15 +572,15 @@
                 const tr = document.createElement('tr');
                 tr.className = 'border-b border-gray-700';
                 tr.innerHTML = `
-                    <td class="table-cell"><div class="font-medium">${card.name}</div></td>
-                    <td class="table-cell">${item.quantity}</td>
-                    <td class="table-cell">$${averageBuyPrice.toFixed(2)}</td>
-                    <td class="table-cell font-semibold text-green-400">$${currentMarketPrice.toLocaleString()}</td>
-                    <td class="table-cell"><input type="number" id="sell-qty-${card.id}" min="1" max="${item.quantity}" value="1"></td>
+                    <td class="table-cell"><div class="font-medium"><span class="math-inline">\{card\.name\}</div\></td\>
+<td class\="table\-cell"\></span>{item.quantity}</td>
+                    <td class="table-cell"><span class="math-block">\{averageBuyPrice\.toFixed\(2\)\}</td\>
+<td class\="table\-cell font\-semibold text\-green\-400"\></span>{currentMarketPrice.toLocaleString()}</td>
+                    <td class="table-cell"><input type="number" id="sell-qty-<span class="math-inline">\{card\.id\}" min\="1" max\="</span>{item.quantity}" value="1"></td>
                     <td class="table-cell">
                         <div class="flex items-center gap-2">
-                            <button class="btn btn-danger btn-compact" data-card-id="${card.id}" data-action="sell-qty">$</button>
-                            <button class="btn btn-danger btn-compact" data-card-id="${card.id}" data-action="sell-all">A</button>
+                            <button class="btn btn-danger btn-compact" title="Sell Quantity" data-card-id="<span class="math-inline">\{card\.id\}" data\-action\="sell\-qty"\></span></button>
+                            <button class="btn btn-danger btn-compact" title="Sell All" data-card-id="${card.id}" data-action="sell-all">A</button>
                         </div>
                     </td>`;
                 inventoryItemsEl.appendChild(tr);
@@ -595,7 +595,7 @@
                 const travelCost = travelDurations[currentLocationId]?.[location.id] || 99;
                 const button = document.createElement('button');
                 button.className = 'btn btn-primary w-full text-left';
-                button.textContent = `${location.name} (${travelCost} day${travelCost > 1 ? 's' : ''})`;
+                button.textContent = `<span class="math-inline">\{location\.name\} \(</span>{travelCost} day${travelCost > 1 ? 's' : ''})`;
                 button.title = location.description;
                 button.onclick = () => travelTo(location.id);
                 travelOptionsEl.appendChild(button);
@@ -614,7 +614,7 @@
                 placeholderEl.style.display = 'block';
                 manageCabinetBtn.style.display = 'none';
             } else {
-                if (cabinetListEl.contains(placeholderEl)) placeholderEl.style.display = 'none';
+                if (cabinetListEl.contains(placeholderEl)) cabinetListEl.style.display = 'none';
                 manageCabinetBtn.style.display = 'inline-block';
                 gameState.displayCabinet.forEach(cabinetItem => {
                     const cardVisual = createCardVisual(cabinetItem);
@@ -695,287 +695,4 @@
             }
             
             if (gameState.displayCabinet.length < DISPLAY_CABINET_LIMIT) {
-                gameState.displayCabinet.push(newCabinetItem);
-                addLogMessage(`Added a ${newCabinetItem.card.name} to the Display Cabinet!`);
-                if(buttonElement) {
-                    buttonElement.textContent = 'Added!';
-                    buttonElement.disabled = true;
-                }
-                renderAll();
-            } else if (!isReplacing) {
-                showReplaceCabinetModal(newCabinetItem, buttonElement);
-            }
-        }
-
-        function buyPriceGuide() { if(gameState.cash<PRICE_GUIDE_COST){addLogMessage(`Not enough cash.`);return;}gameState.cash-=PRICE_GUIDE_COST;gameState.hasPriceGuide=true;addLogMessage(`Purchased Price Guide!`);renderAll(); }
-        
-        function buyBoosterPack() { 
-            if(gameState.cash<BOOSTER_PACK_PRICE){addLogMessage(`Not enough cash.`);return;}
-            if(gameState.boosterPacksPurchasedToday>=BOOSTER_PACK_DAILY_LIMIT){addLogMessage(`Daily pack limit reached.`);return;}
-            if(!marketState[gameState.currentLocationId].boosterAvailable){addLogMessage(`Boosters sold out today.`);return;}
-            if(!boosterPackModalEl.classList.contains('hidden')){return;}
-            gameState.cash-=BOOSTER_PACK_PRICE;
-            gameState.boosterPacksPurchasedToday++;
-            const packSize = Math.floor(Math.random()*3)+3;
-            const pulledCards = [];
-            const lowValueCards = TRADABLE_CARDS.filter(c => c.basePrice <= 250);
-            const lowValueLootTable = [];
-            lowValueCards.forEach(card => {
-                const weight = (card.id === 'common_single') ? 6 : 1;
-                for (let i = 0; i < weight; i++) lowValueLootTable.push(card);
-            });
-            const fullLootTable = [];
-            TRADABLE_CARDS.forEach(card => {
-                let weight = 1; if(card.id === 'common_single') weight = 4;
-                for (let i = 0; i < weight; i++) fullLootTable.push(card);
-            });
-            for (let i = 0; i < Math.min(3, packSize); i++) {
-                pulledCards.push(lowValueLootTable[Math.floor(Math.random() * lowValueLootTable.length)]);
-            }
-            if (packSize > 3) {
-                for (let i = 3; i < packSize; i++) {
-                    pulledCards.push(fullLootTable[Math.floor(Math.random() * fullLootTable.length)]);
-                }
-            }
-            revealCardsSequentially(pulledCards);
-        }
-        
-        function revealCardsSequentially(cards) {
-            packSummaryAreaEl.innerHTML = '';
-            closePackModalBtn.style.display = 'none';
-            boosterPackModalEl.classList.remove('hidden');
-            let revealIndex = 0;
-
-            function revealNext() {
-                if (revealIndex < cards.length) {
-                    const card = cards[revealIndex];
-                    let inventoryItem = gameState.inventory.find(item => item.cardId === card.id);
-                    if (inventoryItem) inventoryItem.quantity++;
-                    else gameState.inventory.push({ cardId: card.id, quantity: 1, totalCost: 0 });
-
-                    const wrapperDiv = document.createElement('div');
-                    wrapperDiv.className = 'flex flex-col items-center opacity-0 animate-fade-in w-24';
-                    
-                    const cabinetButton = document.createElement('button');
-                    cabinetButton.className = 'btn btn-secondary btn-sm text-xs mt-2 w-full';
-                    cabinetButton.textContent = 'To Cabinet';
-                    cabinetButton.onclick = () => addToDisplayCabinet(card.id, cabinetButton);
-                    
-                    const tempCabinetItem = { card: card, layers: null };
-                    if (card.id === 'common_single') {
-                        tempCabinetItem.layers = createCardImageLayers(document.createElement('div'));
-                        cabinetButton.dataset.layers = JSON.stringify(tempCabinetItem.layers);
-                    }
-                    
-                    const cardVisual = createCardVisual(tempCabinetItem);
-                    
-                    wrapperDiv.appendChild(cardVisual);
-                    wrapperDiv.appendChild(cabinetButton);
-                    packSummaryAreaEl.appendChild(wrapperDiv);
-
-                    revealIndex++;
-                    setTimeout(revealNext, 500);
-                } else {
-                    closePackModalBtn.style.display = 'inline-block';
-                    const summaryLog = packState.cards.map(c => `<li class="ml-4 list-disc pack-item">${c.name}</li>`).join('');
-                    addLogMessage(`Opened a pack: <ul>${summaryLog}</ul>`);
-                    renderAll();
-                }
-            }
-            revealNext();
-        }
-
-        // --- NEW/MODIFIED --- Functions to handle specific buy/sell actions
-        function buyItemQty(cardId) {
-            const quantity = parseInt(document.getElementById(`buy-qty-${cardId}`).value);
-            if(isNaN(quantity) || quantity <= 0) { addLogMessage(`Invalid quantity.`); return; }
-            
-            const card = getCardDetails(cardId);
-            const marketInfo = marketState[gameState.currentLocationId]?.[cardId];
-            if (!marketInfo || quantity > marketInfo.available) { addLogMessage(`Not enough available to buy.`); return; }
-
-            const totalCost = marketInfo.price * quantity;
-            if (totalCost > gameState.cash) { addLogMessage(`Not enough cash. Need $${totalCost.toLocaleString()}.`); return; }
-            
-            gameState.cash -= totalCost;
-            marketInfo.available -= quantity;
-            let inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
-            if (inventoryItem) {
-                inventoryItem.quantity += quantity;
-                inventoryItem.totalCost += totalCost;
-            } else {
-                gameState.inventory.push({ cardId, quantity, totalCost });
-            }
-            addLogMessage(`Bought ${quantity} ${card.name} for $${totalCost.toLocaleString()}.`);
-            renderAll();
-        }
-
-        function buyAllItems(cardId) {
-            const marketInfo = marketState[gameState.currentLocationId]?.[cardId];
-            if (!marketInfo || marketInfo.available <= 0) { addLogMessage(`None available to buy.`); return; }
-            document.getElementById(`buy-qty-${cardId}`).value = marketInfo.available;
-            buyItemQty(cardId);
-        }
-
-        function sellItemQty(cardId) {
-            const quantity = parseInt(document.getElementById(`sell-qty-${cardId}`).value);
-            const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
-
-            if(isNaN(quantity) || quantity <= 0) { addLogMessage(`Invalid quantity.`); return; }
-            if (!inventoryItem || quantity > inventoryItem.quantity) { addLogMessage(`You don't have that many to sell.`); return; }
-
-            const card = getCardDetails(cardId);
-            const currentMarketPrice = marketState[gameState.currentLocationId]?.[cardId]?.price;
-            if(currentMarketPrice === undefined){ addLogMessage(`Cannot determine sell price.`); return; }
-
-            const totalSaleValue = currentMarketPrice * quantity;
-            const costOfSoldItems = (inventoryItem.totalCost / inventoryItem.quantity) * quantity;
-            
-            gameState.cash += totalSaleValue;
-            inventoryItem.quantity -= quantity;
-            inventoryItem.totalCost -= isNaN(costOfSoldItems) ? 0 : costOfSoldItems;
-
-            if (inventoryItem.quantity <= 0) {
-                gameState.inventory = gameState.inventory.filter(item => item.cardId !== cardId);
-            }
-            addLogMessage(`Sold ${quantity} ${card.name} for $${totalSaleValue.toLocaleString()}.`);
-            renderAll();
-        }
-
-        function sellAllItems(cardId) {
-            const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
-            if (!inventoryItem || inventoryItem.quantity <= 0) { addLogMessage(`None to sell.`); return; }
-            document.getElementById(`sell-qty-${cardId}`).value = inventoryItem.quantity;
-            sellItemQty(cardId);
-        }
-
-        async function travelTo(destinationLocationId) {
-            const travelCostDays = travelDurations[gameState.currentLocationId]?.[destinationLocationId];
-            if (travelCostDays === undefined) { addLogMessage("Error: Travel route not defined."); return; }
-            if (gameState.daysRemaining < travelCostDays) { addLogMessage("Not enough days left to travel!"); await checkGameOver(); return; }
-            gameState.daysRemaining -= travelCostDays;
-            gameState.currentLocationId = destinationLocationId;
-            addLogMessage(`Traveled to ${getCurrentLocation().name}. Lost ${travelCostDays} day${travelCostDays > 1 ? 's' : ''}.`);
-            gameState.boosterPacksPurchasedToday = 0;
-            updateMarketForCurrentLocation(); 
-            if (Math.random() < EVENT_CHANCE_ON_TRAVEL) {
-                const eventType = Math.random();
-                if (eventType < 0.33) triggerCardShowEvent();
-                else if (eventType < 0.66) triggerMeetAndGreetEvent();
-                else triggerMarketFloodEvent();
-            }
-            if (await checkGameOver()) return;
-            renderAll(); 
-        }
-        
-        async function showGameOverScreen() {
-            const gameOverCabinetList = document.getElementById('game-over-cabinet-list');
-            gameOverCabinetList.innerHTML = '';
-            if (gameState.displayCabinet.length > 0) {
-                gameState.displayCabinet.forEach(cabinetItem => {
-                    const cardVisual = createCardVisual(cabinetItem);
-                    gameOverCabinetList.appendChild(cardVisual);
-                });
-                document.getElementById('game-over-cabinet-section').style.display = 'block';
-            } else {
-                document.getElementById('game-over-cabinet-section').style.display = 'none';
-            }
-
-            const topScores = leaderboardScores.slice(0, LEADERBOARD_SIZE);
-            document.getElementById('final-score').textContent = `$${gameState.cash.toLocaleString()}`;
-            renderLeaderboard(topScores, document.getElementById('game-over-leaderboard-list'));
-            gameOverModalEl.classList.remove('hidden');
-        }
-
-        async function checkGameOver() {
-            if (gameState.daysRemaining <= 0) {
-                addLogMessage(`Game Over! Final cash: $${gameState.cash.toLocaleString()}.`);
-                const lowestHighScore = leaderboardScores.length > 0 ? leaderboardScores[Math.min(leaderboardScores.length - 1, LEADERBOARD_SIZE - 1)].score : 0;
-                if (gameState.cash > lowestHighScore || leaderboardScores.length < LEADERBOARD_SIZE) {
-                    document.getElementById('high-score-final-score').textContent = `$${gameState.cash.toLocaleString()}`;
-                    highScoreModalEl.classList.remove('hidden');
-                } else {
-                    await showGameOverScreen();
-                }
-                return true; 
-            }
-            return false; 
-        }
-
-        function showPlayerCabinet(cabinet) {
-            viewCabinetListEl.innerHTML = '';
-            if (cabinet && cabinet.length > 0) {
-                document.getElementById('view-cabinet-title').textContent = "Player's Cabinet";
-                cabinet.forEach(cabinetItem => {
-                    const cardVisual = createCardVisual(cabinetItem);
-                    viewCabinetListEl.appendChild(cardVisual);
-                });
-            } else {
-                viewCabinetListEl.innerHTML = '<p class="text-gray-500 col-span-full">This player had an empty cabinet.</p>';
-            }
-            viewCabinetModalEl.classList.remove('hidden');
-        }
-
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                // --- MODIFIED --- Event listeners updated for new actions
-                const handleMarketClick = (e) => {
-                    const button = e.target.closest('button[data-action]');
-                    if (!button) return;
-                    const action = button.dataset.action;
-                    const cardId = button.dataset.cardId;
-                    if (!action || !cardId) return;
-
-                    if (action === 'buy-qty') buyItemQty(cardId);
-                    else if (action === 'buy-all') buyAllItems(cardId);
-                };
-                
-                const handleInventoryClick = (e) => {
-                    const button = e.target.closest('button[data-action]');
-                    if (!button) return;
-                    const action = button.dataset.action;
-                    const cardId = button.dataset.cardId;
-                    if (!action || !cardId) return;
-
-                    if (action === 'sell-qty') sellItemQty(cardId);
-                    else if (action === 'sell-all') sellAllItems(cardId);
-                };
-
-                const handleLeaderboardClick = (e) => {
-                    const button = e.target.closest('button[data-action="view-cabinet"]');
-                    if (button) {
-                        const scoreId = button.dataset.scoreId;
-                        const score = leaderboardScores.find(s => s.id === scoreId);
-                        if (score && score.cabinet) {
-                            showPlayerCabinet(score.cabinet);
-                        }
-                    }
-                };
-                
-                marketItemsEl.addEventListener('click', handleMarketClick);
-                inventoryItemsEl.addEventListener('click', handleInventoryClick);
-                leaderboardListEl.addEventListener('click', handleLeaderboardClick);
-                gameOverLeaderboardListEl.addEventListener('click', handleLeaderboardClick);
-
-                restartGameBtn.addEventListener('click', () => { addLogMessage("Restarting game..."); initializeGame(); });
-                playAgainBtn.addEventListener('click', () => { gameOverModalEl.classList.add('hidden'); initializeGame(); });
-                closePackModalBtn.addEventListener('click', () => { boosterPackModalEl.classList.add('hidden'); });
-                closeEventModalBtn.addEventListener('click', () => { eventModalEl.classList.add('hidden'); });
-                helpTextToggleEl.addEventListener('change', (e) => { toggleHelpText(e.target.checked); });
-                submitScoreBtn.addEventListener('click', submitHighScore);
-                cancelCabinetModalBtn.addEventListener('click', () => { cabinetModalEl.classList.add('hidden'); });
-                manageCabinetBtn.addEventListener('click', showManageCabinetModal);
-                closeViewCabinetBtn.addEventListener('click', () => { viewCabinetModalEl.classList.add('hidden')});
-                
-                initializeGame();
-                listenForLeaderboardUpdates();
-            } else {
-                signInAnonymously(auth).catch(error => {
-                    console.error("Anonymous sign-in failed: ", error);
-                    document.body.innerHTML = `<div class="min-h-screen flex items-center justify-center p-4"><div class="max-w-2xl text-center p-8 rounded-lg bg-gray-800 border border-red-500"><h1 class="text-3xl font-bold text-red-400 mb-4">Connection Error</h1><p class="text-lg mb-2">Could not connect to the game server.</p><p class="text-md text-gray-400 mb-6">This usually happens when the website's domain is not authorized or the API Key has referrer restrictions.</p><p class="mt-4 text-xs text-gray-500">Full error: ${error.message}</p></div></div>`;
-                });
-            }
-        });
-    </script>
-</body>
-</html>
+                gameState.displayCabinet.push(newCabinetItem
