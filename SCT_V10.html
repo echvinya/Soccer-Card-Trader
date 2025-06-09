@@ -1,0 +1,335 @@
+// Add these constants near the top with other constants
+const TRAVEL_EVENT_CHANCE = 0.3; // 30% chance of an event occurring
+const EVENT_DURATIONS = {
+    CARD_SHOW: 1, // lasts 1 day
+    MARKET_FLOOD: 1, // lasts 1 day
+    PLAYER_SIGHTING: 0, // instant effect
+    FOUND_CARD: 0 // instant effect
+};
+
+// Add to gameState initialization
+// In initializeGame() function, add:
+// activeEvents: [],
+// storeDiscount: 0,
+
+// Add these new functions after the existing helper functions
+
+function checkForTravelEvent() {
+    if (Math.random() > TRAVEL_EVENT_CHANCE) return null;
+    
+    const events = [
+        { type: 'card_show', weight: 25 },
+        { type: 'market_flood', weight: 25 },
+        { type: 'player_sighting', weight: 25 },
+        { type: 'found_card', weight: 25 }
+    ];
+    
+    const totalWeight = events.reduce((sum, event) => sum + event.weight, 0);
+    let random = Math.random() * totalWeight;
+    
+    for (const event of events) {
+        random -= event.weight;
+        if (random <= 0) {
+            return executeEvent(event.type);
+        }
+    }
+}
+
+function executeEvent(eventType) {
+    switch (eventType) {
+        case 'card_show':
+            return executeCardShow();
+        case 'market_flood':
+            return executeMarketFlood();
+        case 'player_sighting':
+            return executePlayerSighting();
+        case 'found_card':
+            return executeFoundCard();
+    }
+}
+
+function executeCardShow() {
+    // Select 3-5 random cards to boost
+    const numCards = Math.floor(Math.random() * 3) + 3;
+    const selectedCards = [];
+    const availableCards = TRADABLE_CARDS.filter(c => c.basePrice >= 50); // Only boost valuable cards
+    
+    for (let i = 0; i < numCards && i < availableCards.length; i++) {
+        const randomIndex = Math.floor(Math.random() * availableCards.length);
+        const card = availableCards.splice(randomIndex, 1)[0];
+        const boostPercent = Math.random() * 20 + 10; // 10-30% boost
+        selectedCards.push({ cardId: card.id, boost: boostPercent });
+    }
+    
+    // Apply boosts to current market
+    const locationMarket = marketState[gameState.currentLocationId];
+    selectedCards.forEach(({ cardId, boost }) => {
+        if (locationMarket[cardId]) {
+            locationMarket[cardId].price = Math.round(locationMarket[cardId].price * (1 + boost / 100));
+            locationMarket[cardId].eventModified = true;
+        }
+    });
+    
+    // Store event for tracking
+    gameState.activeEvents.push({
+        type: 'card_show',
+        location: gameState.currentLocationId,
+        affectedCards: selectedCards,
+        expiresIn: EVENT_DURATIONS.CARD_SHOW
+    });
+    
+    const cardNames = selectedCards.map(sc => getCardDetails(sc.cardId).name).join(', ');
+    return {
+        title: "Card Show in Town!",
+        message: `A traveling card show has arrived! The following cards have increased in value: ${cardNames}`,
+        type: 'card_show'
+    };
+}
+
+function executeMarketFlood() {
+    // Select one card to crash
+    const availableCards = TRADABLE_CARDS.filter(c => c.basePrice >= 20); // Don't crash cheap cards
+    const targetCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+    const dropPercent = Math.random() * 30 + 20; // 20-50% drop
+    
+    // Apply drop to current market
+    const locationMarket = marketState[gameState.currentLocationId];
+    if (locationMarket[targetCard.id]) {
+        locationMarket[targetCard.id].price = Math.round(locationMarket[targetCard.id].price * (1 - dropPercent / 100));
+        locationMarket[targetCard.id].eventModified = true;
+    }
+    
+    // Store event
+    gameState.activeEvents.push({
+        type: 'market_flood',
+        location: gameState.currentLocationId,
+        affectedCard: targetCard.id,
+        drop: dropPercent,
+        expiresIn: EVENT_DURATIONS.MARKET_FLOOD
+    });
+    
+    return {
+        title: "Market Flooded!",
+        message: `A large collection of ${targetCard.name} cards was just discovered! Prices have dropped by ${Math.round(dropPercent)}%.`,
+        type: 'market_flood'
+    };
+}
+
+function executePlayerSighting() {
+    // Check if player has any common singles
+    const commonSingles = gameState.inventory.find(item => item.cardId === 'common_single');
+    
+    if (!commonSingles || commonSingles.quantity < 1) {
+        // Player has no common singles, give them a small cash bonus instead
+        const bonus = Math.floor(Math.random() * 50) + 25;
+        gameState.cash += bonus;
+        return {
+            title: "Near Miss!",
+            message: `You spotted a famous player but had no cards to sign! A fan gave you $${bonus} for pointing them out.`,
+            type: 'player_sighting_miss'
+        };
+    }
+    
+    // Convert one common single to autographed
+    commonSingles.quantity--;
+    if (commonSingles.quantity <= 0) {
+        gameState.inventory = gameState.inventory.filter(item => item.cardId !== 'common_single');
+    }
+    
+    // Add autographed common
+    let autographedItem = gameState.inventory.find(item => item.cardId === 'autographed_common');
+    if (autographedItem) {
+        autographedItem.quantity++;
+    } else {
+        gameState.inventory.push({ cardId: 'autographed_common', quantity: 1, totalCost: 0 });
+    }
+    
+    return {
+        title: "Player Sighting!",
+        message: "You spotted a famous player at a café! They signed one of your common cards, transforming it into an Autographed Common Card!",
+        type: 'player_sighting'
+    };
+}
+
+function executeFoundCard() {
+    // Random card with weighted probability
+    const lootTable = [];
+    TRADABLE_CARDS.forEach(card => {
+        let weight = 1;
+        if (card.basePrice < 50) weight = 10;
+        else if (card.basePrice < 100) weight = 5;
+        else if (card.basePrice < 200) weight = 2;
+        
+        for (let i = 0; i < weight; i++) {
+            lootTable.push(card);
+        }
+    });
+    
+    const foundCard = lootTable[Math.floor(Math.random() * lootTable.length)];
+    
+    // Store the found card temporarily
+    gameState.tempFoundCard = foundCard;
+    
+    return {
+        title: "Lucky Find!",
+        message: `You found a ${foundCard.name} on the ground! You can keep it or return it to the store for a potential discount.`,
+        type: 'found_card',
+        showChoices: true,
+        card: foundCard
+    };
+}
+
+function keepFoundCard() {
+    const foundCard = gameState.tempFoundCard;
+    if (!foundCard) return;
+    
+    let inventoryItem = gameState.inventory.find(item => item.cardId === foundCard.id);
+    if (inventoryItem) {
+        inventoryItem.quantity++;
+    } else {
+        gameState.inventory.push({ cardId: foundCard.id, quantity: 1, totalCost: 0 });
+    }
+    
+    addLogMessage(`You kept the ${foundCard.name}!`);
+    delete gameState.tempFoundCard;
+    eventModalEl.classList.add('hidden');
+    renderAll();
+}
+
+function returnFoundCard() {
+    const foundCard = gameState.tempFoundCard;
+    if (!foundCard) return;
+    
+    // Calculate discount based on card value
+    let discountPercent;
+    if (foundCard.basePrice < 50) {
+        discountPercent = Math.random() * 2 + 3; // 3-5%
+    } else if (foundCard.basePrice < 200) {
+        discountPercent = Math.random() * 3 + 5; // 5-8%
+    } else {
+        discountPercent = Math.random() * 3 + 7; // 7-10%
+    }
+    
+    gameState.storeDiscount = discountPercent;
+    gameState.activeEvents.push({
+        type: 'store_discount',
+        location: gameState.currentLocationId,
+        discount: discountPercent,
+        expiresIn: 1
+    });
+    
+    addLogMessage(`You returned the ${foundCard.name} to the store. They gave you a ${Math.round(discountPercent)}% discount for today!`);
+    delete gameState.tempFoundCard;
+    eventModalEl.classList.add('hidden');
+    renderAll();
+}
+
+function processActiveEvents() {
+    // Decrease expiration counters
+    gameState.activeEvents = gameState.activeEvents.filter(event => {
+        event.expiresIn--;
+        return event.expiresIn >= 0;
+    });
+    
+    // Clear any expired market modifications
+    const currentMarket = marketState[gameState.currentLocationId];
+    if (currentMarket) {
+        Object.keys(currentMarket).forEach(cardId => {
+            if (currentMarket[cardId].eventModified) {
+                delete currentMarket[cardId].eventModified;
+            }
+        });
+    }
+    
+    // Clear expired store discount
+    const hasActiveDiscount = gameState.activeEvents.some(e => e.type === 'store_discount');
+    if (!hasActiveDiscount) {
+        gameState.storeDiscount = 0;
+    }
+}
+
+// Modified showEventModal to handle choices
+function showEventModal(eventResult) {
+    document.getElementById('event-title').textContent = eventResult.title;
+    document.getElementById('event-message').textContent = eventResult.message;
+    
+    const modalContent = eventModalEl.querySelector('.modal-content');
+    
+    // Remove any existing choice buttons
+    const existingChoices = modalContent.querySelector('.event-choices');
+    if (existingChoices) existingChoices.remove();
+    
+    if (eventResult.showChoices && eventResult.type === 'found_card') {
+        // Hide the normal continue button
+        closeEventModalBtn.style.display = 'none';
+        
+        // Add choice buttons
+        const choicesDiv = document.createElement('div');
+        choicesDiv.className = 'event-choices flex gap-4 justify-center mt-4';
+        
+        const keepBtn = document.createElement('button');
+        keepBtn.className = 'btn btn-success';
+        keepBtn.textContent = 'Keep It';
+        keepBtn.onclick = keepFoundCard;
+        
+        const returnBtn = document.createElement('button');
+        returnBtn.className = 'btn btn-primary';
+        returnBtn.textContent = 'Return to Store';
+        returnBtn.onclick = returnFoundCard;
+        
+        choicesDiv.appendChild(keepBtn);
+        choicesDiv.appendChild(returnBtn);
+        modalContent.appendChild(choicesDiv);
+    } else {
+        closeEventModalBtn.style.display = 'inline-block';
+    }
+    
+    eventModalEl.classList.remove('hidden');
+}
+
+// Update the buyItemQty function to apply store discount
+function buyItemQtyWithDiscount(cardId) {
+    const quantity = parseInt(document.getElementById(`buy-qty-${cardId}`).value);
+    if(isNaN(quantity) || quantity <= 0) { addLogMessage(`Invalid quantity.`); return; }
+    
+    const card = getCardDetails(cardId);
+    const marketInfo = marketState[gameState.currentLocationId]?.[cardId];
+    if (!marketInfo || quantity > marketInfo.available) { addLogMessage(`Not enough available to buy.`); return; }
+
+    let totalCost = marketInfo.price * quantity;
+    
+    // Apply store discount if active
+    if (gameState.storeDiscount > 0) {
+        const discountAmount = Math.round(totalCost * (gameState.storeDiscount / 100));
+        totalCost -= discountAmount;
+        addLogMessage(`Store discount applied: -$${discountAmount}`);
+    }
+    
+    if (totalCost > gameState.cash) { addLogMessage(`Not enough cash. Need $${totalCost.toLocaleString()}.`); return; }
+    
+    gameState.cash -= totalCost;
+    marketInfo.available -= quantity;
+    let inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
+    if (inventoryItem) {
+        inventoryItem.quantity += quantity;
+        inventoryItem.totalCost += totalCost;
+    } else {
+        gameState.inventory.push({ cardId, quantity, totalCost });
+    }
+    addLogMessage(`Bought ${quantity} ${card.name} for $${totalCost.toLocaleString()}.`);
+    renderAll();
+}
+
+// Update renderMarket to show event indicators
+function renderMarketWithEvents() {
+    // Call the original renderMarket logic here
+    // Add visual indicators for cards affected by events
+    
+    // Add store discount indicator if active
+    if (gameState.storeDiscount > 0) {
+        const discountBanner = document.createElement('div');
+        discountBanner.className = 'bg-green-600 text-white p-2 rounded mb-4 text-center';
+        discountBanner.textContent = `Store Discount Active: ${Math.round(gameState.storeDiscount)}% off all purchases!`;
+        marketItemsEl.parentElement.insertBefore(discountBanner, marketItemsEl);
+    }
+}
