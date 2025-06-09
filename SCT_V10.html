@@ -531,7 +531,16 @@
                 const discountBanner = document.createElement('div');
                 discountBanner.className = 'discount-banner bg-green-600 text-white p-2 rounded mb-4 text-center';
                 discountBanner.textContent = `Store Discount Active: ${Math.round(gameState.storeDiscount)}% off all purchases!`;
-                document.getElementById('market-section').insertBefore(discountBanner, marketItemsEl.parentElement);
+                
+                // Find the market section and insert after the header div
+                const marketSection = document.getElementById('market-section');
+                const headerDiv = marketSection.querySelector('.flex.justify-between.items-start.mb-3');
+                if (headerDiv && headerDiv.nextSibling) {
+                    marketSection.insertBefore(discountBanner, headerDiv.nextSibling);
+                } else {
+                    // Fallback: prepend to market section
+                    marketSection.prepend(discountBanner);
+                }
             }
             
             const locationMarket = marketState[gameState.currentLocationId];
