@@ -968,12 +968,11 @@
                 }
             });
             
-            // Store event for tracking
+            // Store event for tracking (no expiration, lasts until travel)
             gameState.activeEvents.push({
                 type: 'card_show',
                 location: gameState.currentLocationId,
-                affectedCards: selectedCards,
-                expiresIn: EVENT_DURATIONS.CARD_SHOW
+                affectedCards: selectedCards
             });
             
             const cardNames = selectedCards.map(sc => getCardDetails(sc.cardId).name).join(', ');
@@ -997,13 +996,12 @@
                 locationMarket[targetCard.id].eventModified = true;
             }
             
-            // Store event
+            // Store event (no expiration, lasts until travel)
             gameState.activeEvents.push({
                 type: 'market_flood',
                 location: gameState.currentLocationId,
                 affectedCard: targetCard.id,
-                drop: dropPercent,
-                expiresIn: EVENT_DURATIONS.MARKET_FLOOD
+                drop: dropPercent
             });
             
             return {
@@ -1112,8 +1110,7 @@
             gameState.activeEvents.push({
                 type: 'store_discount',
                 location: gameState.currentLocationId,
-                discount: discountPercent,
-                expiresIn: 1
+                discount: discountPercent
             });
             
             addLogMessage(`You returned the ${foundCard.name} to the store. They gave you a ${Math.round(discountPercent)}% discount for today!`);
@@ -1123,26 +1120,18 @@
         }
 
         function processActiveEvents() {
-            // Decrease expiration counters
-            gameState.activeEvents = gameState.activeEvents.filter(event => {
-                event.expiresIn--;
-                return event.expiresIn >= 0;
-            });
+            // Clear all active events when traveling
+            gameState.activeEvents = [];
+            gameState.storeDiscount = 0;
             
-            // Clear any expired market modifications
+            // Clear any market modifications from events
             const currentMarket = marketState[gameState.currentLocationId];
             if (currentMarket) {
                 Object.keys(currentMarket).forEach(cardId => {
-                    if (currentMarket[cardId].eventModified) {
+                    if (currentMarket[cardId] && currentMarket[cardId].eventModified) {
                         delete currentMarket[cardId].eventModified;
                     }
                 });
-            }
-            
-            // Clear expired store discount
-            const hasActiveDiscount = gameState.activeEvents.some(e => e.type === 'store_discount');
-            if (!hasActiveDiscount) {
-                gameState.storeDiscount = 0;
             }
         }
 
