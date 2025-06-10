@@ -553,20 +553,19 @@
         }
         function toggleHelpText(show) { gameState.showHelpText = show; renderAll(); }
 
-        function generateLayerIndices() {
+        function createCardImageLayers(targetDiv, layerIndices = []) {
             const indices = [];
-            COMMON_CARD_ASSETS.layers.forEach(layer => {
-                indices.push(Math.floor(Math.random() * layer.count) + 1);
-            });
-            return indices;
-        }
-
-        function createCardImageLayers(targetDiv, layerIndices) {
-            if (!layerIndices || layerIndices.length === 0) return;
+            if (layerIndices.length === 0) {
+                COMMON_CARD_ASSETS.layers.forEach(layer => {
+                    indices.push(Math.floor(Math.random() * layer.count) + 1);
+                });
+            } else {
+                indices.push(...layerIndices);
+            }
 
             COMMON_CARD_ASSETS.layers.forEach((layer, i) => {
                 const img = document.createElement('img');
-                img.src = `${COMMON_CARD_ASSETS.base_url}${layer.folder}/${layerIndices[i]}.png`;
+                img.src = `${COMMON_CARD_ASSETS.base_url}${layer.folder}/${indices[i]}.png`;
                 img.style.position = 'absolute';
                 img.style.left = '0';
                 img.style.top = '0';
@@ -574,6 +573,7 @@
                 img.style.height = '100%';
                 targetDiv.appendChild(img);
             });
+            return indices;
         }
         
         function createCardVisual(cabinetItem) {
@@ -581,29 +581,23 @@
             const visualContainer = document.createElement('div');
             visualContainer.className = 'relative aspect-[3/4] w-full';
 
-            const graphicCardTypes = [
-                'favorite_player', 
-                'numbered_legend', 
-                'prized_rookie_card', 
-                'holo_legend', 
-                'numbered_rookie_auto', 
-                'autographed_common', 
-                'common_single'
-            ];
+            const graphicCardTypes = ['favorite_player', 'numbered_legend', 'prized_rookie_card', 'holo_legend', 'numbered_rookie_auto', 'autographed_common_card'];
 
             if (graphicCardTypes.includes(card.id)) {
                 createCardImageLayers(visualContainer, cabinetItem.layers);
-                if (card.basePrice > RARE_CARD_THRESHOLD) {
+                 if (card.basePrice > RARE_CARD_THRESHOLD) {
                     visualContainer.classList.add('sparkle');
                 }
-            } else {
+            } else if (card.id === 'common_single') {
+                 createCardImageLayers(visualContainer, cabinetItem.layers);
+            }
+            else {
                 visualContainer.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center text-center';
                 visualContainer.textContent = card.name;
-                if (card.basePrice > RARE_CARD_THRESHOLD) {
+                 if (card.basePrice > RARE_CARD_THRESHOLD) {
                     visualContainer.classList.add('sparkle', 'text-black');
-                } else {
-                    visualContainer.style.backgroundColor = '#374151';
                 }
+                else visualContainer.style.backgroundColor = '#374151';
             }
             return visualContainer;
         }
@@ -1047,11 +1041,9 @@
                     cabinetButton.textContent = 'To Cabinet';
                     cabinetButton.onclick = () => addToDisplayCabinet(card.id, cabinetButton);
                     
-                    const graphicCardTypes = ['favorite_player', 'numbered_legend', 'prized_rookie_card', 'holo_legend', 'numbered_rookie_auto', 'autographed_common', 'common_single'];
                     const tempCabinetItem = { card: card, layers: null };
-
-                    if (graphicCardTypes.includes(card.id)) {
-                        tempCabinetItem.layers = generateLayerIndices();
+                    if (card.id === 'common_single') {
+                        tempCabinetItem.layers = createCardImageLayers(document.createElement('div'));
                         cabinetButton.dataset.layers = JSON.stringify(tempCabinetItem.layers);
                     }
                     
