@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collectible Trader Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* Tailwind gray-900 */
+            color: #d1d5db; /* Tailwind gray-300 */
+        }
+        .card {
+            background-color: #1f2937; /* Tailwind gray-800 */
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid #374151; /* Tailwind gray-700 */
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            line-height: 1; /* Tighter line height for small buttons */
+        }
+        .btn-compact {
+            padding: 0.5rem 0.75rem; /* Make buttons smaller */
+        }
+        .btn-primary {
+            background-color: #991b1b; /* red-800 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #7f1d1d; /* red-900 */
+        }
+        .btn-secondary {
+            background-color: #4b5563; /* Tailwind gray-600 */
+            color: #e5e7eb; /* Tailwind gray-200 */
+        }
+        .btn-secondary:hover {
+            background-color: #374151; /* Tailwind gray-700 */
+        }
+        .btn-success {
+            background-color: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #059669;
+        }
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+        .btn-special {
+            background: linear-gradient(to right, #9f1239, #be185d); /* Rose-800 to Pink-700 */
+            color: white;
+        }
+        .btn-special:hover {
+            background: linear-gradient(to right, #881337, #9d174d); /* Rose-900 to Pink-800 */
+        }
+        .btn:disabled {
+            background-color: #4b5563; /* Tailwind gray-600 */
+            color: #9ca3af; /* Tailwind gray-400 */
+            cursor: not-allowed;
+        }
+        input[type="text"], input[type="number"] {
+            width: 4rem;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #4b5563; /* Tailwind gray-600 */
+            border-radius: 0.375rem;
+            text-align: center;
+            background-color: #374151; /* Tailwind gray-700 */
+            color: #e5e7eb; /* Tailwind gray-200 */
+        }
+        .table-cell { padding: 0.5rem 0.75rem; text-align: left; vertical-align: middle; }
+        .log-message { padding: 0.25rem 0.5rem; border-bottom: 1px solid #374151; }
+        .pack-item { font-weight: 500; }
+        .modal { position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; }
+        .modal-content { background-color: #1f2937; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); width: 90%; max-width: 500px; text-align: center; border: 1px solid #374151; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+        @keyframes sparkle { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .sparkle { background: linear-gradient(45deg, #fef9c3, #fee2e2, #fde68a, #fee2e2, #fef9c3); background-size: 400% 400%; animation: sparkle 4s ease infinite; border: 2px solid #f87171; opacity: 1 !important; }
+        .holo { background: linear-gradient(-45deg, #374151, #4b5563, #374151, #1f2937); background-size: 400% 400%; animation: sparkle 6s ease infinite; opacity: 1 !important; }
+        .scribble-bg { background-color: #374151; background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234b5563' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+        .event-choices button { min-width: 120px; }
+        .discount-banner { animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div id="game-container" class="container mx-auto max-w-6xl">
+        <header class="mb-6 text-center">
+            <h1 class="text-4xl font-bold text-red-400">Soccer Card Trader</h1>
+        </header>
+
+        <div id="player-stats-container" class="card mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+             <div><p class="text-sm text-gray-400">Cash</p><p id="cash" class="text-2xl font-semibold text-green-400">$0</p></div>
+             <div><p class="text-sm text-gray-400">Days Remaining</p><p id="days" class="text-2xl font-semibold text-amber-400">0</p></div>
+             <div><p class="text-sm text-gray-400">Current Location</p><p id="current-location-name" class="text-xl font-semibold text-gray-300">-</p></div>
+             <div><button id="restart-game-btn" class="btn btn-danger w-full mt-2 md:mt-0">Restart Game</button></div>
+        </div>
+
+       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div id="market-section" class="card lg:col-span-2">
+                <div class="flex justify-between items-start mb-3"><h2 class="text-2xl font-semibold" id="market-location-name">-</h2><div id="special-actions-container" class="flex flex-col sm:flex-row gap-2 items-center"></div></div>
+                <div class="overflow-x-auto"><table class="w-full min-w-max">
+                    <thead class="bg-gray-700/50">
+                        <tr>
+                            <th class="table-cell">Card Type</th>
+                            <th class="table-cell">Price</th>
+                            <th class="table-cell">Supply</th>
+                            <th class="table-cell">Quantity</th>
+                            <th class="table-cell">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="market-items"></tbody>
+                </table></div>
+            </div>
+
+            <div class="space-y-6">
+                <div id="travel-section" class="card">
+                    <h2 class="text-2xl font-semibold mb-3">Travel To:</h2>
+                    <div id="travel-options" class="space-y-2"></div>
+                </div>
+                <div id="log-section" class="card">
+                    <h2 class="text-2xl font-semibold mb-3">Game Log</h2>
+                    <div id="log-messages" class="h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-md p-2 text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <div id="inventory-section" class="card">
+                <h2 class="text-2xl font-semibold mb-3">Your Portfolio & Selling</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-max">
+                        <thead class="bg-gray-700/50">
+                            <tr>
+                                <th class="table-cell">Card Type</th>
+                                <th class="table-cell">Held</th>
+                                <th class="table-cell">Avg. Buy Price</th>
+                                <th class="table-cell">Current Sell Price</th>
+                                <th class="table-cell">Quantity</th>
+                                <th class="table-cell">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-items"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div id="display-cabinet-section" class="card lg:col-span-2">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-2xl font-semibold text-cyan-400">Display Cabinet</h2>
+                    <button id="manage-cabinet-btn" class="btn btn-secondary">Manage</button>
+                </div>
+                <div id="display-cabinet-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4">
+                    <p id="display-cabinet-placeholder" class="text-gray-500 col-span-full">Your best pulls will be shown here. Open a booster pack to add cards!</p>
+                </div>
+            </div>
+
+            <div id="leaderboard-section" class="card">
+                <h2 id="in-game-leaderboard-title" class="text-2xl font-semibold mb-3 text-amber-400">Global Top 3</h2>
+                <div id="leaderboard-list" class="space-y-2">
+                    <p class="text-gray-500">Loading leaderboard...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 text-center"><label class="flex items-center justify-center space-x-2"><input type="checkbox" id="help-text-toggle" class="form-checkbox h-5 w-5 bg-gray-700 border-gray-600 text-red-500 focus:ring-red-500" checked><span class="text-gray-400">Show Help Text</span></label></div>
+    </div>
+
+    <div id="game-over-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="game-over-title" class="text-3xl font-bold mb-4">Game Over!</h2>
+            <p id="game-over-message" class="text-lg mb-2">You've completed your trading journey.</p>
+            <p class="text-xl mb-4">Your Final Score: <span id="final-score" class="text-2xl font-bold text-green-400">$0</span></p>
+            
+            <div id="game-over-cabinet-section" class="mt-4">
+                <h3 class="text-xl font-semibold text-cyan-400">Your Final Cabinet</h3>
+                <div id="game-over-cabinet-list" class="grid grid-cols-3 gap-4 mt-2">
+                </div>
+            </div>
+
+            <hr class="border-gray-600 my-4">
+            <h3 class="text-2xl font-semibold mb-3 text-amber-400">Global Top 10</h3>
+            <div id="game-over-leaderboard-list" class="space-y-2 text-left max-h-64 overflow-y-auto"></div>
+            <button id="play-again-btn" class="btn btn-primary text-lg px-8 py-3 mt-6">Try Again</button>
+        </div>
+    </div>
+    
+    <div id="booster-pack-modal" class="modal hidden"><div class="modal-content"><h2 class="text-3xl font-bold mb-4">Your Haul!</h2>
+        <div id="pack-summary-area" class="flex flex-row flex-wrap justify-center items-center gap-4 my-6 min-h-[144px]"></div>
+        <div class="text-center"><button id="close-pack-modal-btn" class="btn btn-primary mt-4">Awesome!</button></div>
+    </div></div>
+    <div id="event-modal" class="modal hidden"><div class="modal-content"><h2 id="event-title" class="text-3xl font-bold mb-4 text-red-400">Random Event!</h2><p id="event-message" class="text-lg mb-6">Something unexpected happened...</p><button id="close-event-modal-btn" class="btn btn-primary">Continue</button></div></div>
+
+    <div id="high-score-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="text-3xl font-bold mb-2 text-amber-400">New High Score!</h2>
+            <p class="text-lg mb-4">You made the global leaderboard!</p>
+            <p class="text-xl mb-2">Final Score:</p>
+            <p id="high-score-final-score" class="text-4xl font-bold text-green-400 mb-6">$0</p>
+            <div class="mb-6">
+                <label for="player-initials" class="block text-lg mb-2">Enter Your Initials (3 letters)</label>
+                <input type="text" id="player-initials" maxlength="3" class="mx-auto w-24 text-2xl font-bold uppercase p-2 tracking-widest" pattern="[A-Za-z]{3}">
+            </div>
+            <button id="submit-score-btn" class="btn btn-success text-lg px-8 py-3">Submit Score</button>
+        </div>
+    </div>
+
+    <div id="cabinet-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="cabinet-modal-title" class="text-3xl font-bold mb-2 text-cyan-400">Cabinet Full!</h2>
+            <p id="cabinet-modal-message" class="text-lg mb-4">Choose a card to replace with your new pull.</p>
+            <div id="cabinet-modal-options" class="grid grid-cols-3 gap-4 my-6">
+            </div>
+            <button id="cancel-cabinet-modal-btn" class="btn btn-danger">Cancel</button>
+        </div>
+    </div>
+
+    <div id="view-cabinet-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="view-cabinet-title" class="text-3xl font-bold mb-4 text-cyan-400">Player's Cabinet</h2>
+            <div id="view-cabinet-list" class="grid grid-cols-3 gap-4 my-6">
+            </div>
+            <button id="close-view-cabinet-btn" class="btn btn-primary">Close</button>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, getDoc, setDoc, addDoc, deleteDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyB_FFY3omc51DkkBNmIftcuy0kiRKuNj1Q",
+          authDomain: "soccer-card-trader.firebaseapp.com",
+          projectId: "soccer-card-trader",
+          storageBucket: "soccer-card-trader.firebasestorage.app",
+          messagingSenderId: "858390637557",
+          appId: "1:858390637557:web:64e33c6339e666b3b94ebc"
+        };
+        const appId = 'sct-global';
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const INITIAL_CASH = 2000;
+        const INITIAL_DAYS = 30;
+        const MIN_PRICE_MULTIPLIER = 0.4;
+        const MAX_PRICE_MULTIPLIER = 2;
+        const MIN_AVAILABILITY = 0;
+        const MAX_AVAILABILITY = 20;
+        const BOOSTER_PACK_PRICE = 250;
+        const BOOSTER_PACK_DAILY_LIMIT = 3;
+        const BOOSTER_CHANCE_PER_DAY = 0.8; 
+        const PRICE_GUIDE_COST = 1000;
+        const RARE_CARD_THRESHOLD = 200;
+        const LEADERBOARD_SIZE = 10;
+        const IN_GAME_LEADERBOARD_SIZE = 3; 
+        const DISPLAY_CABINET_LIMIT = 3;
+        const TRAVEL_EVENT_CHANCE = 0.3; // 30% chance of an event occurring
+        const EVENT_DURATIONS = {
+            CARD_SHOW: 1, // lasts 1 day
+            MARKET_FLOOD: 1, // lasts 1 day
+            PLAYER_SIGHTING: 0, // instant effect
+            FOUND_CARD: 0 // instant effect
+        };
+
+        const COMMON_CARD_ASSETS = {
+            base_url: 'Images/Common/',
+            layers: [
+                { folder: 'Background', count: 44 },
+                { folder: 'Head', count: 17 },
+                { folder: 'Shirt', count: 13 },
+                { folder: 'hair', count: 21 },
+                { folder: 'Frame', count: 5 }
+            ]
+        };
+
+        const LOCATIONS = [
+            { 
+                id: 'toots_and_rips', 
+                name: 'Toots and Rips', 
+                description: 'High-end collectibles and rare finds. Specializes in autographed and jersey cards.', 
+                priceBias: 1.15, 
+                availabilityBias: 0.85,
+                specialization: 'high_end',
+                boosterPrice: BOOSTER_PACK_PRICE
+            },
+            { 
+                id: 'tree_city_cards', 
+                name: 'Tree City Cards', 
+                description: 'A local favorite for all types of trading cards. Best source for rookie cards.', 
+                priceBias: 1.0, 
+                availabilityBias: 1.0,
+                specialization: 'rookies',
+                boosterPrice: 300
+            },
+            { 
+                id: 'cards_r_us', 
+                name: 'Cards\'R\'us', 
+                description: 'Large inventory, volume dealer. Buy 5+ of any card for 10% discount.', 
+                priceBias: 1.05, 
+                availabilityBias: 1.1,
+                specialization: 'volume',
+                boosterPrice: BOOSTER_PACK_PRICE
+            },
+            { 
+                id: 'all_cards', 
+                name: 'All Cards', 
+                description: 'Massive inventory (5-50 of each card) but 2 days from everywhere.', 
+                priceBias: 0.9, 
+                availabilityBias: 1.15,
+                specialization: 'bulk',
+                boosterPrice: BOOSTER_PACK_PRICE
+            },
+            { 
+                id: 'klpa_emporium', 
+                name: 'KLPA Emporium', 
+                description: 'A massive emporium with mystery packs containing guaranteed rares.', 
+                priceBias: 1.1, 
+                availabilityBias: 1.05,
+                specialization: 'mystery',
+                boosterPrice: 400
+            },
+            { 
+                id: 'mom_and_pops', 
+                name: 'Mom and Pop\'s', 
+                description: 'A cozy shop with trade-in service: 25 commons for 1 random better card.', 
+                priceBias: 0.95, 
+                availabilityBias: 0.95,
+                specialization: 'trade_in',
+                boosterPrice: BOOSTER_PACK_PRICE
+            },
+        ];
+        
+        const travelDurations = {
+            'toots_and_rips':  { 'tree_city_cards': 1, 'cards_r_us': 2, 'all_cards': 2, 'klpa_emporium': 2, 'mom_and_pops': 1 },
+            'tree_city_cards': { 'toots_and_rips': 1, 'cards_r_us': 1, 'all_cards': 2, 'klpa_emporium': 2, 'mom_and_pops': 1 },
+            'cards_r_us':      { 'toots_and_rips': 2, 'tree_city_cards': 1, 'all_cards': 2, 'klpa_emporium': 3, 'mom_and_pops': 2 },
+            'all_cards':       { 'toots_and_rips': 2, 'tree_city_cards': 2, 'cards_r_us': 2, 'klpa_emporium': 2, 'mom_and_pops': 2 },
+            'klpa_emporium':   { 'toots_and_rips': 2, 'tree_city_cards': 2, 'cards_r_us': 3, 'all_cards': 2, 'mom_and_pops': 1 },
+            'mom_and_pops':    { 'toots_and_rips': 1, 'tree_city_cards': 1, 'cards_r_us': 2, 'all_cards': 2, 'klpa_emporium': 1 }
+        };
+
+        const CARDS = [
+            { id: 'autographed_jersey', name: 'Autographed Jersey Card', basePrice: 650, description: 'Features a piece of player-worn jersey and a signature.' },
+            { id: 'numbered_rookie_auto', name: 'Numbered Rookie Auto', basePrice: 500, description: 'A rookie card with a signature, serial numbered to 99.' },
+            { id: 'holo_legend', name: 'Holo Legend Card', basePrice: 220, description: 'A holographic card of an iconic player from the past.' },
+            { id: 'numbered_legend', name: 'Numbered Legend', basePrice: 420, description: 'A card of a legendary player numbered to 25.' },
+            { id: 'game_worn_relic', name: 'Game-Worn Relic', basePrice: 180, description: 'Contains a piece of a game-used, jesery, ball, net or cleat.' },
+            { id: 'prized_rookie_card', name: 'Prized Rookie Card', basePrice: 120, description: 'A highly sought-after rookie card of a top prospect.' },
+            { id: 'favorite_player', name: 'Favorite Player Card', basePrice: 75, description: 'A standard card of a fan-favorite player.' },
+            { id: 'autographed_common', name: 'Autographed Common Card', basePrice: 95, description: 'A common card, now with a valuable signature.' },
+            { id: 'common_single', name: 'Common Single', basePrice: 5, description: 'A single common card.' },
+            { id: 'booster_pack', name: 'Booster Pack', basePrice: BOOSTER_PACK_PRICE, special: true },
+        ];
+        const TRADABLE_CARDS = CARDS.filter(card => !card.special);
+
+        let gameState = {};
+        let marketState = {};
+        let leaderboardScores = [];
+
+        const cashEl = document.getElementById('cash');
+        const daysEl = document.getElementById('days');
+        const currentLocationNameEl = document.getElementById('current-location-name');
+        const marketLocationNameEl = document.getElementById('market-location-name');
+        const specialActionsContainerEl = document.getElementById('special-actions-container');
+        const marketItemsEl = document.getElementById('market-items');
+        const inventoryItemsEl = document.getElementById('inventory-items');
+        const travelOptionsEl = document.getElementById('travel-options');
+        const logMessagesEl = document.getElementById('log-messages');
+        const restartGameBtn = document.getElementById('restart-game-btn');
+        const helpTextToggleEl = document.getElementById('help-text-toggle');
+        const leaderboardListEl = document.getElementById('leaderboard-list');
+        const inGameLeaderboardTitleEl = document.getElementById('in-game-leaderboard-title');
+        const gameOverModalEl = document.getElementById('game-over-modal');
+        const finalScoreEl = document.getElementById('final-score');
+        const playAgainBtn = document.getElementById('play-again-btn');
+        const gameOverLeaderboardListEl = document.getElementById('game-over-leaderboard-list');
+        const boosterPackModalEl = document.getElementById('booster-pack-modal');
+        const packSummaryAreaEl = document.getElementById('pack-summary-area');
+        const closePackModalBtn = document.getElementById('close-pack-modal-btn');
+        const eventModalEl = document.getElementById('event-modal');
+        const closeEventModalBtn = document.getElementById('close-event-modal-btn');
+        const highScoreModalEl = document.getElementById('high-score-modal');
+        const submitScoreBtn = document.getElementById('submit-score-btn');
+        const cabinetModalEl = document.getElementById('cabinet-modal');
+        const cabinetModalTitleEl = document.getElementById('cabinet-modal-title');
+        const cabinetModalMessageEl = document.getElementById('cabinet-modal-message');
+        const cabinetModalOptionsEl = document.getElementById('cabinet-modal-options');
+        const cancelCabinetModalBtn = document.getElementById('cancel-cabinet-modal-btn');
+        const manageCabinetBtn = document.getElementById('manage-cabinet-btn');
+        const viewCabinetModalEl = document.getElementById('view-cabinet-modal');
+        const viewCabinetListEl = document.getElementById('view-cabinet-list');
+        const closeViewCabinetBtn = document.getElementById('close-view-cabinet-btn');
+
+
+        const getLeaderboardCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+
+        async function listenForLeaderboardUpdates() {
+            onSnapshot(getLeaderboardCollection(), (snapshot) => {
+                const scores = [];
+                snapshot.forEach(doc => {
+                    scores.push({ id: doc.id, ...doc.data() });
+                });
+                leaderboardScores = scores.sort((a, b) => b.score - a.score);
+                const topScores = leaderboardScores.slice(0, IN_GAME_LEADERBOARD_SIZE);
+                inGameLeaderboardTitleEl.textContent = `Global Top ${IN_GAME_LEADERBOARD_SIZE}`;
+                renderLeaderboard(topScores, leaderboardListEl); 
+            });
+        }
+        
+        async function submitHighScore() {
+            const initials = document.getElementById('player-initials').value.trim().toUpperCase();
+            if (initials.length !== 3 || !/^[A-Z]{3}$/.test(initials)) { 
+                alert("Please enter exactly 3 letters."); 
+                return; 
+            }
+            submitScoreBtn.disabled = true;
+            submitScoreBtn.textContent = "Submitting...";
+            
+            // Calculate total score including cabinet value
+            let cabinetValue = 0;
+            gameState.displayCabinet.forEach(item => {
+                cabinetValue += (item.capturedValue || 0);
+            });
+            const totalScore = gameState.cash + cabinetValue;
+            
+            const scoreData = {
+                initials: initials,
+                score: totalScore, // Submit total score instead of just cash
+                cash: gameState.cash, // Store cash separately for display
+                cabinetValue: cabinetValue, // Store cabinet value for display
+                timestamp: new Date(),
+                cabinet: gameState.displayCabinet
+            };
+
+            try {
+                await addDoc(getLeaderboardCollection(), scoreData);
+                const snapshot = await getDocs(getLeaderboardCollection());
+                if (snapshot.docs.length > LEADERBOARD_SIZE) {
+                    const allScores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    allScores.sort((a, b) => b.score - a.score);
+                    const scoresToDelete = allScores.slice(LEADERBOARD_SIZE);
+                    for (const score of scoresToDelete) {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', score.id));
+                    }
+                }
+                addLogMessage(`High score of ${totalScore.toLocaleString()} submitted for ${initials}!`);
+                await showGameOverScreen();
+            } catch (error) {
+                console.error("Error submitting high score: ", error);
+                addLogMessage("Error: Could not submit high score.");
+                await showGameOverScreen();
+            } finally {
+                highScoreModalEl.classList.add('hidden');
+                submitScoreBtn.disabled = false;
+                submitScoreBtn.textContent = "Submit Score";
+            }
+        }
+
+        function initializeGame() {
+            gameState = {
+                cash: INITIAL_CASH, 
+                daysRemaining: INITIAL_DAYS, 
+                currentLocationId: LOCATIONS[0].id,
+                inventory: [], 
+                log: [], 
+                hasPriceGuide: false, 
+                boosterPacksPurchasedToday: 0, 
+                showHelpText: true,
+                displayCabinet: [],
+                activeEvents: [],
+                storeDiscount: 0,
+                tempFoundCard: null
+            };
+            marketState = {};
+            generateAllMarketPrices();
+            updateMarketForCurrentLocation();
+            addLogMessage(`Welcome! You have ${INITIAL_DAYS} days. Starting at ${getCurrentLocation().name}.`);
+            renderAll();
+            gameOverModalEl.classList.add('hidden');
+            highScoreModalEl.classList.add('hidden');
+        }
+
+        function getCurrentLocation() { return LOCATIONS.find(loc => loc.id === gameState.currentLocationId); }
+        function getCardDetails(cardId) { return CARDS.find(card => card.id === cardId); }
+        
+        function generateMarketDataForCard(card, location) {
+            const priceFluctuation = Math.random()*(MAX_PRICE_MULTIPLIER-MIN_PRICE_MULTIPLIER)+MIN_PRICE_MULTIPLIER;
+            const finalPrice = Math.round(card.basePrice*priceFluctuation*location.priceBias);
+            
+            let availabilityFluctuation = Math.random();
+            let baseAvailability = Math.floor(Math.pow(availabilityFluctuation,2)*(MAX_AVAILABILITY-MIN_AVAILABILITY+1))+MIN_AVAILABILITY;
+            
+            // Apply location specializations
+            if (location.specialization === 'high_end') {
+                // Toots and Rips: More high-value cards
+                if (card.id === 'autographed_jersey' || card.id === 'numbered_rookie_auto' || card.id === 'numbered_legend') {
+                    baseAvailability = Math.max(5, Math.floor(baseAvailability * 2));
+                } else if (card.basePrice < 50) {
+                    baseAvailability = Math.floor(baseAvailability * 0.5);
+                }
+            } else if (location.specialization === 'rookies') {
+                // Tree City Cards: More rookie cards
+                if (card.id === 'prized_rookie_card' || card.id === 'numbered_rookie_auto') {
+                    baseAvailability = Math.max(5, Math.floor(baseAvailability * 2.5));
+                }
+            } else if (location.specialization === 'bulk') {
+                // All Cards: Massive inventory (5-50 of each)
+                baseAvailability = Math.floor(Math.random() * 46) + 5; // 5-50
+            }
+            
+            const finalAvailability = Math.max(1,Math.round(baseAvailability*location.availabilityBias));
+            return { price: Math.max(1,finalPrice), available: finalAvailability };
+        }
+
+        function generateAllMarketPrices() {
+            LOCATIONS.forEach(location => {
+                marketState[location.id] = {};
+                marketState[location.id].boosterAvailable = (Math.random() < BOOSTER_CHANCE_PER_DAY);
+                TRADABLE_CARDS.forEach(card => { marketState[location.id][card.id] = generateMarketDataForCard(card, location); });
+            });
+        }
+        
+        function updateMarketForCurrentLocation() {
+            const location = getCurrentLocation();
+            const locationMarket = marketState[location.id] || {};
+            locationMarket.boosterAvailable = (Math.random() < BOOSTER_CHANCE_PER_DAY);
+            TRADABLE_CARDS.forEach(card => { locationMarket[card.id] = generateMarketDataForCard(card, location); });
+            marketState[location.id] = locationMarket;
+        }
+
+        function addLogMessage(message) {
+            gameState.log.unshift(message); if (gameState.log.length > 50) gameState.log.pop(); renderLog();
+        }
+        function toggleHelpText(show) { gameState.showHelpText = show; renderAll(); }
+
+        function createCardImageLayers(targetDiv, layerIndices = []) {
+            const indices = [];
+            if (layerIndices.length === 0) {
+                COMMON_CARD_ASSETS.layers.forEach(layer => {
+                    indices.push(Math.floor(Math.random() * layer.count) + 1);
+                });
+            } else {
+                indices.push(...layerIndices);
+            }
+
+            COMMON_CARD_ASSETS.layers.forEach((layer, i) => {
+                const img = document.createElement('img');
+                img.src = `${COMMON_CARD_ASSETS.base_url}${layer.folder}/${indices[i]}.png`;
+                img.style.position = 'absolute';
+                img.style.left = '0';
+                img.style.top = '0';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                targetDiv.appendChild(img);
+            });
+            return indices;
+        }
+        
+        function createCardVisual(cabinetItem) {
+            const card = cabinetItem.card;
+            const visualContainer = document.createElement('div');
+            visualContainer.className = 'relative aspect-[3/4] w-full';
+
+            const graphicCardTypes = ['favorite_player', 'numbered_legend', 'prized_rookie_card', 'holo_legend', 'numbered_rookie_auto', 'autographed_common_card'];
+
+            if (graphicCardTypes.includes(card.id)) {
+                createCardImageLayers(visualContainer, cabinetItem.layers);
+                 if (card.basePrice > RARE_CARD_THRESHOLD) {
+                    visualContainer.classList.add('sparkle');
+                }
+            } else if (card.id === 'common_single') {
+                 createCardImageLayers(visualContainer, cabinetItem.layers);
+            }
+            else {
+                visualContainer.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center text-center';
+                visualContainer.textContent = card.name;
+                 if (card.basePrice > RARE_CARD_THRESHOLD) {
+                    visualContainer.classList.add('sparkle', 'text-black');
+                }
+                else visualContainer.style.backgroundColor = '#374151';
+            }
+            return visualContainer;
+        }
+        
+        function renderAll() { renderPlayerStats(); renderMarket(); renderInventory(); renderTravelOptions(); renderLog(); renderDisplayCabinet(); }
+        
+        function renderPlayerStats() {
+             document.getElementById('cash').textContent = `$${gameState.cash.toLocaleString()}`;
+             document.getElementById('days').textContent = gameState.daysRemaining;
+             const location = getCurrentLocation();
+             document.getElementById('current-location-name').textContent = location.name;
+             document.getElementById('market-location-name').textContent = location.name;
+        }
+
+        function renderLeaderboard(scores, targetElement) {
+            targetElement.innerHTML = '';
+            if (scores.length === 0) {
+                targetElement.innerHTML = '<p class="text-gray-500 text-center">No high scores yet. Be the first!</p>';
+                return;
+            }
+            scores.forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center text-lg p-1 rounded';
+                if (index === 0) div.classList.add('bg-amber-500/20');
+                
+                const cabinetButton = (entry.cabinet && entry.cabinet.length > 0) 
+                    ? `<button class="btn btn-secondary btn-sm text-xs" data-score-id="${entry.id}" data-action="view-cabinet">Cabinet</button>`
+                    : '';
+
+                div.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="font-bold mr-3">${index + 1}. ${entry.initials}</span>
+                        ${cabinetButton}
+                    </div>
+                    <span class="text-green-400 font-semibold">$${entry.score.toLocaleString()}</span>`;
+                targetElement.appendChild(div);
+            });
+        }
+
+        function renderMarket() {
+            marketItemsEl.innerHTML = '';
+            specialActionsContainerEl.innerHTML = '';
+            
+            // Remove any existing discount banner
+            const existingBanner = document.querySelector('.discount-banner');
+            if (existingBanner) existingBanner.remove();
+            
+            // Add store discount indicator if active
+            if (gameState.storeDiscount > 0) {
+                const discountBanner = document.createElement('div');
+                discountBanner.className = 'discount-banner bg-green-600 text-white p-2 rounded mb-4 text-center';
+                discountBanner.textContent = `Store Discount Active: ${Math.round(gameState.storeDiscount)}% off all purchases!`;
+                
+                // Find the market section and insert after the header div
+                const marketSection = document.getElementById('market-section');
+                const headerDiv = marketSection.querySelector('.flex.justify-between.items-start.mb-3');
+                if (headerDiv && headerDiv.nextSibling) {
+                    marketSection.insertBefore(discountBanner, headerDiv.nextSibling);
+                } else {
+                    // Fallback: prepend to market section
+                    marketSection.prepend(discountBanner);
+                }
+            }
+            
+            const location = getCurrentLocation();
+            const locationMarket = marketState[gameState.currentLocationId];
+            if (!locationMarket) { marketItemsEl.innerHTML = '<tr><td colspan="5" class="table-cell text-center py-4">Market data not available.</td></tr>'; return; }
+
+            if (!gameState.hasPriceGuide) {
+                const priceGuideBtn = document.createElement('button');
+                priceGuideBtn.className = 'btn btn-secondary';
+                priceGuideBtn.innerHTML = `Buy Price Guide <span class="font-bold ml-2">${PRICE_GUIDE_COST}</span>`;
+                priceGuideBtn.title = `Reveals if a card's current price is above or below its base value.`;
+                priceGuideBtn.onclick = buyPriceGuide;
+                specialActionsContainerEl.appendChild(priceGuideBtn);
+            }
+            
+            // Add trade-in button for Mom and Pop's
+            if (location.specialization === 'trade_in') {
+                const commonCount = gameState.inventory.find(item => item.cardId === 'common_single')?.quantity || 0;
+                const tradeInBtn = document.createElement('button');
+                tradeInBtn.className = 'btn btn-secondary';
+                tradeInBtn.innerHTML = `Trade 25 Commons <span class="font-bold ml-2">(Have: ${commonCount})</span>`;
+                tradeInBtn.title = 'Trade 25 Common Singles for 1 random better card';
+                tradeInBtn.disabled = commonCount < 25;
+                tradeInBtn.onclick = executeTradeIn;
+                specialActionsContainerEl.appendChild(tradeInBtn);
+            }
+            
+            const boosterPackBtn = document.createElement('button');
+            boosterPackBtn.className = 'btn btn-special';
+            const locationBoosterPrice = location.boosterPrice;
+            boosterPackBtn.innerHTML = `Buy Booster Pack <span class="font-bold ml-2">${locationBoosterPrice}</span>`;
+            
+            if (location.specialization === 'rookies') {
+                boosterPackBtn.title = 'Get 3-5 random cards with higher chance of rookies!';
+            } else if (location.specialization === 'mystery') {
+                boosterPackBtn.title = 'Mystery pack: Guaranteed to contain at least one rare card!';
+            } else {
+                boosterPackBtn.title = 'Get 3-5 random cards. A high-risk, high-reward gamble!';
+            }
+            
+            if (!locationMarket.boosterAvailable) {
+                boosterPackBtn.disabled = true;
+                boosterPackBtn.textContent = 'Boosters Sold Out Today';
+            } else if (gameState.boosterPacksPurchasedToday >= BOOSTER_PACK_DAILY_LIMIT) {
+                boosterPackBtn.disabled = true;
+                boosterPackBtn.textContent = `Daily Limit Reached (${BOOSTER_PACK_DAILY_LIMIT})`;
+            } else {
+                boosterPackBtn.onclick = () => buyBoosterPack(locationBoosterPrice);
+            }
+            specialActionsContainerEl.appendChild(boosterPackBtn);
+
+            TRADABLE_CARDS.forEach(card => {
+                const marketInfo = locationMarket[card.id];
+                if (!marketInfo) return;
+
+                // Check if this card is affected by an event
+                let eventIndicator = '';
+                const activeCardShow = gameState.activeEvents.find(e => 
+                    e.type === 'card_show' && 
+                    e.affectedCards.some(ac => ac.cardId === card.id)
+                );
+                const activeFlood = gameState.activeEvents.find(e => 
+                    e.type === 'market_flood' && 
+                    e.affectedCard === card.id
+                );
+                
+                if (activeCardShow) {
+                    eventIndicator = '<span class="ml-2 text-yellow-400" title="Card Show Boost!">⭐</span>';
+                } else if (activeFlood) {
+                    eventIndicator = '<span class="ml-2 text-blue-400" title="Market Flooded!">💧</span>';
+                }
+
+                let priceIndicatorHtml = '';
+                if (gameState.hasPriceGuide) {
+                    if (marketInfo.price > card.basePrice) priceIndicatorHtml = `<span class="ml-2 text-green-400" title="Price is above base value">▲</span>`;
+                    else if (marketInfo.price < card.basePrice) priceIndicatorHtml = `<span class="ml-2 text-red-400" title="Price is below base value">▼</span>`;
+                }
+                const priceColorClass = gameState.hasPriceGuide ? (marketInfo.price > card.basePrice ? 'text-green-400' : 'text-red-400') : 'text-gray-300';
+                
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-700';
+                
+                tr.innerHTML = `
+                    <td class="table-cell">
+                        <div class="font-medium">${card.name}${eventIndicator}</div>
+                        <div class="text-xs text-gray-400">${card.description}</div>
+                    </td>
+                    <td class="table-cell"><div class="flex items-center"><span class="font-semibold ${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div></td>
+                    <td class="table-cell">${marketInfo.available}</td>
+                    <td class="table-cell"><input type="number" id="buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1"></td>
+                    <td class="table-cell">
+                        <div class="flex items-center gap-2">
+                            <button class="btn btn-success btn-compact" title="Buy Quantity" data-card-id="${card.id}" data-action="buy-qty" ${marketInfo.available === 0 ? 'disabled' : ''}>$</button>
+                            <button class="btn btn-success btn-compact" title="Buy All" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>A</button>
+                        </div>
+                    </td>`;
+                marketItemsEl.appendChild(tr);
+            });
+        }
+
+        function renderInventory() {
+            inventoryItemsEl.innerHTML = '';
+            if (gameState.inventory.length === 0) {
+                inventoryItemsEl.innerHTML = '<tr><td colspan="6" class="table-cell text-center py-4">Your portfolio is empty.</td></tr>';
+                return;
+            }
+            gameState.inventory.forEach(item => {
+                const card = getCardDetails(item.cardId);
+                const currentMarketPrice = marketState[gameState.currentLocationId]?.[item.cardId]?.price || 0;
+                const averageBuyPrice = item.quantity > 0 ? (item.totalCost / item.quantity) : 0;
+
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-700';
+                tr.innerHTML = `
+                    <td class="table-cell"><div class="font-medium">${card.name}</div></td>
+                    <td class="table-cell">${item.quantity}</td>
+                    <td class="table-cell">$${averageBuyPrice.toFixed(2)}</td>
+                    <td class="table-cell font-semibold text-green-400">$${currentMarketPrice.toLocaleString()}</td>
+                    <td class="table-cell"><input type="number" id="sell-qty-${card.id}" min="1" max="${item.quantity}" value="1"></td>
+                    <td class="table-cell">
+                        <div class="flex items-center gap-2">
+                            <button class="btn btn-danger btn-compact" title="Sell Quantity" data-card-id="${card.id}" data-action="sell-qty">$</button>
+                            <button class="btn btn-danger btn-compact" title="Sell All" data-card-id="${card.id}" data-action="sell-all">A</button>
+                        </div>
+                    </td>`;
+                inventoryItemsEl.appendChild(tr);
+            });
+        }
+
+        function renderTravelOptions() { 
+            travelOptionsEl.innerHTML = '';
+            const currentLocationId = gameState.currentLocationId;
+            LOCATIONS.forEach(location => {
+                if (location.id === currentLocationId) return;
+                const travelCost = travelDurations[currentLocationId]?.[location.id] || 99;
+                const button = document.createElement('button');
+                button.className = 'btn btn-primary w-full text-left';
+                button.textContent = `${location.name} (${travelCost} day${travelCost > 1 ? 's' : ''})`;
+                button.title = location.description;
+                button.onclick = () => travelTo(location.id);
+                travelOptionsEl.appendChild(button);
+            });
+        }
+
+        function renderLog() { logMessagesEl.innerHTML = gameState.log.map(msg => `<div class="log-message">${msg}</div>`).join(''); }
+        
+        function renderDisplayCabinet() {
+            const cabinetListEl = document.getElementById('display-cabinet-list');
+            const placeholderEl = document.getElementById('display-cabinet-placeholder');
+            cabinetListEl.innerHTML = ''; 
+
+            if (gameState.displayCabinet.length === 0) {
+                if (!cabinetListEl.contains(placeholderEl)) cabinetListEl.appendChild(placeholderEl);
+                placeholderEl.style.display = 'block';
+                manageCabinetBtn.style.display = 'none';
+            } else {
+                if (cabinetListEl.contains(placeholderEl)) placeholderEl.style.display = 'none';
+                manageCabinetBtn.style.display = 'inline-block';
+                gameState.displayCabinet.forEach(cabinetItem => {
+                    const cardWrapper = document.createElement('div');
+                    cardWrapper.className = 'flex flex-col items-center';
+                    
+                    const cardVisual = createCardVisual(cabinetItem);
+                    cardWrapper.appendChild(cardVisual);
+                    
+                    // Add value display
+                    const valueDisplay = document.createElement('div');
+                    valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+                    valueDisplay.textContent = `${cabinetItem.capturedValue || 0}`;
+                    cardWrapper.appendChild(valueDisplay);
+                    
+                    cabinetListEl.appendChild(cardWrapper);
+                });
+            }
+        }
+        
+        function showManageCabinetModal() {
+            cabinetModalTitleEl.textContent = 'Manage Cabinet';
+            cabinetModalMessageEl.textContent = 'Select a card to return to your inventory.';
+            cabinetModalOptionsEl.innerHTML = '';
+            
+            gameState.displayCabinet.forEach((cabinetItem, index) => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'flex flex-col items-center cursor-pointer hover:opacity-80';
+                
+                const cardVisual = createCardVisual(cabinetItem);
+                cardWrapper.appendChild(cardVisual);
+                
+                // Add value display
+                const valueDisplay = document.createElement('div');
+                valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+                valueDisplay.textContent = `${cabinetItem.capturedValue || 0}`;
+                cardWrapper.appendChild(valueDisplay);
+                
+                cardWrapper.onclick = () => returnCabinetCardToInventory(index);
+                cabinetModalOptionsEl.appendChild(cardWrapper);
+            });
+            cabinetModalEl.classList.remove('hidden');
+        }
+
+        function returnCabinetCardToInventory(indexToRemove) {
+            if (indexToRemove < 0 || indexToRemove >= gameState.displayCabinet.length) return;
+            const removedCabinetItem = gameState.displayCabinet.splice(indexToRemove, 1)[0];
+            if (!removedCabinetItem) return;
+
+            const removedCard = removedCabinetItem.card;
+            let inventoryItem = gameState.inventory.find(item => item.cardId === removedCard.id);
+            if (inventoryItem) {
+                inventoryItem.quantity++;
+            } else {
+                gameState.inventory.push({ cardId: removedCard.id, quantity: 1, totalCost: 0 });
+            }
+            
+            addLogMessage(`Moved a ${removedCard.name} from the cabinet back to inventory.`);
+            cabinetModalEl.classList.add('hidden');
+            renderAll();
+        }
+
+        function showReplaceCabinetModal(newCardItem, fromButton) {
+            cabinetModalTitleEl.textContent = 'Cabinet Full!';
+            cabinetModalMessageEl.textContent = 'Choose a card to replace with your new pull.';
+            cabinetModalOptionsEl.innerHTML = '';
+
+            gameState.displayCabinet.forEach((cabinetItem, index) => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'flex flex-col items-center cursor-pointer hover:opacity-80';
+                
+                const cardVisual = createCardVisual(cabinetItem);
+                cardWrapper.appendChild(cardVisual);
+                
+                // Add value display
+                const valueDisplay = document.createElement('div');
+                valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+                valueDisplay.textContent = `${cabinetItem.capturedValue || 0}`;
+                cardWrapper.appendChild(valueDisplay);
+                
+                cardWrapper.onclick = () => replaceCabinetCard(index, newCardItem, fromButton);
+                cabinetModalOptionsEl.appendChild(cardWrapper);
+            });
+            cabinetModalEl.classList.remove('hidden');
+        }
+        
+        function replaceCabinetCard(indexToRemove, newCardItem, fromButton) {
+            returnCabinetCardToInventory(indexToRemove);
+            addToDisplayCabinet(newCardItem.card.id, fromButton, true, newCardItem.layers);
+            cabinetModalEl.classList.add('hidden');
+        }
+        
+        function addToDisplayCabinet(cardId, buttonElement, isReplacing = false, forcedLayers = null) {
+            const cardLayers = forcedLayers || (buttonElement.dataset.layers ? JSON.parse(buttonElement.dataset.layers) : null);
+            
+            // Get current market value when adding to cabinet
+            const currentMarketPrice = marketState[gameState.currentLocationId]?.[cardId]?.price || getCardDetails(cardId).basePrice;
+            
+            const newCabinetItem = {
+                card: getCardDetails(cardId),
+                layers: cardLayers,
+                capturedValue: currentMarketPrice // Store the value when added
+            };
+
+            if (!isReplacing) {
+                const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
+                if (!inventoryItem || inventoryItem.quantity < 1) {
+                    addLogMessage(`Error: Card not found in inventory.`);
+                    return;
+                }
+                inventoryItem.quantity--;
+                if (inventoryItem.quantity <= 0) {
+                    gameState.inventory = gameState.inventory.filter(i => i.cardId !== cardId);
+                }
+            }
+            
+            if (gameState.displayCabinet.length < DISPLAY_CABINET_LIMIT) {
+                gameState.displayCabinet.push(newCabinetItem);
+                addLogMessage(`Added a ${newCabinetItem.card.name} to the Display Cabinet! (Value: ${currentMarketPrice})`);
+                if(buttonElement) {
+                    buttonElement.textContent = 'Added!';
+                    buttonElement.disabled = true;
+                }
+                renderAll();
+            } else if (!isReplacing) {
+                showReplaceCabinetModal(newCabinetItem, buttonElement);
+            }
+        }
+
+        function buyPriceGuide() { if(gameState.cash<PRICE_GUIDE_COST){addLogMessage(`Not enough cash.`);return;}gameState.cash-=PRICE_GUIDE_COST;gameState.hasPriceGuide=true;addLogMessage(`Purchased Price Guide!`);renderAll(); }
+        
+        function buyBoosterPack(locationPrice = BOOSTER_PACK_PRICE) { 
+            if(gameState.cash<locationPrice){addLogMessage(`Not enough cash. Need ${locationPrice}.`);return;}
+            if(gameState.boosterPacksPurchasedToday>=BOOSTER_PACK_DAILY_LIMIT){addLogMessage(`Daily pack limit reached.`);return;}
+            if(!marketState[gameState.currentLocationId].boosterAvailable){addLogMessage(`Boosters sold out today.`);return;}
+            if(!boosterPackModalEl.classList.contains('hidden')){return;}
+            
+            gameState.cash-=locationPrice;
+            gameState.boosterPacksPurchasedToday++;
+            
+            renderAll(); 
+
+            const location = getCurrentLocation();
+            const packSize = Math.floor(Math.random()*3)+3;
+            const pulledCards = [];
+            
+            if (location.specialization === 'rookies') {
+                // Tree City: Higher chance of rookie cards
+                const rookieCards = TRADABLE_CARDS.filter(c => c.id.includes('rookie'));
+                const otherCards = TRADABLE_CARDS.filter(c => !c.id.includes('rookie'));
+                
+                // First card has 50% chance to be a rookie
+                if (Math.random() < 0.5 && rookieCards.length > 0) {
+                    pulledCards.push(rookieCards[Math.floor(Math.random() * rookieCards.length)]);
+                } else {
+                    pulledCards.push(otherCards[Math.floor(Math.random() * otherCards.length)]);
+                }
+                
+                // Rest of pack
+                for (let i = 1; i < packSize; i++) {
+                    if (Math.random() < 0.3 && rookieCards.length > 0) { // 30% chance for rookies
+                        pulledCards.push(rookieCards[Math.floor(Math.random() * rookieCards.length)]);
+                    } else {
+                        pulledCards.push(TRADABLE_CARDS[Math.floor(Math.random() * TRADABLE_CARDS.length)]);
+                    }
+                }
+            } else if (location.specialization === 'mystery') {
+                // KLPA Emporium: Guaranteed rare (basePrice > 200)
+                const rareCards = TRADABLE_CARDS.filter(c => c.basePrice > RARE_CARD_THRESHOLD);
+                const otherCards = TRADABLE_CARDS.filter(c => c.basePrice <= RARE_CARD_THRESHOLD);
+                
+                // First card is guaranteed rare
+                pulledCards.push(rareCards[Math.floor(Math.random() * rareCards.length)]);
+                
+                // Rest of pack is normal distribution
+                for (let i = 1; i < packSize; i++) {
+                    pulledCards.push(TRADABLE_CARDS[Math.floor(Math.random() * TRADABLE_CARDS.length)]);
+                }
+            } else {
+                // Standard pack distribution
+                const lowValueCards = TRADABLE_CARDS.filter(c => c.basePrice <= 250);
+                const lowValueLootTable = [];
+                lowValueCards.forEach(card => {
+                    const weight = (card.id === 'common_single') ? 6 : 1;
+                    for (let i = 0; i < weight; i++) lowValueLootTable.push(card);
+                });
+                const fullLootTable = [];
+                TRADABLE_CARDS.forEach(card => {
+                    let weight = 1; if(card.id === 'common_single') weight = 4;
+                    for (let i = 0; i < weight; i++) fullLootTable.push(card);
+                });
+                for (let i = 0; i < Math.min(3, packSize); i++) {
+                    pulledCards.push(lowValueLootTable[Math.floor(Math.random() * lowValueLootTable.length)]);
+                }
+                if (packSize > 3) {
+                    for (let i = 3; i < packSize; i++) {
+                        pulledCards.push(fullLootTable[Math.floor(Math.random() * fullLootTable.length)]);
+                    }
+                }
+            }
+            
+            revealCardsSequentially(pulledCards);
+        }
+        
+        function revealCardsSequentially(cards) {
+            packSummaryAreaEl.innerHTML = '';
+            closePackModalBtn.style.display = 'none';
+            boosterPackModalEl.classList.remove('hidden');
+            let revealIndex = 0;
+
+            function revealNext() {
+                if (revealIndex < cards.length) {
+                    const card = cards[revealIndex];
+                    let inventoryItem = gameState.inventory.find(item => item.cardId === card.id);
+                    if (inventoryItem) inventoryItem.quantity++;
+                    else gameState.inventory.push({ cardId: card.id, quantity: 1, totalCost: 0 });
+
+                    const wrapperDiv = document.createElement('div');
+                    wrapperDiv.className = 'flex flex-col items-center opacity-0 animate-fade-in w-24';
+                    
+                    const cabinetButton = document.createElement('button');
+                    cabinetButton.className = 'btn btn-secondary btn-sm text-xs mt-2 w-full';
+                    cabinetButton.textContent = 'To Cabinet';
+                    cabinetButton.onclick = () => addToDisplayCabinet(card.id, cabinetButton);
+                    
+                    const tempCabinetItem = { card: card, layers: null };
+                    if (card.id === 'common_single') {
+                        tempCabinetItem.layers = createCardImageLayers(document.createElement('div'));
+                        cabinetButton.dataset.layers = JSON.stringify(tempCabinetItem.layers);
+                    }
+                    
+                    const cardVisual = createCardVisual(tempCabinetItem);
+                    
+                    wrapperDiv.appendChild(cardVisual);
+                    wrapperDiv.appendChild(cabinetButton);
+                    packSummaryAreaEl.appendChild(wrapperDiv);
+
+                    revealIndex++;
+                    setTimeout(revealNext, 500);
+                } else {
+                    closePackModalBtn.style.display = 'inline-block';
+                    const summaryLog = cards.map(c => `<li class="ml-4 list-disc pack-item">${c.name}</li>`).join('');
+                    addLogMessage(`Opened a pack: <ul>${summaryLog}</ul>`);
+                    renderAll();
+                }
+            }
+            revealNext();
+        }
+
+        function buyItemQty(cardId) {
+            const quantity = parseInt(document.getElementById(`buy-qty-${cardId}`).value);
+            if(isNaN(quantity) || quantity <= 0) { addLogMessage(`Invalid quantity.`); return; }
+            
+            const card = getCardDetails(cardId);
+            const marketInfo = marketState[gameState.currentLocationId]?.[cardId];
+            if (!marketInfo || quantity > marketInfo.available) { addLogMessage(`Not enough available to buy.`); return; }
+
+            let totalCost = marketInfo.price * quantity;
+            
+            // Apply volume discount at Cards'R'us
+            const location = getCurrentLocation();
+            if (location.specialization === 'volume' && quantity >= 5) {
+                const volumeDiscount = Math.round(totalCost * 0.1);
+                totalCost -= volumeDiscount;
+                addLogMessage(`Volume discount applied: -${volumeDiscount} (10% off for 5+ cards)`);
+            }
+            
+            // Apply store discount if active
+            if (gameState.storeDiscount > 0) {
+                const discountAmount = Math.round(totalCost * (gameState.storeDiscount / 100));
+                totalCost -= discountAmount;
+                addLogMessage(`Store discount applied: -${discountAmount}`);
+            }
+            
+            if (totalCost > gameState.cash) { addLogMessage(`Not enough cash. Need ${totalCost.toLocaleString()}.`); return; }
+            
+            gameState.cash -= totalCost;
+            marketInfo.available -= quantity;
+            let inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
+            if (inventoryItem) {
+                inventoryItem.quantity += quantity;
+                inventoryItem.totalCost += totalCost;
+            } else {
+                gameState.inventory.push({ cardId, quantity, totalCost });
+            }
+            addLogMessage(`Bought ${quantity} ${card.name} for ${totalCost.toLocaleString()}.`);
+            renderAll();
+        }
+
+        function buyAllItems(cardId) {
+            const marketInfo = marketState[gameState.currentLocationId]?.[cardId];
+            if (!marketInfo || marketInfo.available <= 0) { addLogMessage(`None available to buy.`); return; }
+            document.getElementById(`buy-qty-${cardId}`).value = marketInfo.available;
+            buyItemQty(cardId);
+        }
+
+        function sellItemQty(cardId) {
+            const quantity = parseInt(document.getElementById(`sell-qty-${cardId}`).value);
+            const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
+
+            if(isNaN(quantity) || quantity <= 0) { addLogMessage(`Invalid quantity.`); return; }
+            if (!inventoryItem || quantity > inventoryItem.quantity) { addLogMessage(`You don't have that many to sell.`); return; }
+
+            const card = getCardDetails(cardId);
+            const currentMarketPrice = marketState[gameState.currentLocationId]?.[cardId]?.price;
+            if(currentMarketPrice === undefined){ addLogMessage(`Cannot determine sell price.`); return; }
+
+            const totalSaleValue = currentMarketPrice * quantity;
+            const costOfSoldItems = (inventoryItem.totalCost / inventoryItem.quantity) * quantity;
+            
+            gameState.cash += totalSaleValue;
+            inventoryItem.quantity -= quantity;
+            inventoryItem.totalCost -= isNaN(costOfSoldItems) ? 0 : costOfSoldItems;
+
+            if (inventoryItem.quantity <= 0) {
+                gameState.inventory = gameState.inventory.filter(item => item.cardId !== cardId);
+            }
+            addLogMessage(`Sold ${quantity} ${card.name} for $${totalSaleValue.toLocaleString()}.`);
+            renderAll();
+        }
+
+        function sellAllItems(cardId) {
+            const inventoryItem = gameState.inventory.find(item => item.cardId === cardId);
+            if (!inventoryItem || inventoryItem.quantity <= 0) { addLogMessage(`None to sell.`); return; }
+            document.getElementById(`sell-qty-${cardId}`).value = inventoryItem.quantity;
+            sellItemQty(cardId);
+        }
+
+        function executeTradeIn() {
+            const commonItem = gameState.inventory.find(item => item.cardId === 'common_single');
+            if (!commonItem || commonItem.quantity < 25) {
+                addLogMessage(`Need 25 Common Singles to trade. You have ${commonItem?.quantity || 0}.`);
+                return;
+            }
+            
+            // Remove 25 commons
+            commonItem.quantity -= 25;
+            commonItem.totalCost = Math.max(0, commonItem.totalCost - (25 * 5)); // Rough estimate
+            if (commonItem.quantity <= 0) {
+                gameState.inventory = gameState.inventory.filter(item => item.cardId !== 'common_single');
+            }
+            
+            // Generate random better card (exclude commons)
+            const eligibleCards = TRADABLE_CARDS.filter(c => c.id !== 'common_single' && c.basePrice >= 50);
+            const receivedCard = eligibleCards[Math.floor(Math.random() * eligibleCards.length)];
+            
+            // Add the received card
+            let inventoryItem = gameState.inventory.find(item => item.cardId === receivedCard.id);
+            if (inventoryItem) {
+                inventoryItem.quantity++;
+            } else {
+                gameState.inventory.push({ cardId: receivedCard.id, quantity: 1, totalCost: 0 });
+            }
+            
+            addLogMessage(`Traded 25 Common Singles for a ${receivedCard.name}!`);
+            renderAll();
+        }
+
+        // Updated travel events to affect destination
+        function checkForTravelEvent() {
+            if (Math.random() > TRAVEL_EVENT_CHANCE) return null;
+            
+            const events = [
+                { type: 'card_show', weight: 25 },
+                { type: 'market_flood', weight: 25 },
+                { type: 'player_sighting', weight: 25 },
+                { type: 'found_card', weight: 25 }
+            ];
+            
+            const totalWeight = events.reduce((sum, event) => sum + event.weight, 0);
+            let random = Math.random() * totalWeight;
+            
+            for (const event of events) {
+                random -= event.weight;
+                if (random <= 0) {
+                    return executeEvent(event.type);
+                }
+            }
+        }
+
+        function executeEvent(eventType) {
+            switch (eventType) {
+                case 'card_show':
+                    return executeCardShow();
+                case 'market_flood':
+                    return executeMarketFlood();
+                case 'player_sighting':
+                    return executePlayerSighting();
+                case 'found_card':
+                    return executeFoundCard();
+            }
+        }
+
+        function executeCardShow() {
+            // Select 3-5 random cards to boost
+            const numCards = Math.floor(Math.random() * 3) + 3;
+            const selectedCards = [];
+            const availableCards = TRADABLE_CARDS.filter(c => c.basePrice >= 50); // Only boost valuable cards
+            
+            for (let i = 0; i < numCards && i < availableCards.length; i++) {
+                const randomIndex = Math.floor(Math.random() * availableCards.length);
+                const card = availableCards.splice(randomIndex, 1)[0];
+                const boostPercent = Math.random() * 20 + 10; // 10-30% boost
+                selectedCards.push({ cardId: card.id, boost: boostPercent });
+            }
+            
+            // Apply boosts to current market (at destination)
+            const locationMarket = marketState[gameState.currentLocationId];
+            selectedCards.forEach(({ cardId, boost }) => {
+                if (locationMarket[cardId]) {
+                    locationMarket[cardId].price = Math.round(locationMarket[cardId].price * (1 + boost / 100));
+                    locationMarket[cardId].eventModified = true;
+                }
+            });
+            
+            // Store event for tracking (no expiration, lasts until travel)
+            gameState.activeEvents.push({
+                type: 'card_show',
+                location: gameState.currentLocationId,
+                affectedCards: selectedCards
+            });
+            
+            const cardNames = selectedCards.map(sc => getCardDetails(sc.cardId).name).join(', ');
+            const locationName = getCurrentLocation().name;
+            return {
+                title: "Card Show in Town!",
+                message: `A traveling card show has arrived at ${locationName}! The following cards have increased in value: ${cardNames}`,
+                type: 'card_show'
+            };
+        }
+
+        function executeMarketFlood() {
+            // Select one card to crash
+            const availableCards = TRADABLE_CARDS.filter(c => c.basePrice >= 20); // Don't crash cheap cards
+            const targetCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+            const dropPercent = Math.random() * 30 + 20; // 20-50% drop
+            
+            // Apply drop to current market (at destination)
+            const locationMarket = marketState[gameState.currentLocationId];
+            if (locationMarket[targetCard.id]) {
+                locationMarket[targetCard.id].price = Math.round(locationMarket[targetCard.id].price * (1 - dropPercent / 100));
+                locationMarket[targetCard.id].eventModified = true;
+            }
+            
+            // Store event (no expiration, lasts until travel)
+            gameState.activeEvents.push({
+                type: 'market_flood',
+                location: gameState.currentLocationId,
+                affectedCard: targetCard.id,
+                drop: dropPercent
+            });
+            
+            const locationName = getCurrentLocation().name;
+            return {
+                title: "Market Flooded!",
+                message: `A large collection of ${targetCard.name} cards was just discovered at ${locationName}! Prices have dropped by ${Math.round(dropPercent)}%.`,
+                type: 'market_flood'
+            };
+        }
+
+        function executePlayerSighting() {
+            // Check if player has any common singles
+            const commonSingles = gameState.inventory.find(item => item.cardId === 'common_single');
+            
+            if (!commonSingles || commonSingles.quantity < 1) {
+                // Player has no common singles, give them a small cash bonus instead
+                const bonus = Math.floor(Math.random() * 50) + 25;
+                gameState.cash += bonus;
+                return {
+                    title: "Near Miss!",
+                    message: `You spotted a famous player but had no cards to sign! A fan gave you ${bonus} for pointing them out.`,
+                    type: 'player_sighting_miss'
+                };
+            }
+            
+            // Convert one common single to autographed
+            commonSingles.quantity--;
+            if (commonSingles.quantity <= 0) {
+                gameState.inventory = gameState.inventory.filter(item => item.cardId !== 'common_single');
+            }
+            
+            // Add autographed common
+            let autographedItem = gameState.inventory.find(item => item.cardId === 'autographed_common');
+            if (autographedItem) {
+                autographedItem.quantity++;
+            } else {
+                gameState.inventory.push({ cardId: 'autographed_common', quantity: 1, totalCost: 0 });
+            }
+            
+            return {
+                title: "Player Sighting!",
+                message: "You spotted a famous player at a café! They signed one of your common cards, transforming it into an Autographed Common Card!",
+                type: 'player_sighting'
+            };
+        }
+
+        function executeFoundCard() {
+            // Random card with weighted probability
+            const lootTable = [];
+            TRADABLE_CARDS.forEach(card => {
+                let weight = 1;
+                if (card.basePrice < 50) weight = 10;
+                else if (card.basePrice < 100) weight = 5;
+                else if (card.basePrice < 200) weight = 2;
+                
+                for (let i = 0; i < weight; i++) {
+                    lootTable.push(card);
+                }
+            });
+            
+            const foundCard = lootTable[Math.floor(Math.random() * lootTable.length)];
+            
+            // Store the found card temporarily
+            gameState.tempFoundCard = foundCard;
+            
+            return {
+                title: "Lucky Find!",
+                message: `You found a ${foundCard.name} on the ground! You can keep it or return it to the store for a potential discount.`,
+                type: 'found_card',
+                showChoices: true,
+                card: foundCard
+            };
+        }
+
+        function keepFoundCard() {
+            const foundCard = gameState.tempFoundCard;
+            if (!foundCard) return;
+            
+            let inventoryItem = gameState.inventory.find(item => item.cardId === foundCard.id);
+            if (inventoryItem) {
+                inventoryItem.quantity++;
+            } else {
+                gameState.inventory.push({ cardId: foundCard.id, quantity: 1, totalCost: 0 });
+            }
+            
+            addLogMessage(`You kept the ${foundCard.name}!`);
+            delete gameState.tempFoundCard;
+            eventModalEl.classList.add('hidden');
+            renderAll();
+        }
+
+        function returnFoundCard() {
+            const foundCard = gameState.tempFoundCard;
+            if (!foundCard) return;
+            
+            // Calculate discount based on card value
+            let discountPercent;
+            if (foundCard.basePrice < 50) {
+                discountPercent = Math.random() * 2 + 3; // 3-5%
+            } else if (foundCard.basePrice < 200) {
+                discountPercent = Math.random() * 3 + 5; // 5-8%
+            } else {
+                discountPercent = Math.random() * 3 + 7; // 7-10%
+            }
+            
+            gameState.storeDiscount = discountPercent;
+            gameState.activeEvents.push({
+                type: 'store_discount',
+                location: gameState.currentLocationId,
+                discount: discountPercent
+            });
+            
+            addLogMessage(`You returned the ${foundCard.name} to the store. They gave you a ${Math.round(discountPercent)}% discount for today!`);
+            delete gameState.tempFoundCard;
+            eventModalEl.classList.add('hidden');
+            renderAll();
+        }
+
+        function processActiveEvents() {
+            // Clear all active events when traveling
+            gameState.activeEvents = [];
+            gameState.storeDiscount = 0;
+            
+            // Clear any market modifications from events
+            const currentMarket = marketState[gameState.currentLocationId];
+            if (currentMarket) {
+                Object.keys(currentMarket).forEach(cardId => {
+                    if (currentMarket[cardId] && currentMarket[cardId].eventModified) {
+                        delete currentMarket[cardId].eventModified;
+                    }
+                });
+            }
+        }
+
+        // Modified showEventModal to handle choices
+        function showEventModal(eventResult) {
+            document.getElementById('event-title').textContent = eventResult.title;
+            document.getElementById('event-message').textContent = eventResult.message;
+            
+            const modalContent = eventModalEl.querySelector('.modal-content');
+            
+            // Remove any existing choice buttons
+            const existingChoices = modalContent.querySelector('.event-choices');
+            if (existingChoices) existingChoices.remove();
+            
+            if (eventResult.showChoices && eventResult.type === 'found_card') {
+                // Hide the normal continue button
+                closeEventModalBtn.style.display = 'none';
+                
+                // Add choice buttons
+                const choicesDiv = document.createElement('div');
+                choicesDiv.className = 'event-choices flex gap-4 justify-center mt-4';
+                
+                const keepBtn = document.createElement('button');
+                keepBtn.className = 'btn btn-success';
+                keepBtn.textContent = 'Keep It';
+                keepBtn.onclick = keepFoundCard;
+                
+                const returnBtn = document.createElement('button');
+                returnBtn.className = 'btn btn-primary';
+                returnBtn.textContent = 'Return to Store';
+                returnBtn.onclick = returnFoundCard;
+                
+                choicesDiv.appendChild(keepBtn);
+                choicesDiv.appendChild(returnBtn);
+                modalContent.appendChild(choicesDiv);
+            } else {
+                closeEventModalBtn.style.display = 'inline-block';
+            }
+            
+            eventModalEl.classList.remove('hidden');
+        }
+
+        async function travelTo(destinationLocationId) {
+            const travelCostDays = travelDurations[gameState.currentLocationId]?.[destinationLocationId];
+            if (travelCostDays === undefined) { 
+                addLogMessage("Cannot travel to that location."); 
+                return; 
+            }
+            if (gameState.daysRemaining < travelCostDays) { 
+                addLogMessage("Not enough days left to travel!"); 
+                await checkGameOver(); 
+                return; 
+            }
+            
+            gameState.daysRemaining -= travelCostDays;
+            gameState.currentLocationId = destinationLocationId;
+            addLogMessage(`Traveled to ${getCurrentLocation().name}. Lost ${travelCostDays} day${travelCostDays > 1 ? 's' : ''}.`);
+            gameState.boosterPacksPurchasedToday = 0;
+            
+            // Process any active events (reduce their duration)
+            processActiveEvents();
+            
+            // Update market BEFORE checking for events
+            updateMarketForCurrentLocation(); 
+            
+            // Check for random travel event
+            const eventResult = checkForTravelEvent();
+            if (eventResult) {
+                showEventModal(eventResult);
+                addLogMessage(`Event: ${eventResult.title}`);
+            }
+
+            if (await checkGameOver()) return;
+            renderAll(); 
+        }
+        
+        async function showGameOverScreen() {
+            const gameOverCabinetList = document.getElementById('game-over-cabinet-list');
+            gameOverCabinetList.innerHTML = '';
+            if (gameState.displayCabinet.length > 0) {
+                gameState.displayCabinet.forEach(cabinetItem => {
+                    const cardVisual = createCardVisual(cabinetItem);
+                    gameOverCabinetList.appendChild(cardVisual);
+                });
+                document.getElementById('game-over-cabinet-section').style.display = 'block';
+            } else {
+                document.getElementById('game-over-cabinet-section').style.display = 'none';
+            }
+
+            const topScores = leaderboardScores.slice(0, LEADERBOARD_SIZE);
+            document.getElementById('final-score').textContent = `${gameState.cash.toLocaleString()}`;
+            renderLeaderboard(topScores, document.getElementById('game-over-leaderboard-list'));
+            gameOverModalEl.classList.remove('hidden');
+        }
+
+        async function checkGameOver() {
+            if (gameState.daysRemaining <= 0) {
+                addLogMessage(`Game Over! Final cash: ${gameState.cash.toLocaleString()}.`);
+                const lowestHighScore = leaderboardScores.length > 0 ? leaderboardScores[Math.min(leaderboardScores.length - 1, LEADERBOARD_SIZE - 1)].score : 0;
+                if (gameState.cash > lowestHighScore || leaderboardScores.length < LEADERBOARD_SIZE) {
+                    document.getElementById('high-score-final-score').textContent = `${gameState.cash.toLocaleString()}`;
+                    highScoreModalEl.classList.remove('hidden');
+                } else {
+                    await showGameOverScreen();
+                }
+                return true; 
+            }
+            return false; 
+        }
+
+        function showPlayerCabinet(cabinet) {
+            viewCabinetListEl.innerHTML = '';
+            if (cabinet && cabinet.length > 0) {
+                document.getElementById('view-cabinet-title').textContent = "Player's Cabinet";
+                cabinet.forEach(cabinetItem => {
+                    const cardWrapper = document.createElement('div');
+                    cardWrapper.className = 'flex flex-col items-center';
+                    
+                    const cardVisual = createCardVisual(cabinetItem);
+                    cardWrapper.appendChild(cardVisual);
+                    
+                    // Add value display if available
+                    if (cabinetItem.capturedValue) {
+                        const valueDisplay = document.createElement('div');
+                        valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+                        valueDisplay.textContent = `${cabinetItem.capturedValue}`;
+                        cardWrapper.appendChild(valueDisplay);
+                    }
+                    
+                    viewCabinetListEl.appendChild(cardWrapper);
+                });
+            } else {
+                viewCabinetListEl.innerHTML = '<p class="text-gray-500 col-span-full">This player had an empty cabinet.</p>';
+            }
+            viewCabinetModalEl.classList.remove('hidden');
+        }
+
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                const handleMarketClick = (e) => {
+                    const button = e.target.closest('button[data-action]');
+                    if (!button) return;
+                    const action = button.dataset.action;
+                    const cardId = button.dataset.cardId;
+                    if (!action || !cardId) return;
+
+                    if (action === 'buy-qty') buyItemQty(cardId);
+                    else if (action === 'buy-all') buyAllItems(cardId);
+                };
+                
+                const handleInventoryClick = (e) => {
+                    const button = e.target.closest('button[data-action]');
+                    if (!button) return;
+                    const action = button.dataset.action;
+                    const cardId = button.dataset.cardId;
+                    if (!action || !cardId) return;
+
+                    if (action === 'sell-qty') sellItemQty(cardId);
+                    else if (action === 'sell-all') sellAllItems(cardId);
+                };
+
+                const handleLeaderboardClick = (e) => {
+                    const button = e.target.closest('button[data-action="view-cabinet"]');
+                    if (button) {
+                        const scoreId = button.dataset.scoreId;
+                        const score = leaderboardScores.find(s => s.id === scoreId);
+                        if (score && score.cabinet) {
+                            showPlayerCabinet(score.cabinet);
+                        }
+                    }
+                };
+                
+                marketItemsEl.addEventListener('click', handleMarketClick);
+                inventoryItemsEl.addEventListener('click', handleInventoryClick);
+                leaderboardListEl.addEventListener('click', handleLeaderboardClick);
+                gameOverLeaderboardListEl.addEventListener('click', handleLeaderboardClick);
+
+                restartGameBtn.addEventListener('click', () => { addLogMessage("Restarting game..."); initializeGame(); });
+                playAgainBtn.addEventListener('click', () => { gameOverModalEl.classList.add('hidden'); initializeGame(); });
+                closePackModalBtn.addEventListener('click', () => { boosterPackModalEl.classList.add('hidden'); });
+                closeEventModalBtn.addEventListener('click', () => { eventModalEl.classList.add('hidden'); });
+                helpTextToggleEl.addEventListener('change', (e) => { toggleHelpText(e.target.checked); });
+                submitScoreBtn.addEventListener('click', submitHighScore);
+                cancelCabinetModalBtn.addEventListener('click', () => { cabinetModalEl.classList.add('hidden'); });
+                manageCabinetBtn.addEventListener('click', showManageCabinetModal);
+                closeViewCabinetBtn.addEventListener('click', () => { viewCabinetModalEl.classList.add('hidden')});
+                
+                initializeGame();
+                listenForLeaderboardUpdates();
+            } else {
+                signInAnonymously(auth).catch(error => {
+                    console.error("Anonymous sign-in failed: ", error);
+                    document.body.innerHTML = `<div class="min-h-screen flex items-center justify-center p-4"><div class="max-w-2xl text-center p-8 rounded-lg bg-gray-800 border border-red-500"><h1 class="text-3xl font-bold text-red-400 mb-4">Connection Error</h1><p class="text-lg mb-2">Could not connect to the game server.</p><p class="text-md text-gray-400 mb-6">This usually happens when the website's domain is not authorized or the API Key has referrer restrictions.</p><p class="mt-4 text-xs text-gray-500">Full error: ${error.message}</p></div></div>`;
+                });
+            }
+        });
+    </script>
+</body>
+</html>
