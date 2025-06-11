@@ -1192,18 +1192,10 @@
         }
         
         function checkForTravelEvent() {
-            if (Math.random() > TRAVEL_EVENT_CHANCE || gameState.pendingEvent) return null;
-            
-            const localEvents = [
-                { type: 'player_sighting', weight: 50 },
-                { type: 'found_card', weight: 50 }
-            ];
-            
-            const remoteEvents = [
-                 { type: 'card_show', weight: 50 },
-                 { type: 'market_flood', weight: 50 }
-            ]
+            if (Math.random() > TRAVEL_EVENT_CHANCE || gameState.pendingEvent) return;
 
+            const localEvents = [{ type: 'player_sighting', weight: 30 }, { type: 'found_card', weight: 30 }];
+            const remoteEvents = [{ type: 'card_show', weight: 20 }, { type: 'market_flood', weight: 20 }];
             const allEvents = [...localEvents, ...remoteEvents];
             
             const totalWeight = allEvents.reduce((sum, event) => sum + event.weight, 0);
@@ -1212,17 +1204,24 @@
             for (const event of allEvents) {
                 random -= event.weight;
                 if (random <= 0) {
-                    return executeEvent(event.type);
+                    if (remoteEvents.find(e => e.type === event.type)) {
+                        const otherLocations = LOCATIONS.filter(l => l.id !== gameState.currentLocationId);
+                        const eventLocation = otherLocations[Math.floor(Math.random() * otherLocations.length)];
+                        executeEvent(event.type, eventLocation.id, true);
+                    } else {
+                        executeEvent(event.type, gameState.currentLocationId, false);
+                    }
+                    return; 
                 }
             }
         }
 
-        function executeEvent(eventType, destinationId = null) {
+        function executeEvent(eventType, locationId, isRemote) {
             switch (eventType) {
                 case 'card_show':
-                    return executeCardShow(destinationId);
+                    return executeCardShow(locationId, isRemote);
                 case 'market_flood':
-                    return executeMarketFlood(destinationId);
+                    return executeMarketFlood(locationId, isRemote);
                 case 'player_sighting':
                     return executePlayerSighting();
                 case 'found_card':
@@ -1230,11 +1229,8 @@
             }
         }
 
-        function executeCardShow(destinationId = null) {
-            const isRemote = destinationId !== null;
-            const targetLocationId = isRemote ? destinationId : gameState.currentLocationId;
-            const targetLocation = LOCATIONS.find(loc => loc.id === targetLocationId);
-
+        function executeCardShow(locationId, isRemote) {
+            const targetLocation = LOCATIONS.find(loc => loc.id === locationId);
             const numCards = Math.floor(Math.random() * 3) + 3;
             const selectedCards = [];
             const availableCards = TRADABLE_CARDS.filter(c => c.basePrice >= 50);
@@ -1242,78 +1238,75 @@
             for (let i = 0; i < numCards && i < availableCards.length; i++) {
                 const randomIndex = Math.floor(Math.random() * availableCards.length);
                 const card = availableCards.splice(randomIndex, 1)[0];
-                const boostPercent = Math.random() * 20 + 10;
-                selectedCards.push({ cardId: card.id, boost: boostPercent });
+                selectedCards.push({ cardId: card.id });
             }
             
-            const locationMarket = marketState[targetLocationId];
-            selectedCards.forEach(({ cardId, boost }) => {
-                if (locationMarket[cardId]) {
-                    locationMarket[cardId].price = Math.round(locationMarket[cardId].price * (1 + boost / 100));
-                    locationMarket[cardId].eventModified = true;
-                }
-            });
-
-            const eventData = { type: 'card_show', location: targetLocationId, affectedCards: selectedCards, message: `A card show is boosting prices at ${targetLocation.name}!` };
+            const eventData = { type: 'card_show', location: locationId, affectedCards: selectedCards, message: `Word is a Card Show is happening over at ${targetLocation.name}, causing some prices to jump.` };
             
             if(isRemote) {
                 gameState.pendingEvent = eventData;
                 showAnnouncementModal(eventData);
             } else {
                 gameState.activeEvents.push(eventData);
-                 const cardNames = selectedCards.map(sc => getCardDetails(sc.cardId).name).join(', ');
+                applyEventEffects(eventData);
+                const cardNames = selectedCards.map(sc => getCardDetails(sc.cardId).name).join(', ');
                 showEventModal({title: "Card Show in Town!", message: `A traveling card show has arrived! The following cards have increased in value: ${cardNames}`});
             }
         }
 
-        function executeMarketFlood(destinationId = null) {
-            const isRemote = destinationId !== null;
-            const targetLocationId = isRemote ? destinationId : gameState.currentLocationId;
-            const targetLocation = LOCATIONS.find(loc => loc.id === targetLocationId);
-
+        function executeMarketFlood(locationId, isRemote) {
+            const targetLocation = LOCATIONS.find(loc => loc.id === locationId);
             const availableCards = TRADABLE_CARDS.filter(c => c.basePrice >= 20);
             const targetCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-            const dropPercent = Math.random() * 30 + 20;
             
-            const locationMarket = marketState[targetLocationId];
-            if (locationMarket[targetCard.id]) {
-                locationMarket[targetCard.id].price = Math.round(locationMarket[targetCard.id].price * (1 - dropPercent / 100));
-                locationMarket[targetCard.id].eventModified = true;
-            }
-
-            const eventData = { type: 'market_flood', location: targetLocationId, affectedCard: targetCard.id, drop: dropPercent, message: `A market flood of some cards is happening at ${targetLocation.name}!` };
+            const eventData = { type: 'market_flood', location: locationId, affectedCard: targetCard.id, message: `You hear a rumor that a huge collection was found near ${targetLocation.name}, flooding the market.` };
 
             if(isRemote) {
                 gameState.pendingEvent = eventData;
-                 showAnnouncementModal(eventData);
+                showAnnouncementModal(eventData);
             } else {
                 gameState.activeEvents.push(eventData);
-                showEventModal({title: "Market Flooded!", message: `A large collection of ${targetCard.name} cards was just discovered! Prices have dropped by ${Math.round(dropPercent)}%.`});
+                applyEventEffects(eventData);
+                showEventModal({title: "Market Flooded!", message: `A large collection of ${targetCard.name} cards was just discovered! Prices have dropped.`});
+            }
+        }
+        
+        function applyEventEffects(eventData) {
+            const locationMarket = marketState[eventData.location];
+            if (!locationMarket) return;
+
+            if (eventData.type === 'card_show') {
+                eventData.affectedCards.forEach(({ cardId }) => {
+                    if (locationMarket[cardId]) {
+                        const boostPercent = Math.random() * 20 + 10;
+                        locationMarket[cardId].price = Math.round(locationMarket[cardId].price * (1 + boostPercent / 100));
+                        locationMarket[cardId].eventModified = true;
+                    }
+                });
+            } else if (eventData.type === 'market_flood') {
+                 if (locationMarket[eventData.affectedCard]) {
+                    const dropPercent = Math.random() * 30 + 20;
+                    locationMarket[eventData.affectedCard].price = Math.round(locationMarket[eventData.affectedCard].price * (1 - dropPercent / 100));
+                    locationMarket[eventData.affectedCard].eventModified = true;
+                }
             }
         }
 
+
         function executePlayerSighting() {
-            // Check if player has any common singles
             const commonSingles = gameState.inventory.find(item => item.cardId === 'common_single');
-            
             if (!commonSingles || commonSingles.quantity < 1) {
-                // Player has no common singles, give them a small cash bonus instead
                 const bonus = Math.floor(Math.random() * 50) + 25;
                 gameState.cash += bonus;
-                showEventModal({
-                    title: "Near Miss!",
-                    message: `You spotted a famous player but had no cards to sign! A fan gave you ${bonus} for pointing them out.`,
-                });
+                showEventModal({ title: "Near Miss!", message: `You spotted a famous player but had no cards to sign! A fan gave you ${bonus} for pointing them out.` });
                 return;
             }
             
-            // Convert one common single to autographed
             commonSingles.quantity--;
             if (commonSingles.quantity <= 0) {
                 gameState.inventory = gameState.inventory.filter(item => item.cardId !== 'common_single');
             }
             
-            // Add autographed common
             let autographedItem = gameState.inventory.find(item => item.cardId === 'autographed_common');
             if (autographedItem) {
                 autographedItem.quantity++;
@@ -1321,36 +1314,21 @@
                 gameState.inventory.push({ cardId: 'autographed_common', quantity: 1, totalCost: 0 });
             }
 
-            showEventModal({
-                title: "Player Sighting!",
-                message: "You spotted a famous player at a café! They signed one of your common cards, transforming it into an Autographed Common Card!",
-            });
+            showEventModal({ title: "Player Sighting!", message: "You spotted a famous player at a café! They signed one of your common cards, transforming it into an Autographed Common Card!" });
+            renderAll();
         }
 
         function executeFoundCard() {
             const lootTable = [];
             TRADABLE_CARDS.forEach(card => {
-                let weight = 1;
-                if (card.basePrice < 50) weight = 10;
-                else if (card.basePrice < 100) weight = 5;
-                else if (card.basePrice < 200) weight = 2;
-                
-                for (let i = 0; i < weight; i++) {
-                    lootTable.push(card);
-                }
+                let weight = 1; if (card.basePrice < 50) weight = 10; else if (card.basePrice < 100) weight = 5; else if (card.basePrice < 200) weight = 2;
+                for (let i = 0; i < weight; i++) lootTable.push(card);
             });
             
             const foundCard = lootTable[Math.floor(Math.random() * lootTable.length)];
-            
             gameState.tempFoundCard = foundCard;
             
-            showEventModal({
-                title: "Lucky Find!",
-                message: `You found a ${foundCard.name} on the ground! You can keep it or return it to the store for a potential discount.`,
-                type: 'found_card',
-                showChoices: true,
-                card: foundCard
-            });
+            showEventModal({ title: "Lucky Find!", message: `You found a ${foundCard.name} on the ground! Keep it or return it to the store?`, showChoices: true, type: 'found_card' });
         }
 
         function keepFoundCard() {
@@ -1375,13 +1353,9 @@
             if (!foundCard) return;
             
             let discountPercent;
-            if (foundCard.basePrice < 50) {
-                discountPercent = Math.random() * 2 + 3; // 3-5%
-            } else if (foundCard.basePrice < 200) {
-                discountPercent = Math.random() * 3 + 5; // 5-8%
-            } else {
-                discountPercent = Math.random() * 3 + 7; // 7-10%
-            }
+            if (foundCard.basePrice < 50) discountPercent = Math.random() * 2 + 3;
+            else if (foundCard.basePrice < 200) discountPercent = Math.random() * 3 + 5;
+            else discountPercent = Math.random() * 3 + 7;
             
             gameState.storeDiscount = discountPercent;
             
@@ -1391,14 +1365,16 @@
             renderAll();
         }
 
-        function processDayEnd() {
-            gameState.storeDiscount = 0;
-            const eventResult = checkForTravelEvent();
-            if (eventResult && (eventResult.type === 'card_show' || eventResult.type === 'market_flood')) {
-                const otherLocations = LOCATIONS.filter(l => l.id !== gameState.currentLocationId);
-                const eventLocation = otherLocations[Math.floor(Math.random() * otherLocations.length)];
-                executeEvent(eventResult.type, eventLocation.id);
-            }
+        function clearOldEvents(locationId) {
+            const locationMarket = marketState[locationId];
+            if (!locationMarket) return;
+
+            Object.keys(locationMarket).forEach(cardId => {
+                if (locationMarket[cardId] && locationMarket[cardId].eventModified) {
+                    delete locationMarket[cardId].eventModified;
+                }
+            });
+            gameState.activeEvents = [];
         }
 
         function showEventModal(eventResult) {
@@ -1436,7 +1412,7 @@
         }
         
         function showAnnouncementModal(eventData) {
-            document.getElementById('announcement-title').textContent = (eventData.type === 'card_show') ? "Card Show Announced!" : "Market Flood Warning!";
+            document.getElementById('announcement-title').textContent = (eventData.type === 'card_show') ? "Card Show Announced!" : "Market Flood Rumor!";
             document.getElementById('announcement-message').textContent = eventData.message;
             
             const choicesDiv = document.getElementById('announcement-choices');
@@ -1466,32 +1442,33 @@
 
 
         async function travelTo(destinationLocationId) {
-            const travelCostDays = travelDurations[gameState.currentLocationId]?.[destinationLocationId];
+            const previousLocationId = gameState.currentLocationId;
+            const travelCostDays = travelDurations[previousLocationId]?.[destinationLocationId];
+
             if (travelCostDays === undefined) { 
-                addLogMessage("Cannot travel to that location."); 
-                return; 
+                addLogMessage("Cannot travel to that location."); return; 
             }
             if (gameState.daysRemaining < travelCostDays) { 
-                addLogMessage("Not enough days left to travel!"); 
-                await checkGameOver(); 
-                return; 
+                addLogMessage("Not enough days left to travel!"); await checkGameOver(); return; 
             }
+            
+            clearOldEvents(previousLocationId);
+            gameState.storeDiscount = 0;
             
             gameState.daysRemaining -= travelCostDays;
             gameState.currentLocationId = destinationLocationId;
             addLogMessage(`Traveled to ${getCurrentLocation().name}. Lost ${travelCostDays} day${travelCostDays > 1 ? 's' : ''}.`);
             gameState.boosterPacksPurchasedToday = 0;
             
-            // Activate pending event if traveling to the event location
             if (gameState.pendingEvent && gameState.pendingEvent.location === destinationLocationId) {
                 gameState.activeEvents.push(gameState.pendingEvent);
-                addLogMessage(`You've arrived just in time for the ${gameState.pendingEvent.type.replace('_',' ')}!`);
-                gameState.pendingEvent = null; // Clear pending event
+                applyEventEffects(gameState.pendingEvent);
+                addLogMessage(`You've arrived just in time for the ${gameState.pendingEvent.type.replace(/_/g,' ')}!`);
+                gameState.pendingEvent = null;
             }
             
             updateMarketForCurrentLocation(); 
-            
-            processDayEnd(); // Check for new events for the next day
+            checkForTravelEvent();
 
             if (await checkGameOver()) return;
             renderAll(); 
@@ -1542,7 +1519,6 @@
                     const cardVisual = createCardVisual(cabinetItem);
                     cardWrapper.appendChild(cardVisual);
                     
-                    // Add value display if available
                     if (cabinetItem.capturedValue) {
                         const valueDisplay = document.createElement('div');
                         valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
