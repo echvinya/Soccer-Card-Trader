@@ -94,6 +94,80 @@
         .event-choices button { min-width: 120px; }
         .discount-banner { animation: pulse 2s ease-in-out infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+        
+        /* Serial number effects */
+        .serial-foil {
+            background: linear-gradient(
+                45deg,
+                #FFD700 0%,
+                #FFA500 25%,
+                #FFD700 50%,
+                #FFA500 75%,
+                #FFD700 100%
+            );
+            background-size: 200% 200%;
+            animation: foil-shimmer 3s ease-in-out infinite;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        @keyframes foil-shimmer {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .serial-rainbow {
+            background: linear-gradient(
+                90deg,
+                #ff0000, #ff7f00, #ffff00, 
+                #00ff00, #0000ff, #4b0082, #9400d3
+            );
+            background-size: 300% 100%;
+            animation: rainbow-shift 4s ease-in-out infinite;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+        }
+
+        @keyframes rainbow-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .serial-embossed {
+            color: #FFD700;
+            text-shadow: 
+                -1px -1px 1px rgba(255, 255, 255, 0.1),
+                1px 1px 1px rgba(0, 0, 0, 0.5),
+                2px 2px 2px rgba(0, 0, 0, 0.3),
+                0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .sparkle-overlay {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.5) 50%,
+                transparent 70%
+            );
+            transform: rotate(45deg) translateX(-100%);
+            animation: sparkle-sweep 3s infinite;
+        }
+
+        @keyframes sparkle-sweep {
+            0% { transform: rotate(45deg) translateX(-100%); }
+            100% { transform: rotate(45deg) translateX(100%); }
+        }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
@@ -467,7 +541,7 @@
                         await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', score.id));
                     }
                 }
-                addLogMessage(`High score of ${totalScore.toLocaleString()} submitted for ${initials}!`);
+                addLogMessage(`High score of $${totalScore.toLocaleString()} submitted for ${initials}!`);
                 await showGameOverScreen();
             } catch (error) {
                 console.error("Error submitting high score: ", error);
@@ -585,6 +659,117 @@
             });
         }
         
+        function generateCardNumbering(card) {
+            // Only for numbered cards and autographed jersey
+            const eligibleCards = ['numbered_legend', 'numbered_rookie_auto', 'autographed_jersey'];
+            if (!eligibleCards.includes(card.id)) return null;
+            
+            // Define denominations and their weights/multipliers
+            const denominations = [
+                { total: 1, weight: 1, multiplier: 20 },      // 1/1 - Ultra rare
+                { total: 2, weight: 2, multiplier: 15 },      // X/2
+                { total: 10, weight: 5, multiplier: 10 },     // X/10
+                { total: 25, weight: 10, multiplier: 5 },     // X/25
+                { total: 75, weight: 15, multiplier: 3 },     // X/75
+                { total: 150, weight: 20, multiplier: 2 },    // X/150
+                { total: 250, weight: 25, multiplier: 1.5 },  // X/250
+                { total: 500, weight: 22, multiplier: 1.5 }   // X/500
+            ];
+            
+            // Weighted random selection
+            const totalWeight = denominations.reduce((sum, d) => sum + d.weight, 0);
+            let random = Math.random() * totalWeight;
+            
+            for (const denom of denominations) {
+                random -= denom.weight;
+                if (random <= 0) {
+                    const serialNumber = Math.floor(Math.random() * denom.total) + 1;
+                    
+                    // Special multipliers for first and last numbers
+                    let finalMultiplier = denom.multiplier;
+                    if (serialNumber === 1) finalMultiplier *= 1.5; // First print bonus
+                    if (serialNumber === denom.total) finalMultiplier *= 1.25; // Last print bonus
+                    
+                    return {
+                        number: serialNumber,
+                        total: denom.total,
+                        multiplier: finalMultiplier,
+                        display: `${serialNumber}/${denom.total}`
+                    };
+                }
+            }
+        }
+
+        function addNumberingOverlay(container, numbering) {
+            if (!numbering) return;
+            
+            // Create the serial number container
+            const serialContainer = document.createElement('div');
+            serialContainer.className = 'absolute bottom-2 right-2 flex flex-col items-center';
+            serialContainer.style.zIndex = '10';
+            
+            // Background plate
+            const plate = document.createElement('div');
+            plate.className = 'relative px-3 py-1 rounded';
+            
+            // Different styles based on rarity
+            if (numbering.number === 1 && numbering.total === 1) {
+                // 1/1 - Ultimate rare
+                plate.style.background = 'linear-gradient(135deg, #FFD700 0%, #B8860B 50%, #FFD700 100%)';
+                plate.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.5)';
+                plate.className += ' animate-pulse';
+                
+            } else if (numbering.total <= 10) {
+                // Ultra rare
+                plate.style.background = 'linear-gradient(135deg, #C0C0C0 0%, #808080 50%, #C0C0C0 100%)';
+                plate.style.boxShadow = '0 0 15px rgba(192, 192, 192, 0.6)';
+                
+            } else if (numbering.total <= 25) {
+                // Very rare
+                plate.style.background = 'linear-gradient(135deg, #CD7F32 0%, #8B4513 50%, #CD7F32 100%)';
+                plate.style.boxShadow = '0 0 10px rgba(205, 127, 50, 0.5)';
+                
+            } else {
+                // Standard numbered
+                plate.style.background = 'rgba(0, 0, 0, 0.8)';
+                plate.style.border = '1px solid #FFD700';
+            }
+            
+            // Serial number text
+            const serialText = document.createElement('div');
+            serialText.textContent = numbering.display;
+            serialText.style.fontFamily = 'monospace';
+            serialText.style.fontSize = '11px';
+            serialText.style.fontWeight = '900';
+            serialText.style.letterSpacing = '0.5px';
+            
+            // Apply text effects based on rarity
+            if (numbering.number === 1 && numbering.total === 1) {
+                serialText.className = 'serial-rainbow';
+            } else if (numbering.number === 1 || numbering.number === numbering.total) {
+                serialText.className = 'serial-foil';
+            } else if (numbering.total <= 25) {
+                serialText.className = 'serial-embossed';
+            } else {
+                serialText.style.color = '#FFD700';
+            }
+            
+            // Add "SERIAL" label for ultra-rare
+            if (numbering.total <= 10) {
+                const label = document.createElement('div');
+                label.textContent = 'SERIAL';
+                label.style.fontSize = '8px';
+                label.style.color = '#FFD700';
+                label.style.letterSpacing = '1px';
+                label.style.opacity = '0.8';
+                plate.appendChild(label);
+            }
+            
+            plate.appendChild(serialText);
+            serialContainer.appendChild(plate);
+            container.appendChild(serialContainer);
+        }
+        
         function createCardVisual(cabinetItem) {
             const card = cabinetItem.card;
             const visualContainer = document.createElement('div');
@@ -597,13 +782,19 @@
                 'holo_legend', 
                 'numbered_rookie_auto', 
                 'autographed_common', 
-                'common_single'
+                'common_single',
+                'autographed_jersey'
             ];
 
             if (graphicCardTypes.includes(card.id)) {
                 createCardImageLayers(visualContainer, cabinetItem.layers);
                 if (card.basePrice > RARE_CARD_THRESHOLD && card.id !== 'common_single') {
                     visualContainer.classList.add('sparkle');
+                }
+                
+                // Add numbering overlay if present
+                if (cabinetItem.numbering) {
+                    addNumberingOverlay(visualContainer, cabinetItem.numbering);
                 }
             } else {
                 visualContainer.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center text-center';
@@ -684,7 +875,7 @@
             if (!gameState.hasPriceGuide) {
                 const priceGuideBtn = document.createElement('button');
                 priceGuideBtn.className = 'btn btn-secondary';
-                priceGuideBtn.innerHTML = `Buy Price Guide <span class="font-bold ml-2">${PRICE_GUIDE_COST}</span>`;
+                priceGuideBtn.innerHTML = `Buy Price Guide <span class="font-bold ml-2">$${PRICE_GUIDE_COST}</span>`;
                 priceGuideBtn.title = `Reveals if a card's current price is above or below its base value.`;
                 priceGuideBtn.onclick = buyPriceGuide;
                 specialActionsContainerEl.appendChild(priceGuideBtn);
@@ -705,7 +896,7 @@
             const boosterPackBtn = document.createElement('button');
             boosterPackBtn.className = 'btn btn-special';
             const locationBoosterPrice = location.boosterPrice;
-            boosterPackBtn.innerHTML = `Buy Booster Pack <span class="font-bold ml-2">${locationBoosterPrice}</span>`;
+            boosterPackBtn.innerHTML = `Buy Booster Pack <span class="font-bold ml-2">$${locationBoosterPrice}</span>`;
             
             if (location.specialization === 'rookies') {
                 boosterPackBtn.title = 'Get 3-5 random cards with higher chance of rookies!';
@@ -840,10 +1031,10 @@
                     const cardVisual = createCardVisual(cabinetItem);
                     cardWrapper.appendChild(cardVisual);
                     
-                    // Add value display
+                    // Add value display with dollar sign
                     const valueDisplay = document.createElement('div');
                     valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
-                    valueDisplay.textContent = `${cabinetItem.capturedValue || 0}`;
+                    valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
                     cardWrapper.appendChild(valueDisplay);
                     
                     cabinetListEl.appendChild(cardWrapper);
@@ -863,10 +1054,10 @@
                 const cardVisual = createCardVisual(cabinetItem);
                 cardWrapper.appendChild(cardVisual);
                 
-                // Add value display
+                // Add value display with dollar sign
                 const valueDisplay = document.createElement('div');
                 valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
-                valueDisplay.textContent = `${cabinetItem.capturedValue || 0}`;
+                valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
                 cardWrapper.appendChild(valueDisplay);
                 
                 cardWrapper.onclick = () => returnCabinetCardToInventory(index);
@@ -905,7 +1096,7 @@
                 const cardVisual = createCardVisual(cabinetItem);
                 cardWrapper.appendChild(cardVisual);
                 
-                // Add value display
+                // Add value display with dollar sign
                 const valueDisplay = document.createElement('div');
                 valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
                 valueDisplay.textContent = `${cabinetItem.capturedValue || 0}`;
@@ -924,15 +1115,22 @@
         }
         
         function addToDisplayCabinet(cardId, buttonElement, isReplacing = false, forcedLayers = null) {
-            const cardLayers = forcedLayers || (buttonElement.dataset.layers ? JSON.parse(buttonElement.dataset.layers) : null);
+            const cardLayers = forcedLayers || (buttonElement && buttonElement.dataset.layers ? JSON.parse(buttonElement.dataset.layers) : null);
+            const numbering = buttonElement && buttonElement.dataset.numbering ? JSON.parse(buttonElement.dataset.numbering) : null;
             
             // Get current market value when adding to cabinet
-            const currentMarketPrice = marketState[gameState.currentLocationId]?.[cardId]?.price || getCardDetails(cardId).basePrice;
+            let currentMarketPrice = marketState[gameState.currentLocationId]?.[cardId]?.price || getCardDetails(cardId).basePrice;
+            
+            // Apply numbering multiplier if applicable
+            if (numbering) {
+                currentMarketPrice = Math.round(currentMarketPrice * numbering.multiplier);
+            }
             
             const newCabinetItem = {
                 card: getCardDetails(cardId),
                 layers: cardLayers,
-                capturedValue: currentMarketPrice // Store the value when added
+                numbering: numbering,
+                capturedValue: currentMarketPrice
             };
 
             if (!isReplacing) {
@@ -949,7 +1147,8 @@
             
             if (gameState.displayCabinet.length < DISPLAY_CABINET_LIMIT) {
                 gameState.displayCabinet.push(newCabinetItem);
-                addLogMessage(`Added a ${newCabinetItem.card.name} to the Display Cabinet! (Value: ${currentMarketPrice})`);
+                const serialMsg = numbering ? ` (Serial: ${numbering.display})` : '';
+                addLogMessage(`Added a ${newCabinetItem.card.name} to the Display Cabinet! (Value: ${currentMarketPrice}${serialMsg})`);
                 if(buttonElement) {
                     buttonElement.textContent = 'Added!';
                     buttonElement.disabled = true;
@@ -1044,28 +1243,35 @@
             function revealNext() {
                 if (revealIndex < cards.length) {
                     const card = cards[revealIndex];
+                    
+                    // Generate numbering for eligible cards
+                    const numbering = generateCardNumbering(card);
+                    
                     let inventoryItem = gameState.inventory.find(item => item.cardId === card.id);
                     if (inventoryItem) inventoryItem.quantity++;
                     else gameState.inventory.push({ cardId: card.id, quantity: 1, totalCost: 0 });
 
                     const wrapperDiv = document.createElement('div');
-                    wrapperDiv.className = 'flex flex-col items-center opacity-0 animate-fade-in w-24';
+                    wrapperDiv.className = 'flex flex-col items-center opacity-0 animate-fade-in w-32';
                     
                     const cabinetButton = document.createElement('button');
                     cabinetButton.className = 'btn btn-secondary btn-sm text-xs mt-2 w-full';
                     cabinetButton.textContent = 'To Cabinet';
                     cabinetButton.onclick = () => addToDisplayCabinet(card.id, cabinetButton);
                     
-                    const graphicCardTypes = ['favorite_player', 'numbered_legend', 'prized_rookie_card', 'holo_legend', 'numbered_rookie_auto', 'autographed_common', 'common_single'];
-                    const tempCabinetItem = { card: card, layers: null };
+                    const graphicCardTypes = ['favorite_player', 'numbered_legend', 'prized_rookie_card', 'holo_legend', 'numbered_rookie_auto', 'autographed_common', 'common_single', 'autographed_jersey'];
+                    const tempCabinetItem = { card: card, layers: null, numbering: numbering };
 
                     if (graphicCardTypes.includes(card.id)) {
                         tempCabinetItem.layers = generateLayerIndices();
                         cabinetButton.dataset.layers = JSON.stringify(tempCabinetItem.layers);
                     }
                     
-                    const cardVisual = createCardVisual(tempCabinetItem);
+                    if (numbering) {
+                        cabinetButton.dataset.numbering = JSON.stringify(numbering);
+                    }
                     
+                    const cardVisual = createCardVisual(tempCabinetItem);
                     wrapperDiv.appendChild(cardVisual);
 
                     // Add card name
@@ -1073,9 +1279,30 @@
                     cardName.className = 'text-xs text-gray-300 mt-1 mb-1 text-center font-medium';
                     cardName.textContent = card.name;
                     wrapperDiv.appendChild(cardName);
-
+                    
+                    // Add current price display
+                    const currentPrice = marketState[gameState.currentLocationId]?.[card.id]?.price || card.basePrice;
+                    const priceDisplay = document.createElement('div');
+                    priceDisplay.className = 'text-xs text-green-400 font-semibold mb-1';
+                    
+                    if (numbering) {
+                        const adjustedPrice = Math.round(currentPrice * numbering.multiplier);
+                        priceDisplay.innerHTML = `${currentPrice} → <span class="text-yellow-400">${adjustedPrice}</span>`;
+                        
+                        // Add serial info
+                        const serialInfo = document.createElement('div');
+                        serialInfo.className = 'text-xs text-amber-400 font-bold';
+                        serialInfo.textContent = `Serial: ${numbering.display}`;
+                        if (numbering.multiplier > 5) {
+                            serialInfo.className += ' animate-pulse';
+                        }
+                        wrapperDiv.appendChild(serialInfo);
+                    } else {
+                        priceDisplay.textContent = `${currentPrice}`;
+                    }
+                    wrapperDiv.appendChild(priceDisplay);
+                    
                     wrapperDiv.appendChild(cabinetButton);
-
                     packSummaryAreaEl.appendChild(wrapperDiv);
 
                     revealIndex++;
@@ -1158,7 +1385,7 @@
             if (inventoryItem.quantity <= 0) {
                 gameState.inventory = gameState.inventory.filter(item => item.cardId !== cardId);
             }
-            addLogMessage(`Sold ${quantity} ${card.name} for $${totalSaleValue.toLocaleString()}.`);
+            addLogMessage(`Sold ${quantity} ${card.name} for ${totalSaleValue.toLocaleString()}.`);
             renderAll();
         }
 
@@ -1485,28 +1712,55 @@
         async function showGameOverScreen() {
             const gameOverCabinetList = document.getElementById('game-over-cabinet-list');
             gameOverCabinetList.innerHTML = '';
+            
+            // Calculate cabinet value
+            let cabinetValue = 0;
+            
             if (gameState.displayCabinet.length > 0) {
                 gameState.displayCabinet.forEach(cabinetItem => {
+                    const cardWrapper = document.createElement('div');
+                    cardWrapper.className = 'flex flex-col items-center';
+                    
                     const cardVisual = createCardVisual(cabinetItem);
-                    gameOverCabinetList.appendChild(cardVisual);
+                    cardWrapper.appendChild(cardVisual);
+                    
+                    // Add value display with dollar sign
+                    const valueDisplay = document.createElement('div');
+                    valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+                    valueDisplay.textContent = `${cabinetItem.capturedValue || 0}`;
+                    cardWrapper.appendChild(valueDisplay);
+                    
+                    gameOverCabinetList.appendChild(cardWrapper);
+                    cabinetValue += (cabinetItem.capturedValue || 0);
                 });
                 document.getElementById('game-over-cabinet-section').style.display = 'block';
             } else {
                 document.getElementById('game-over-cabinet-section').style.display = 'none';
             }
 
+            // Add cabinet value to final score
+            const totalScore = gameState.cash + cabinetValue;
+            
             const topScores = leaderboardScores.slice(0, LEADERBOARD_SIZE);
-            document.getElementById('final-score').textContent = `${gameState.cash.toLocaleString()}`;
+            document.getElementById('final-score').innerHTML = `${gameState.cash.toLocaleString()} <span class="text-lg">(+ ${cabinetValue} cabinet)</span> = <span class="text-green-400">${totalScore.toLocaleString()}</span>`;
             renderLeaderboard(topScores, document.getElementById('game-over-leaderboard-list'));
             gameOverModalEl.classList.remove('hidden');
         }
 
         async function checkGameOver() {
             if (gameState.daysRemaining <= 0) {
-                addLogMessage(`Game Over! Final cash: ${gameState.cash.toLocaleString()}.`);
+                // Calculate total score including cabinet value
+                let cabinetValue = 0;
+                gameState.displayCabinet.forEach(item => {
+                    cabinetValue += (item.capturedValue || 0);
+                });
+                const totalScore = gameState.cash + cabinetValue;
+                
+                addLogMessage(`Game Over! Final cash: ${gameState.cash.toLocaleString()}, Cabinet value: ${cabinetValue}, Total: ${totalScore.toLocaleString()}.`);
+                
                 const lowestHighScore = leaderboardScores.length > 0 ? leaderboardScores[Math.min(leaderboardScores.length - 1, LEADERBOARD_SIZE - 1)].score : 0;
-                if (gameState.cash > lowestHighScore || leaderboardScores.length < LEADERBOARD_SIZE) {
-                    document.getElementById('high-score-final-score').textContent = `${gameState.cash.toLocaleString()}`;
+                if (totalScore > lowestHighScore || leaderboardScores.length < LEADERBOARD_SIZE) {
+                    document.getElementById('high-score-final-score').innerHTML = `${gameState.cash.toLocaleString()} + ${cabinetValue} cabinet = <span class="text-green-400">${totalScore.toLocaleString()}</span>`;
                     highScoreModalEl.classList.remove('hidden');
                 } else {
                     await showGameOverScreen();
@@ -1527,6 +1781,7 @@
                     const cardVisual = createCardVisual(cabinetItem);
                     cardWrapper.appendChild(cardVisual);
                     
+                    // Add value display with dollar sign
                     if (cabinetItem.capturedValue) {
                         const valueDisplay = document.createElement('div');
                         valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
