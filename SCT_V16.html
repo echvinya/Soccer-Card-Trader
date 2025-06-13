@@ -187,17 +187,51 @@
        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div id="market-section" class="card lg:col-span-2">
                 <div class="flex justify-between items-start mb-3"><h2 class="text-2xl font-semibold" id="market-location-name">-</h2><div id="special-actions-container" class="flex flex-col sm:flex-row gap-2 items-center"></div></div>
-                <div class="overflow-x-auto"><table class="w-full min-w-max"><thead class="bg-gray-700/50"><tr><th class="table-cell">Card Type</th><th class="table-cell">Price</th><th class="table-cell">Supply</th><th class="table-cell">Quantity</th><th class="table-cell">Actions</th></tr></thead><tbody id="market-items"></tbody></table></div>
+                <div class="overflow-x-auto"><table class="w-full min-w-max">
+                    <thead class="bg-gray-700/50">
+                        <tr>
+                            <th class="table-cell">Card Type</th>
+                            <th class="table-cell">Price</th>
+                            <th class="table-cell">Supply</th>
+                            <th class="table-cell">Quantity</th>
+                            <th class="table-cell">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="market-items"></tbody>
+                </table></div>
             </div>
 
             <div class="space-y-6">
-                <div id="travel-section" class="card"><h2 class="text-2xl font-semibold mb-3">Travel To:</h2><div id="travel-options" class="space-y-2"></div></div>
-                <div id="log-section" class="card"><h2 class="text-2xl font-semibold mb-3">Game Log</h2><div id="log-messages" class="h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-md p-2 text-sm"></div></div>
+                <div id="travel-section" class="card">
+                    <h2 class="text-2xl font-semibold mb-3">Travel To:</h2>
+                    <div id="travel-options" class="space-y-2"></div>
+                </div>
+                <div id="log-section" class="card">
+                    <h2 class="text-2xl font-semibold mb-3">Game Log</h2>
+                    <div id="log-messages" class="h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-md p-2 text-sm"></div>
+                </div>
             </div>
         </div>
 
         <div class="mt-6">
-            <div id="inventory-section" class="card"><h2 class="text-2xl font-semibold mb-3">Your Portfolio & Selling</h2><div class="overflow-x-auto"><table class="w-full min-w-max"><thead class="bg-gray-700/50"><tr><th class="table-cell">Card Type</th><th class="table-cell">Held</th><th class="table-cell">Avg. Buy Price</th><th class="table-cell">Current Sell Price</th><th class="table-cell">Quantity</th><th class="table-cell">Actions</th></tr></thead><tbody id="inventory-items"></tbody></table></div></div>
+            <div id="inventory-section" class="card">
+                <h2 class="text-2xl font-semibold mb-3">Your Portfolio & Selling</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-max">
+                        <thead class="bg-gray-700/50">
+                            <tr>
+                                <th class="table-cell">Card Type</th>
+                                <th class="table-cell">Held</th>
+                                <th class="table-cell">Avg. Buy Price</th>
+                                <th class="table-cell">Current Sell Price</th>
+                                <th class="table-cell">Quantity</th>
+                                <th class="table-cell">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-items"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
         
         <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -279,6 +313,15 @@
             <button id="close-view-cabinet-btn" class="btn btn-primary">Close</button>
         </div>
     </div>
+    
+    <div id="announcement-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="announcement-title" class="text-3xl font-bold mb-4 text-amber-400">Heads Up!</h2>
+            <p id="announcement-message" class="text-lg mb-6">A market event is happening elsewhere...</p>
+            <div id="announcement-choices" class="event-choices flex gap-4 justify-center mt-4">
+                 </div>
+        </div>
+    </div>
 
 
     <script type="module">
@@ -315,20 +358,14 @@
         const IN_GAME_LEADERBOARD_SIZE = 3; 
         const DISPLAY_CABINET_LIMIT = 3;
         const TRAVEL_EVENT_CHANCE = 0.3; // 30% chance of an event occurring
-        const EVENT_DURATIONS = {
-            CARD_SHOW: 1, // lasts 1 day
-            MARKET_FLOOD: 1, // lasts 1 day
-            PLAYER_SIGHTING: 0, // instant effect
-            FOUND_CARD: 0 // instant effect
-        };
-
+        
         const COMMON_CARD_ASSETS = {
             base_url: 'Images/Common/',
             layers: [
-                { folder: 'Background', count: 5 },
-                { folder: 'Head', count: 5 },
-                { folder: 'Shirt', count: 5 },
-                { folder: 'hair', count: 5 },
+                { folder: 'Background', count: 44 },
+                { folder: 'Head', count: 17 },
+                { folder: 'Shirt', count: 13 },
+                { folder: 'hair', count: 21 },
                 { folder: 'Frame', count: 5 }
             ]
         };
@@ -450,6 +487,7 @@
         const viewCabinetModalEl = document.getElementById('view-cabinet-modal');
         const viewCabinetListEl = document.getElementById('view-cabinet-list');
         const closeViewCabinetBtn = document.getElementById('close-view-cabinet-btn');
+        const announcementModalEl = document.getElementById('announcement-modal');
 
 
         const getLeaderboardCollection = () => collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
@@ -503,7 +541,7 @@
                         await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', score.id));
                     }
                 }
-                addLogMessage(`High score of ${totalScore.toLocaleString()} submitted for ${initials}!`);
+                addLogMessage(`High score of $${totalScore.toLocaleString()} submitted for ${initials}!`);
                 await showGameOverScreen();
             } catch (error) {
                 console.error("Error submitting high score: ", error);
@@ -528,6 +566,7 @@
                 showHelpText: true,
                 displayCabinet: [],
                 activeEvents: [],
+                pendingEvent: null,
                 storeDiscount: 0,
                 tempFoundCard: null
             };
@@ -584,7 +623,11 @@
             const location = getCurrentLocation();
             const locationMarket = marketState[location.id] || {};
             locationMarket.boosterAvailable = (Math.random() < BOOSTER_CHANCE_PER_DAY);
-            TRADABLE_CARDS.forEach(card => { locationMarket[card.id] = generateMarketDataForCard(card, location); });
+            TRADABLE_CARDS.forEach(card => { 
+                if(!locationMarket[card.id] || !locationMarket[card.id].eventModified) {
+                   locationMarket[card.id] = generateMarketDataForCard(card, location); 
+                }
+            });
             marketState[location.id] = locationMarket;
         }
 
@@ -593,19 +636,20 @@
         }
         function toggleHelpText(show) { gameState.showHelpText = show; renderAll(); }
 
-        function createCardImageLayers(targetDiv, layerIndices = []) {
+        function generateLayerIndices() {
             const indices = [];
-            if (layerIndices.length === 0) {
-                COMMON_CARD_ASSETS.layers.forEach(layer => {
-                    indices.push(Math.floor(Math.random() * layer.count) + 1);
-                });
-            } else {
-                indices.push(...layerIndices);
-            }
+            COMMON_CARD_ASSETS.layers.forEach(layer => {
+                indices.push(Math.floor(Math.random() * layer.count) + 1);
+            });
+            return indices;
+        }
+
+        function createCardImageLayers(targetDiv, layerIndices) {
+            if (!layerIndices || layerIndices.length === 0) return; 
 
             COMMON_CARD_ASSETS.layers.forEach((layer, i) => {
                 const img = document.createElement('img');
-                img.src = `${COMMON_CARD_ASSETS.base_url}${layer.folder}/${indices[i]}.png`;
+                img.src = `${COMMON_CARD_ASSETS.base_url}${layer.folder}/${layerIndices[i]}.png`;
                 img.style.position = 'absolute';
                 img.style.left = '0';
                 img.style.top = '0';
@@ -613,7 +657,117 @@
                 img.style.height = '100%';
                 targetDiv.appendChild(img);
             });
-            return indices;
+        }
+        
+        function generateCardNumbering(card) {
+            // Only for numbered cards and autographed jersey
+            const eligibleCards = ['numbered_legend', 'numbered_rookie_auto', 'autographed_jersey'];
+            if (!eligibleCards.includes(card.id)) return null;
+            
+            // Define denominations and their weights/multipliers
+            const denominations = [
+                { total: 1, weight: 1, multiplier: 20 },      // 1/1 - Ultra rare
+                { total: 2, weight: 2, multiplier: 15 },      // X/2
+                { total: 10, weight: 5, multiplier: 10 },     // X/10
+                { total: 25, weight: 10, multiplier: 5 },     // X/25
+                { total: 75, weight: 15, multiplier: 3 },     // X/75
+                { total: 150, weight: 20, multiplier: 2 },    // X/150
+                { total: 250, weight: 25, multiplier: 1.5 },  // X/250
+                { total: 500, weight: 22, multiplier: 1.5 }   // X/500
+            ];
+            
+            // Weighted random selection
+            const totalWeight = denominations.reduce((sum, d) => sum + d.weight, 0);
+            let random = Math.random() * totalWeight;
+            
+            for (const denom of denominations) {
+                random -= denom.weight;
+                if (random <= 0) {
+                    const serialNumber = Math.floor(Math.random() * denom.total) + 1;
+                    
+                    // Special multipliers for first and last numbers
+                    let finalMultiplier = denom.multiplier;
+                    if (serialNumber === 1) finalMultiplier *= 1.5; // First print bonus
+                    if (serialNumber === denom.total) finalMultiplier *= 1.25; // Last print bonus
+                    
+                    return {
+                        number: serialNumber,
+                        total: denom.total,
+                        multiplier: finalMultiplier,
+                        display: `${serialNumber}/${denom.total}`
+                    };
+                }
+            }
+        }
+
+        function addNumberingOverlay(container, numbering) {
+            if (!numbering) return;
+            
+            // Create the serial number container
+            const serialContainer = document.createElement('div');
+            serialContainer.className = 'absolute bottom-2 right-2 flex flex-col items-center';
+            serialContainer.style.zIndex = '10';
+            
+            // Background plate
+            const plate = document.createElement('div');
+            plate.className = 'relative px-3 py-1 rounded';
+            
+            // Different styles based on rarity
+            if (numbering.number === 1 && numbering.total === 1) {
+                // 1/1 - Ultimate rare
+                plate.style.background = 'linear-gradient(135deg, #FFD700 0%, #B8860B 50%, #FFD700 100%)';
+                plate.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.5)';
+                plate.className += ' animate-pulse';
+                
+            } else if (numbering.total <= 10) {
+                // Ultra rare
+                plate.style.background = 'linear-gradient(135deg, #C0C0C0 0%, #808080 50%, #C0C0C0 100%)';
+                plate.style.boxShadow = '0 0 15px rgba(192, 192, 192, 0.6)';
+                
+            } else if (numbering.total <= 25) {
+                // Very rare
+                plate.style.background = 'linear-gradient(135deg, #CD7F32 0%, #8B4513 50%, #CD7F32 100%)';
+                plate.style.boxShadow = '0 0 10px rgba(205, 127, 50, 0.5)';
+                
+            } else {
+                // Standard numbered
+                plate.style.background = 'rgba(0, 0, 0, 0.8)';
+                plate.style.border = '1px solid #FFD700';
+            }
+            
+            // Serial number text
+            const serialText = document.createElement('div');
+            serialText.textContent = numbering.display;
+            serialText.style.fontFamily = 'monospace';
+            serialText.style.fontSize = '11px';
+            serialText.style.fontWeight = '900';
+            serialText.style.letterSpacing = '0.5px';
+            
+            // Apply text effects based on rarity
+            if (numbering.number === 1 && numbering.total === 1) {
+                serialText.className = 'serial-rainbow';
+            } else if (numbering.number === 1 || numbering.number === numbering.total) {
+                serialText.className = 'serial-foil';
+            } else if (numbering.total <= 25) {
+                serialText.className = 'serial-embossed';
+            } else {
+                serialText.style.color = '#FFD700';
+            }
+            
+            // Add "SERIAL" label for ultra-rare
+            if (numbering.total <= 10) {
+                const label = document.createElement('div');
+                label.textContent = 'SERIAL';
+                label.style.fontSize = '8px';
+                label.style.color = '#FFD700';
+                label.style.letterSpacing = '1px';
+                label.style.opacity = '0.8';
+                plate.appendChild(label);
+            }
+            
+            plate.appendChild(serialText);
+            serialContainer.appendChild(plate);
+            container.appendChild(serialContainer);
         }
         
         function createCardVisual(cabinetItem) {
@@ -621,15 +775,35 @@
             const visualContainer = document.createElement('div');
             visualContainer.className = 'relative aspect-[3/4] w-full';
 
-            if (card.id === 'common_single') {
+            const graphicCardTypes = [
+                'favorite_player', 
+                'numbered_legend', 
+                'prized_rookie_card', 
+                'holo_legend', 
+                'numbered_rookie_auto', 
+                'autographed_common', 
+                'common_single',
+                'autographed_jersey'
+            ];
+
+            if (graphicCardTypes.includes(card.id)) {
                 createCardImageLayers(visualContainer, cabinetItem.layers);
+                if (card.basePrice > RARE_CARD_THRESHOLD && card.id !== 'common_single') {
+                    visualContainer.classList.add('sparkle');
+                }
+                
+                // Add numbering overlay if present
+                if (cabinetItem.numbering) {
+                    addNumberingOverlay(visualContainer, cabinetItem.numbering);
+                }
             } else {
                 visualContainer.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center text-center';
                 visualContainer.textContent = card.name;
-                if (card.basePrice > RARE_CARD_THRESHOLD) visualContainer.classList.add('sparkle', 'text-black');
-                else if (card.name.includes('Autographed')) visualContainer.classList.add('scribble-bg', 'bg-gray-700', 'text-gray-100');
-                else if (card.id === 'holo_legend') visualContainer.classList.add('holo', 'text-gray-100');
-                else visualContainer.style.backgroundColor = '#374151';
+                if (card.basePrice > RARE_CARD_THRESHOLD) {
+                    visualContainer.classList.add('sparkle', 'text-black');
+                } else {
+                    visualContainer.style.backgroundColor = '#374151';
+                }
             }
             return visualContainer;
         }
@@ -701,7 +875,7 @@
             if (!gameState.hasPriceGuide) {
                 const priceGuideBtn = document.createElement('button');
                 priceGuideBtn.className = 'btn btn-secondary';
-                priceGuideBtn.innerHTML = `Buy Price Guide <span class="font-bold ml-2">${PRICE_GUIDE_COST}</span>`;
+                priceGuideBtn.innerHTML = `Buy Price Guide <span class="font-bold ml-2">$${PRICE_GUIDE_COST}</span>`;
                 priceGuideBtn.title = `Reveals if a card's current price is above or below its base value.`;
                 priceGuideBtn.onclick = buyPriceGuide;
                 specialActionsContainerEl.appendChild(priceGuideBtn);
@@ -722,7 +896,7 @@
             const boosterPackBtn = document.createElement('button');
             boosterPackBtn.className = 'btn btn-special';
             const locationBoosterPrice = location.boosterPrice;
-            boosterPackBtn.innerHTML = `Buy Booster Pack <span class="font-bold ml-2">${locationBoosterPrice}</span>`;
+            boosterPackBtn.innerHTML = `Buy Booster Pack <span class="font-bold ml-2">$${locationBoosterPrice}</span>`;
             
             if (location.specialization === 'rookies') {
                 boosterPackBtn.title = 'Get 3-5 random cards with higher chance of rookies!';
@@ -857,10 +1031,10 @@
                     const cardVisual = createCardVisual(cabinetItem);
                     cardWrapper.appendChild(cardVisual);
                     
-                    // Add value display
+                    // Add value display with dollar sign
                     const valueDisplay = document.createElement('div');
                     valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
-                    valueDisplay.textContent = `${cabinetItem.capturedValue || 0}`;
+                    valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
                     cardWrapper.appendChild(valueDisplay);
                     
                     cabinetListEl.appendChild(cardWrapper);
@@ -880,10 +1054,10 @@
                 const cardVisual = createCardVisual(cabinetItem);
                 cardWrapper.appendChild(cardVisual);
                 
-                // Add value display
+                // Add value display with dollar sign
                 const valueDisplay = document.createElement('div');
                 valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
-                valueDisplay.textContent = `${cabinetItem.capturedValue || 0}`;
+                valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
                 cardWrapper.appendChild(valueDisplay);
                 
                 cardWrapper.onclick = () => returnCabinetCardToInventory(index);
@@ -922,7 +1096,7 @@
                 const cardVisual = createCardVisual(cabinetItem);
                 cardWrapper.appendChild(cardVisual);
                 
-                // Add value display
+                // Add value display with dollar sign
                 const valueDisplay = document.createElement('div');
                 valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
                 valueDisplay.textContent = `${cabinetItem.capturedValue || 0}`;
@@ -941,15 +1115,22 @@
         }
         
         function addToDisplayCabinet(cardId, buttonElement, isReplacing = false, forcedLayers = null) {
-            const cardLayers = forcedLayers || (buttonElement.dataset.layers ? JSON.parse(buttonElement.dataset.layers) : null);
+            const cardLayers = forcedLayers || (buttonElement && buttonElement.dataset.layers ? JSON.parse(buttonElement.dataset.layers) : null);
+            const numbering = buttonElement && buttonElement.dataset.numbering ? JSON.parse(buttonElement.dataset.numbering) : null;
             
             // Get current market value when adding to cabinet
-            const currentMarketPrice = marketState[gameState.currentLocationId]?.[cardId]?.price || getCardDetails(cardId).basePrice;
+            let currentMarketPrice = marketState[gameState.currentLocationId]?.[cardId]?.price || getCardDetails(cardId).basePrice;
+            
+            // Apply numbering multiplier if applicable
+            if (numbering) {
+                currentMarketPrice = Math.round(currentMarketPrice * numbering.multiplier);
+            }
             
             const newCabinetItem = {
                 card: getCardDetails(cardId),
                 layers: cardLayers,
-                capturedValue: currentMarketPrice // Store the value when added
+                numbering: numbering,
+                capturedValue: currentMarketPrice
             };
 
             if (!isReplacing) {
@@ -966,7 +1147,8 @@
             
             if (gameState.displayCabinet.length < DISPLAY_CABINET_LIMIT) {
                 gameState.displayCabinet.push(newCabinetItem);
-                addLogMessage(`Added a ${newCabinetItem.card.name} to the Display Cabinet! (Value: ${currentMarketPrice})`);
+                const serialMsg = numbering ? ` (Serial: ${numbering.display})` : '';
+                addLogMessage(`Added a ${newCabinetItem.card.name} to the Display Cabinet! (Value: ${currentMarketPrice}${serialMsg})`);
                 if(buttonElement) {
                     buttonElement.textContent = 'Added!';
                     buttonElement.disabled = true;
@@ -1061,27 +1243,65 @@
             function revealNext() {
                 if (revealIndex < cards.length) {
                     const card = cards[revealIndex];
+                    
+                    // Generate numbering for eligible cards
+                    const numbering = generateCardNumbering(card);
+                    
                     let inventoryItem = gameState.inventory.find(item => item.cardId === card.id);
                     if (inventoryItem) inventoryItem.quantity++;
                     else gameState.inventory.push({ cardId: card.id, quantity: 1, totalCost: 0 });
 
                     const wrapperDiv = document.createElement('div');
-                    wrapperDiv.className = 'flex flex-col items-center opacity-0 animate-fade-in w-24';
+                    wrapperDiv.className = 'flex flex-col items-center opacity-0 animate-fade-in w-32';
                     
                     const cabinetButton = document.createElement('button');
                     cabinetButton.className = 'btn btn-secondary btn-sm text-xs mt-2 w-full';
                     cabinetButton.textContent = 'To Cabinet';
                     cabinetButton.onclick = () => addToDisplayCabinet(card.id, cabinetButton);
                     
-                    const tempCabinetItem = { card: card, layers: null };
-                    if (card.id === 'common_single') {
-                        tempCabinetItem.layers = createCardImageLayers(document.createElement('div'));
+                    const graphicCardTypes = ['favorite_player', 'numbered_legend', 'prized_rookie_card', 'holo_legend', 'numbered_rookie_auto', 'autographed_common', 'common_single', 'autographed_jersey'];
+                    const tempCabinetItem = { card: card, layers: null, numbering: numbering };
+
+                    if (graphicCardTypes.includes(card.id)) {
+                        tempCabinetItem.layers = generateLayerIndices();
                         cabinetButton.dataset.layers = JSON.stringify(tempCabinetItem.layers);
                     }
                     
-                    const cardVisual = createCardVisual(tempCabinetItem);
+                    if (numbering) {
+                        cabinetButton.dataset.numbering = JSON.stringify(numbering);
+                    }
                     
+                    const cardVisual = createCardVisual(tempCabinetItem);
                     wrapperDiv.appendChild(cardVisual);
+
+                    // Add card name
+                    const cardName = document.createElement('div');
+                    cardName.className = 'text-xs text-gray-300 mt-1 mb-1 text-center font-medium';
+                    cardName.textContent = card.name;
+                    wrapperDiv.appendChild(cardName);
+                    
+                    // Add current price display
+                    const currentPrice = marketState[gameState.currentLocationId]?.[card.id]?.price || card.basePrice;
+                    const priceDisplay = document.createElement('div');
+                    priceDisplay.className = 'text-xs text-green-400 font-semibold mb-1';
+                    
+                    if (numbering) {
+                        const adjustedPrice = Math.round(currentPrice * numbering.multiplier);
+                        priceDisplay.innerHTML = `${currentPrice} → <span class="text-yellow-400">${adjustedPrice}</span>`;
+                        
+                        // Add serial info
+                        const serialInfo = document.createElement('div');
+                        serialInfo.className = 'text-xs text-amber-400 font-bold';
+                        serialInfo.textContent = `Serial: ${numbering.display}`;
+                        if (numbering.multiplier > 5) {
+                            serialInfo.className += ' animate-pulse';
+                        }
+                        wrapperDiv.appendChild(serialInfo);
+                    } else {
+                        priceDisplay.textContent = `${currentPrice}`;
+                    }
+                    wrapperDiv.appendChild(priceDisplay);
+                    
                     wrapperDiv.appendChild(cabinetButton);
                     packSummaryAreaEl.appendChild(wrapperDiv);
 
@@ -1165,7 +1385,7 @@
             if (inventoryItem.quantity <= 0) {
                 gameState.inventory = gameState.inventory.filter(item => item.cardId !== cardId);
             }
-            addLogMessage(`Sold ${quantity} ${card.name} for $${totalSaleValue.toLocaleString()}.`);
+            addLogMessage(`Sold ${quantity} ${card.name} for ${totalSaleValue.toLocaleString()}.`);
             renderAll();
         }
 
@@ -1205,35 +1425,38 @@
             addLogMessage(`Traded 25 Common Singles for a ${receivedCard.name}!`);
             renderAll();
         }
-
-        // Updated travel events to affect destination
+        
         function checkForTravelEvent() {
-            if (Math.random() > TRAVEL_EVENT_CHANCE) return null;
+            if (Math.random() > TRAVEL_EVENT_CHANCE || gameState.pendingEvent) return;
+
+            const localEvents = [{ type: 'player_sighting', weight: 30 }, { type: 'found_card', weight: 30 }];
+            const remoteEvents = [{ type: 'card_show', weight: 20 }, { type: 'market_flood', weight: 20 }];
+            const allEvents = [...localEvents, ...remoteEvents];
             
-            const events = [
-                { type: 'card_show', weight: 25 },
-                { type: 'market_flood', weight: 25 },
-                { type: 'player_sighting', weight: 25 },
-                { type: 'found_card', weight: 25 }
-            ];
-            
-            const totalWeight = events.reduce((sum, event) => sum + event.weight, 0);
+            const totalWeight = allEvents.reduce((sum, event) => sum + event.weight, 0);
             let random = Math.random() * totalWeight;
             
-            for (const event of events) {
+            for (const event of allEvents) {
                 random -= event.weight;
                 if (random <= 0) {
-                    return executeEvent(event.type);
+                    if (remoteEvents.find(e => e.type === event.type)) {
+                        const otherLocations = LOCATIONS.filter(l => l.id !== gameState.currentLocationId);
+                        const eventLocation = otherLocations[Math.floor(Math.random() * otherLocations.length)];
+                        executeEvent(event.type, eventLocation.id, true);
+                    } else {
+                        executeEvent(event.type, gameState.currentLocationId, false);
+                    }
+                    return; 
                 }
             }
         }
 
-        function executeEvent(eventType) {
+        function executeEvent(eventType, locationId, isRemote) {
             switch (eventType) {
                 case 'card_show':
-                    return executeCardShow();
+                    return executeCardShow(locationId, isRemote);
                 case 'market_flood':
-                    return executeMarketFlood();
+                    return executeMarketFlood(locationId, isRemote);
                 case 'player_sighting':
                     return executePlayerSighting();
                 case 'found_card':
@@ -1241,135 +1464,106 @@
             }
         }
 
-        function executeCardShow() {
-            // Select 3-5 random cards to boost
+        function executeCardShow(locationId, isRemote) {
+            const targetLocation = LOCATIONS.find(loc => loc.id === locationId);
             const numCards = Math.floor(Math.random() * 3) + 3;
             const selectedCards = [];
-            const availableCards = TRADABLE_CARDS.filter(c => c.basePrice >= 50); // Only boost valuable cards
+            const availableCards = TRADABLE_CARDS.filter(c => c.basePrice >= 50);
             
             for (let i = 0; i < numCards && i < availableCards.length; i++) {
                 const randomIndex = Math.floor(Math.random() * availableCards.length);
                 const card = availableCards.splice(randomIndex, 1)[0];
-                const boostPercent = Math.random() * 20 + 10; // 10-30% boost
-                selectedCards.push({ cardId: card.id, boost: boostPercent });
+                selectedCards.push({ cardId: card.id });
             }
             
-            // Apply boosts to current market (at destination)
-            const locationMarket = marketState[gameState.currentLocationId];
-            selectedCards.forEach(({ cardId, boost }) => {
-                if (locationMarket[cardId]) {
-                    locationMarket[cardId].price = Math.round(locationMarket[cardId].price * (1 + boost / 100));
-                    locationMarket[cardId].eventModified = true;
-                }
-            });
+            const eventData = { type: 'card_show', location: locationId, affectedCards: selectedCards, message: `Word is a Card Show is happening over at ${targetLocation.name}, causing some prices to jump.` };
             
-            // Store event for tracking (no expiration, lasts until travel)
-            gameState.activeEvents.push({
-                type: 'card_show',
-                location: gameState.currentLocationId,
-                affectedCards: selectedCards
-            });
-            
-            const cardNames = selectedCards.map(sc => getCardDetails(sc.cardId).name).join(', ');
-            const locationName = getCurrentLocation().name;
-            return {
-                title: "Card Show in Town!",
-                message: `A traveling card show has arrived at ${locationName}! The following cards have increased in value: ${cardNames}`,
-                type: 'card_show'
-            };
+            if(isRemote) {
+                gameState.pendingEvent = eventData;
+                showAnnouncementModal(eventData);
+            } else {
+                gameState.activeEvents.push(eventData);
+                applyEventEffects(eventData);
+                const cardNames = selectedCards.map(sc => getCardDetails(sc.cardId).name).join(', ');
+                showEventModal({title: "Card Show in Town!", message: `A traveling card show has arrived! The following cards have increased in value: ${cardNames}`});
+            }
         }
 
-        function executeMarketFlood() {
-            // Select one card to crash
-            const availableCards = TRADABLE_CARDS.filter(c => c.basePrice >= 20); // Don't crash cheap cards
+        function executeMarketFlood(locationId, isRemote) {
+            const targetLocation = LOCATIONS.find(loc => loc.id === locationId);
+            const availableCards = TRADABLE_CARDS.filter(c => c.basePrice >= 20);
             const targetCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-            const dropPercent = Math.random() * 30 + 20; // 20-50% drop
             
-            // Apply drop to current market (at destination)
-            const locationMarket = marketState[gameState.currentLocationId];
-            if (locationMarket[targetCard.id]) {
-                locationMarket[targetCard.id].price = Math.round(locationMarket[targetCard.id].price * (1 - dropPercent / 100));
-                locationMarket[targetCard.id].eventModified = true;
+            const eventData = { type: 'market_flood', location: locationId, affectedCard: targetCard.id, message: `You hear a rumor that a huge collection was found near ${targetLocation.name}, flooding the market.` };
+
+            if(isRemote) {
+                gameState.pendingEvent = eventData;
+                showAnnouncementModal(eventData);
+            } else {
+                gameState.activeEvents.push(eventData);
+                applyEventEffects(eventData);
+                showEventModal({title: "Market Flooded!", message: `A large collection of ${targetCard.name} cards was just discovered! Prices have dropped.`});
             }
-            
-            // Store event (no expiration, lasts until travel)
-            gameState.activeEvents.push({
-                type: 'market_flood',
-                location: gameState.currentLocationId,
-                affectedCard: targetCard.id,
-                drop: dropPercent
-            });
-            
-            const locationName = getCurrentLocation().name;
-            return {
-                title: "Market Flooded!",
-                message: `A large collection of ${targetCard.name} cards was just discovered at ${locationName}! Prices have dropped by ${Math.round(dropPercent)}%.`,
-                type: 'market_flood'
-            };
         }
+        
+        function applyEventEffects(eventData) {
+            const locationMarket = marketState[eventData.location];
+            if (!locationMarket) return;
+
+            if (eventData.type === 'card_show') {
+                eventData.affectedCards.forEach(({ cardId }) => {
+                    if (locationMarket[cardId]) {
+                        const boostPercent = Math.random() * 20 + 10;
+                        locationMarket[cardId].price = Math.round(locationMarket[cardId].price * (1 + boostPercent / 100));
+                        locationMarket[cardId].eventModified = true;
+                    }
+                });
+            } else if (eventData.type === 'market_flood') {
+                 if (locationMarket[eventData.affectedCard]) {
+                    const dropPercent = Math.random() * 30 + 20;
+                    locationMarket[eventData.affectedCard].price = Math.round(locationMarket[eventData.affectedCard].price * (1 - dropPercent / 100));
+                    locationMarket[eventData.affectedCard].eventModified = true;
+                }
+            }
+        }
+
 
         function executePlayerSighting() {
-            // Check if player has any common singles
             const commonSingles = gameState.inventory.find(item => item.cardId === 'common_single');
-            
             if (!commonSingles || commonSingles.quantity < 1) {
-                // Player has no common singles, give them a small cash bonus instead
                 const bonus = Math.floor(Math.random() * 50) + 25;
                 gameState.cash += bonus;
-                return {
-                    title: "Near Miss!",
-                    message: `You spotted a famous player but had no cards to sign! A fan gave you ${bonus} for pointing them out.`,
-                    type: 'player_sighting_miss'
-                };
+                showEventModal({ title: "Near Miss!", message: `You spotted a famous player but had no cards to sign! A fan gave you ${bonus} for pointing them out.` });
+                return;
             }
             
-            // Convert one common single to autographed
             commonSingles.quantity--;
             if (commonSingles.quantity <= 0) {
                 gameState.inventory = gameState.inventory.filter(item => item.cardId !== 'common_single');
             }
             
-            // Add autographed common
             let autographedItem = gameState.inventory.find(item => item.cardId === 'autographed_common');
             if (autographedItem) {
                 autographedItem.quantity++;
             } else {
                 gameState.inventory.push({ cardId: 'autographed_common', quantity: 1, totalCost: 0 });
             }
-            
-            return {
-                title: "Player Sighting!",
-                message: "You spotted a famous player at a café! They signed one of your common cards, transforming it into an Autographed Common Card!",
-                type: 'player_sighting'
-            };
+
+            showEventModal({ title: "Player Sighting!", message: "You spotted a famous player at a café! They signed one of your common cards, transforming it into an Autographed Common Card!" });
+            renderAll();
         }
 
         function executeFoundCard() {
-            // Random card with weighted probability
             const lootTable = [];
             TRADABLE_CARDS.forEach(card => {
-                let weight = 1;
-                if (card.basePrice < 50) weight = 10;
-                else if (card.basePrice < 100) weight = 5;
-                else if (card.basePrice < 200) weight = 2;
-                
-                for (let i = 0; i < weight; i++) {
-                    lootTable.push(card);
-                }
+                let weight = 1; if (card.basePrice < 50) weight = 10; else if (card.basePrice < 100) weight = 5; else if (card.basePrice < 200) weight = 2;
+                for (let i = 0; i < weight; i++) lootTable.push(card);
             });
             
             const foundCard = lootTable[Math.floor(Math.random() * lootTable.length)];
-            
-            // Store the found card temporarily
             gameState.tempFoundCard = foundCard;
             
-            return {
-                title: "Lucky Find!",
-                message: `You found a ${foundCard.name} on the ground! You can keep it or return it to the store for a potential discount.`,
-                type: 'found_card',
-                showChoices: true,
-                card: foundCard
-            };
+            showEventModal({ title: "Lucky Find!", message: `You found a ${foundCard.name} on the ground! Keep it or return it to the store?`, showChoices: true, type: 'found_card' });
         }
 
         function keepFoundCard() {
@@ -1393,22 +1587,12 @@
             const foundCard = gameState.tempFoundCard;
             if (!foundCard) return;
             
-            // Calculate discount based on card value
             let discountPercent;
-            if (foundCard.basePrice < 50) {
-                discountPercent = Math.random() * 2 + 3; // 3-5%
-            } else if (foundCard.basePrice < 200) {
-                discountPercent = Math.random() * 3 + 5; // 5-8%
-            } else {
-                discountPercent = Math.random() * 3 + 7; // 7-10%
-            }
+            if (foundCard.basePrice < 50) discountPercent = Math.random() * 2 + 3;
+            else if (foundCard.basePrice < 200) discountPercent = Math.random() * 3 + 5;
+            else discountPercent = Math.random() * 3 + 7;
             
             gameState.storeDiscount = discountPercent;
-            gameState.activeEvents.push({
-                type: 'store_discount',
-                location: gameState.currentLocationId,
-                discount: discountPercent
-            });
             
             addLogMessage(`You returned the ${foundCard.name} to the store. They gave you a ${Math.round(discountPercent)}% discount for today!`);
             delete gameState.tempFoundCard;
@@ -1416,38 +1600,29 @@
             renderAll();
         }
 
-        function processActiveEvents() {
-            // Clear all active events when traveling
+        function clearOldEvents(locationId) {
+            const locationMarket = marketState[locationId];
+            if (!locationMarket) return;
+
+            Object.keys(locationMarket).forEach(cardId => {
+                if (locationMarket[cardId] && locationMarket[cardId].eventModified) {
+                    delete locationMarket[cardId].eventModified;
+                }
+            });
             gameState.activeEvents = [];
-            gameState.storeDiscount = 0;
-            
-            // Clear any market modifications from events
-            const currentMarket = marketState[gameState.currentLocationId];
-            if (currentMarket) {
-                Object.keys(currentMarket).forEach(cardId => {
-                    if (currentMarket[cardId] && currentMarket[cardId].eventModified) {
-                        delete currentMarket[cardId].eventModified;
-                    }
-                });
-            }
         }
 
-        // Modified showEventModal to handle choices
         function showEventModal(eventResult) {
             document.getElementById('event-title').textContent = eventResult.title;
             document.getElementById('event-message').textContent = eventResult.message;
             
             const modalContent = eventModalEl.querySelector('.modal-content');
-            
-            // Remove any existing choice buttons
             const existingChoices = modalContent.querySelector('.event-choices');
             if (existingChoices) existingChoices.remove();
             
             if (eventResult.showChoices && eventResult.type === 'found_card') {
-                // Hide the normal continue button
                 closeEventModalBtn.style.display = 'none';
                 
-                // Add choice buttons
                 const choicesDiv = document.createElement('div');
                 choicesDiv.className = 'event-choices flex gap-4 justify-center mt-4';
                 
@@ -1470,36 +1645,65 @@
             
             eventModalEl.classList.remove('hidden');
         }
+        
+        function showAnnouncementModal(eventData) {
+            document.getElementById('announcement-title').textContent = (eventData.type === 'card_show') ? "Card Show Announced!" : "Market Flood Rumor!";
+            document.getElementById('announcement-message').textContent = eventData.message;
+            
+            const choicesDiv = document.getElementById('announcement-choices');
+            choicesDiv.innerHTML = '';
+
+            const travelBtn = document.createElement('button');
+            travelBtn.className = 'btn btn-success';
+            travelBtn.textContent = `Travel to ${LOCATIONS.find(l=>l.id === eventData.location).name}`;
+            travelBtn.onclick = () => {
+                announcementModalEl.classList.add('hidden');
+                travelTo(eventData.location);
+            };
+
+            const ignoreBtn = document.createElement('button');
+            ignoreBtn.className = 'btn btn-danger';
+            ignoreBtn.textContent = 'Ignore';
+            ignoreBtn.onclick = () => {
+                gameState.pendingEvent = null; // Clear the pending event
+                announcementModalEl.classList.add('hidden');
+            };
+
+            choicesDiv.appendChild(travelBtn);
+            choicesDiv.appendChild(ignoreBtn);
+
+            announcementModalEl.classList.remove('hidden');
+        }
+
 
         async function travelTo(destinationLocationId) {
-            const travelCostDays = travelDurations[gameState.currentLocationId]?.[destinationLocationId];
+            const previousLocationId = gameState.currentLocationId;
+            const travelCostDays = travelDurations[previousLocationId]?.[destinationLocationId];
+
             if (travelCostDays === undefined) { 
-                addLogMessage("Cannot travel to that location."); 
-                return; 
+                addLogMessage("Cannot travel to that location."); return; 
             }
             if (gameState.daysRemaining < travelCostDays) { 
-                addLogMessage("Not enough days left to travel!"); 
-                await checkGameOver(); 
-                return; 
+                addLogMessage("Not enough days left to travel!"); await checkGameOver(); return; 
             }
+            
+            clearOldEvents(previousLocationId);
+            gameState.storeDiscount = 0;
             
             gameState.daysRemaining -= travelCostDays;
             gameState.currentLocationId = destinationLocationId;
             addLogMessage(`Traveled to ${getCurrentLocation().name}. Lost ${travelCostDays} day${travelCostDays > 1 ? 's' : ''}.`);
             gameState.boosterPacksPurchasedToday = 0;
             
-            // Process any active events (reduce their duration)
-            processActiveEvents();
-            
-            // Update market BEFORE checking for events
-            updateMarketForCurrentLocation(); 
-            
-            // Check for random travel event
-            const eventResult = checkForTravelEvent();
-            if (eventResult) {
-                showEventModal(eventResult);
-                addLogMessage(`Event: ${eventResult.title}`);
+            if (gameState.pendingEvent && gameState.pendingEvent.location === destinationLocationId) {
+                gameState.activeEvents.push(gameState.pendingEvent);
+                applyEventEffects(gameState.pendingEvent);
+                addLogMessage(`You've arrived just in time for the ${gameState.pendingEvent.type.replace(/_/g,' ')}!`);
+                gameState.pendingEvent = null;
             }
+            
+            updateMarketForCurrentLocation(); 
+            checkForTravelEvent();
 
             if (await checkGameOver()) return;
             renderAll(); 
@@ -1508,28 +1712,55 @@
         async function showGameOverScreen() {
             const gameOverCabinetList = document.getElementById('game-over-cabinet-list');
             gameOverCabinetList.innerHTML = '';
+            
+            // Calculate cabinet value
+            let cabinetValue = 0;
+            
             if (gameState.displayCabinet.length > 0) {
                 gameState.displayCabinet.forEach(cabinetItem => {
+                    const cardWrapper = document.createElement('div');
+                    cardWrapper.className = 'flex flex-col items-center';
+                    
                     const cardVisual = createCardVisual(cabinetItem);
-                    gameOverCabinetList.appendChild(cardVisual);
+                    cardWrapper.appendChild(cardVisual);
+                    
+                    // Add value display with dollar sign
+                    const valueDisplay = document.createElement('div');
+                    valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+                    valueDisplay.textContent = `${cabinetItem.capturedValue || 0}`;
+                    cardWrapper.appendChild(valueDisplay);
+                    
+                    gameOverCabinetList.appendChild(cardWrapper);
+                    cabinetValue += (cabinetItem.capturedValue || 0);
                 });
                 document.getElementById('game-over-cabinet-section').style.display = 'block';
             } else {
                 document.getElementById('game-over-cabinet-section').style.display = 'none';
             }
 
+            // Add cabinet value to final score
+            const totalScore = gameState.cash + cabinetValue;
+            
             const topScores = leaderboardScores.slice(0, LEADERBOARD_SIZE);
-            document.getElementById('final-score').textContent = `${gameState.cash.toLocaleString()}`;
+            document.getElementById('final-score').innerHTML = `${gameState.cash.toLocaleString()} <span class="text-lg">(+ ${cabinetValue} cabinet)</span> = <span class="text-green-400">${totalScore.toLocaleString()}</span>`;
             renderLeaderboard(topScores, document.getElementById('game-over-leaderboard-list'));
             gameOverModalEl.classList.remove('hidden');
         }
 
         async function checkGameOver() {
             if (gameState.daysRemaining <= 0) {
-                addLogMessage(`Game Over! Final cash: ${gameState.cash.toLocaleString()}.`);
+                // Calculate total score including cabinet value
+                let cabinetValue = 0;
+                gameState.displayCabinet.forEach(item => {
+                    cabinetValue += (item.capturedValue || 0);
+                });
+                const totalScore = gameState.cash + cabinetValue;
+                
+                addLogMessage(`Game Over! Final cash: ${gameState.cash.toLocaleString()}, Cabinet value: ${cabinetValue}, Total: ${totalScore.toLocaleString()}.`);
+                
                 const lowestHighScore = leaderboardScores.length > 0 ? leaderboardScores[Math.min(leaderboardScores.length - 1, LEADERBOARD_SIZE - 1)].score : 0;
-                if (gameState.cash > lowestHighScore || leaderboardScores.length < LEADERBOARD_SIZE) {
-                    document.getElementById('high-score-final-score').textContent = `${gameState.cash.toLocaleString()}`;
+                if (totalScore > lowestHighScore || leaderboardScores.length < LEADERBOARD_SIZE) {
+                    document.getElementById('high-score-final-score').innerHTML = `${gameState.cash.toLocaleString()} + ${cabinetValue} cabinet = <span class="text-green-400">${totalScore.toLocaleString()}</span>`;
                     highScoreModalEl.classList.remove('hidden');
                 } else {
                     await showGameOverScreen();
@@ -1550,7 +1781,7 @@
                     const cardVisual = createCardVisual(cabinetItem);
                     cardWrapper.appendChild(cardVisual);
                     
-                    // Add value display if available
+                    // Add value display with dollar sign
                     if (cabinetItem.capturedValue) {
                         const valueDisplay = document.createElement('div');
                         valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
