@@ -1,0 +1,1581 @@
+# Complete File Contents for Modular Soccer Card Trader
+
+## 1. **js/core/gameLogger.js**
+```javascript
+import { GameState } from './gameState.js';
+import { UIRenderer } from '../ui/uiRenderer.js';
+
+export const GameLogger = {
+    addLogMessage(message) {
+        GameState.current.log.unshift(message);
+        if (GameState.current.log.length > 50) GameState.current.log.pop();
+        UIRenderer.renderLog();
+    }
+};
+```
+
+## 2. **js/ui/uiRenderer.js**
+```javascript
+import { GameState } from '../core/gameState.js';
+import { GameData } from '../config/gameData.js';
+import { GameConfig } from '../config/gameConfig.js';
+import { UIElements } from './uiElements.js';
+import { CardVisuals } from './cardVisuals.js';
+import { Trading } from '../features/trading.js';
+import { BoosterPacks } from '../features/boosterPacks.js';
+import { Travel } from '../features/travel.js';
+import { Cabinet } from '../features/cabinet.js';
+
+export const UIRenderer = {
+    renderAll() {
+        this.renderPlayerStats();
+        this.renderMarket();
+        this.renderInventory();
+        this.renderTravelOptions();
+        this.renderLog();
+        this.renderDisplayCabinet();
+    },
+
+    renderPlayerStats() {
+        UIElements.cash.textContent = `$${GameState.current.cash.toLocaleString()}`;
+        UIElements.days.textContent = GameState.current.daysRemaining;
+        const location = GameState.getCurrentLocation();
+        UIElements.currentLocationName.textContent = location.name;
+        UIElements.marketLocationName.textContent = location.name;
+    },
+
+    renderLeaderboard(scores, targetElement) {
+        targetElement.innerHTML = '';
+        if (scores.length === 0) {
+            targetElement.innerHTML = '<p class="text-gray-500 text-center">No high scores yet. Be the first!</p>';
+            return;
+        }
+        scores.forEach((entry, index) => {
+            const div = document.createElement('div');
+            div.className = 'flex justify-between items-center text-lg p-1 rounded';
+            if (index === 0) div.classList.add('bg-amber-500/20');
+            
+            const cabinetButton = (entry.cabinet && entry.cabinet.length > 0) 
+                ? `<button class="btn btn-secondary btn-sm text-xs" data-score-id="${entry.id}" data-action="view-cabinet">Cabinet</button>`
+                : '';
+
+            div.innerHTML = `
+                <div class="flex items-center">
+                    <span class="font-bold mr-3">${index + 1}. ${entry.initials}</span>
+                    ${cabinetButton}
+                </div>
+                <span class="text-green-400 font-semibold">$${entry.score.toLocaleString()}</span>`;
+            targetElement.appendChild(div);
+        });
+    },
+
+    renderMarket() {
+        UIElements.marketItems.innerHTML = '';
+        UIElements.specialActionsContainer.innerHTML = '';
+        
+        const existingBanner = document.querySelector('.discount-banner');
+        if (existingBanner) existingBanner.remove();
+        
+        if (GameState.current.storeDiscount > 0) {
+            const discountBanner = document.createElement('div');
+            discountBanner.className = 'discount-banner bg-green-600 text-white p-2 rounded mb-4 text-center';
+            discountBanner.textContent = `Store Discount Active: ${Math.round(GameState.current.storeDiscount)}% off all purchases!`;
+            
+            const marketSection = document.getElementById('market-section');
+            const headerDiv = marketSection.querySelector('.flex.justify-between.items-start.mb-3');
+            if (headerDiv && headerDiv.nextSibling) {
+                marketSection.insertBefore(discountBanner, headerDiv.nextSibling);
+            } else {
+                marketSection.prepend(discountBanner);
+            }
+        }
+        
+        const location = GameState.getCurrentLocation();
+        const locationMarket = GameState.market[GameState.current.currentLocationId];
+        if (!locationMarket) {
+            UIElements.marketItems.innerHTML = '<tr><td colspan="5" class="table-cell text-center py-4">Market data not available.</td></tr>';
+            return;
+        }
+
+        if (!GameState.current.hasPriceGuide) {
+            const priceGuideBtn = document.createElement('button');
+            priceGuideBtn.className = 'btn btn-secondary';
+            priceGuideBtn.innerHTML = `Buy Price Guide <span class="font-bold ml-2">$${GameConfig.priceGuideCost}</span>`;
+            priceGuideBtn.title = `Reveals if a card's current price is above or below its base value.`;
+            priceGuideBtn.onclick = () => Trading.buyPriceGuide();
+            UIElements.specialActionsContainer.appendChild(priceGuideBtn);
+        }
+        
+        if (location.specialization === 'trade_in') {
+            const commonCount = GameState.current.inventory.find(item => item.cardId === 'common_single')?.quantity || 0;
+            const tradeInBtn = document.createElement('button');
+            tradeInBtn.className = 'btn btn-secondary';
+            tradeInBtn.innerHTML = `Trade 25 Commons <span class="font-bold ml-2">(Have: ${commonCount})</span>`;
+            tradeInBtn.title = 'Trade 25 Common Singles for 1 random better card';
+            tradeInBtn.disabled = commonCount < 25;
+            tradeInBtn.onclick = () => Trading.executeTradeIn();
+            UIElements.specialActionsContainer.appendChild(tradeInBtn);
+        }
+        
+        const boosterPackBtn = document.createElement('button');
+        boosterPackBtn.className = 'btn btn-special';
+        const locationBoosterPrice = location.boosterPrice;
+        boosterPackBtn.innerHTML = `Buy Booster Pack <span class="font-bold ml-2">$${locationBoosterPrice}</span>`;
+        
+        if (location.specialization === 'rookies') {
+            boosterPackBtn.title = 'Get 3-5 random cards with higher chance of rookies!';
+        } else if (location.specialization === 'mystery') {
+            boosterPackBtn.title = 'Mystery pack: Guaranteed to contain at least one rare card!';
+        } else {
+            boosterPackBtn.title = 'Get 3-5 random cards. A high-risk, high-reward gamble!';
+        }
+        
+        if (!locationMarket.boosterAvailable) {
+            boosterPackBtn.disabled = true;
+            boosterPackBtn.textContent = 'Boosters Sold Out Today';
+        } else if (GameState.current.boosterPacksPurchasedToday >= GameConfig.boosterPack.dailyLimit) {
+            boosterPackBtn.disabled = true;
+            boosterPackBtn.textContent = `Daily Limit Reached (${GameConfig.boosterPack.dailyLimit})`;
+        } else {
+            boosterPackBtn.onclick = () => BoosterPacks.buyBoosterPack(locationBoosterPrice);
+        }
+        UIElements.specialActionsContainer.appendChild(boosterPackBtn);
+
+        GameData.tradableCards.forEach(card => {
+            const marketInfo = locationMarket[card.id];
+            if (!marketInfo) return;
+
+            let eventIndicator = '';
+            const activeCardShow = GameState.current.activeEvents.find(e => 
+                e.type === 'card_show' && 
+                e.affectedCards.some(ac => ac.cardId === card.id)
+            );
+            const activeFlood = GameState.current.activeEvents.find(e => 
+                e.type === 'market_flood' && 
+                e.affectedCard === card.id
+            );
+            
+            if (activeCardShow) {
+                eventIndicator = '<span class="ml-2 text-yellow-400" title="Card Show Boost!">⭐</span>';
+            } else if (activeFlood) {
+                eventIndicator = '<span class="ml-2 text-blue-400" title="Market Flooded!">💧</span>';
+            }
+
+            let priceIndicatorHtml = '';
+            if (GameState.current.hasPriceGuide) {
+                if (marketInfo.price > card.basePrice) priceIndicatorHtml = `<span class="ml-2 text-green-400" title="Price is above base value">▲</span>`;
+                else if (marketInfo.price < card.basePrice) priceIndicatorHtml = `<span class="ml-2 text-red-400" title="Price is below base value">▼</span>`;
+            }
+            const priceColorClass = GameState.current.hasPriceGuide ? (marketInfo.price > card.basePrice ? 'text-green-400' : 'text-red-400') : 'text-gray-300';
+            
+            const tr = document.createElement('tr');
+            tr.className = 'border-b border-gray-700';
+            
+            tr.innerHTML = `
+                <td class="table-cell">
+                    <div class="font-medium">${card.name}${eventIndicator}</div>
+                    <div class="text-xs text-gray-400">${card.description}</div>
+                </td>
+                <td class="table-cell"><div class="flex items-center"><span class="font-semibold ${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div></td>
+                <td class="table-cell">${marketInfo.available}</td>
+                <td class="table-cell"><input type="number" id="buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1"></td>
+                <td class="table-cell">
+                    <div class="flex items-center gap-2">
+                        <button class="btn btn-success btn-compact" title="Buy Quantity" data-card-id="${card.id}" data-action="buy-qty" ${marketInfo.available === 0 ? 'disabled' : ''}>$</button>
+                        <button class="btn btn-success btn-compact" title="Buy All" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>A</button>
+                    </div>
+                </td>`;
+            UIElements.marketItems.appendChild(tr);
+        });
+    },
+
+    renderInventory() {
+        UIElements.inventoryItems.innerHTML = '';
+        if (GameState.current.inventory.length === 0) {
+            UIElements.inventoryItems.innerHTML = '<tr><td colspan="6" class="table-cell text-center py-4">Your portfolio is empty.</td></tr>';
+            return;
+        }
+        GameState.current.inventory.forEach(item => {
+            const card = GameState.getCardDetails(item.cardId);
+            const currentMarketPrice = GameState.market[GameState.current.currentLocationId]?.[item.cardId]?.price || 0;
+            const averageBuyPrice = item.quantity > 0 ? (item.totalCost / item.quantity) : 0;
+
+            const tr = document.createElement('tr');
+            tr.className = 'border-b border-gray-700';
+            tr.innerHTML = `
+                <td class="table-cell"><div class="font-medium">${card.name}</div></td>
+                <td class="table-cell">${item.quantity}</td>
+                <td class="table-cell">$${averageBuyPrice.toFixed(2)}</td>
+                <td class="table-cell font-semibold text-green-400">$${currentMarketPrice.toLocaleString()}</td>
+                <td class="table-cell"><input type="number" id="sell-qty-${card.id}" min="1" max="${item.quantity}" value="1"></td>
+                <td class="table-cell">
+                    <div class="flex items-center gap-2">
+                        <button class="btn btn-danger btn-compact" title="Sell Quantity" data-card-id="${card.id}" data-action="sell-qty">$</button>
+                        <button class="btn btn-danger btn-compact" title="Sell All" data-card-id="${card.id}" data-action="sell-all">A</button>
+                    </div>
+                </td>`;
+            UIElements.inventoryItems.appendChild(tr);
+        });
+    },
+
+    renderTravelOptions() {
+        UIElements.travelOptions.innerHTML = '';
+        const currentLocationId = GameState.current.currentLocationId;
+        GameData.locations.forEach(location => {
+            if (location.id === currentLocationId) return;
+            const travelCost = GameData.travelDurations[currentLocationId]?.[location.id] || 99;
+            const button = document.createElement('button');
+            button.className = 'btn btn-primary w-full text-left';
+            button.textContent = `${location.name} (${travelCost} day${travelCost > 1 ? 's' : ''})`;
+            button.title = location.description;
+            button.onclick = () => Travel.travelTo(location.id);
+            UIElements.travelOptions.appendChild(button);
+        });
+    },
+
+    renderLog() {
+        UIElements.logMessages.innerHTML = GameState.current.log.map(msg => `<div class="log-message">${msg}</div>`).join('');
+    },
+
+    renderDisplayCabinet() {
+        const cabinetListEl = document.getElementById('display-cabinet-list');
+        const placeholderEl = document.getElementById('display-cabinet-placeholder');
+        cabinetListEl.innerHTML = '';
+
+        if (GameState.current.displayCabinet.length === 0) {
+            if (!cabinetListEl.contains(placeholderEl)) cabinetListEl.appendChild(placeholderEl);
+            placeholderEl.style.display = 'block';
+            UIElements.manageCabinetBtn.style.display = 'none';
+        } else {
+            if (cabinetListEl.contains(placeholderEl)) placeholderEl.style.display = 'none';
+            UIElements.manageCabinetBtn.style.display = 'inline-block';
+            GameState.current.displayCabinet.forEach(cabinetItem => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'flex flex-col items-center';
+                
+                const cardVisual = CardVisuals.createCardVisual(cabinetItem);
+                cardWrapper.appendChild(cardVisual);
+                
+                const valueDisplay = document.createElement('div');
+                valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+                valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
+                cardWrapper.appendChild(valueDisplay);
+                
+                cabinetListEl.appendChild(cardWrapper);
+            });
+        }
+    }
+};
+```
+
+## 3. **js/ui/cardVisuals.js**
+```javascript
+import { GameConfig } from '../config/gameConfig.js';
+
+export const CardVisuals = {
+    generateLayerIndices() {
+        const indices = [];
+        GameConfig.commonCardAssets.layers.forEach(layer => {
+            indices.push(Math.floor(Math.random() * layer.count) + 1);
+        });
+        return indices;
+    },
+
+    createCardImageLayers(targetDiv, layerIndices) {
+        if (!layerIndices || layerIndices.length === 0) return;
+
+        GameConfig.commonCardAssets.layers.forEach((layer, i) => {
+            const img = document.createElement('img');
+            img.src = `${GameConfig.commonCardAssets.base_url}${layer.folder}/${layerIndices[i]}.png`;
+            img.style.position = 'absolute';
+            img.style.left = '0';
+            img.style.top = '0';
+            img.style.width = '100%';
+            img.style.height = '100%';
+            targetDiv.appendChild(img);
+        });
+    },
+
+    generateCardNumbering(card) {
+        const eligibleCards = ['numbered_legend', 'numbered_rookie_auto', 'autographed_jersey'];
+        if (!eligibleCards.includes(card.id)) return null;
+        
+        const denominations = [
+            { total: 1, weight: 1, multiplier: 20 },
+            { total: 2, weight: 2, multiplier: 15 },
+            { total: 10, weight: 5, multiplier: 10 },
+            { total: 25, weight: 10, multiplier: 5 },
+            { total: 75, weight: 15, multiplier: 3 },
+            { total: 150, weight: 20, multiplier: 2 },
+            { total: 250, weight: 25, multiplier: 1.5 },
+            { total: 500, weight: 22, multiplier: 1.5 }
+        ];
+        
+        const totalWeight = denominations.reduce((sum, d) => sum + d.weight, 0);
+        let random = Math.random() * totalWeight;
+        
+        for (const denom of denominations) {
+            random -= denom.weight;
+            if (random <= 0) {
+                const serialNumber = Math.floor(Math.random() * denom.total) + 1;
+                
+                let finalMultiplier = denom.multiplier;
+                if (serialNumber === 1) finalMultiplier *= 1.5;
+                if (serialNumber === denom.total) finalMultiplier *= 1.25;
+                
+                return {
+                    number: serialNumber,
+                    total: denom.total,
+                    multiplier: finalMultiplier,
+                    display: `${serialNumber}/${denom.total}`
+                };
+            }
+        }
+    },
+
+    addNumberingOverlay(container, numbering) {
+        if (!numbering) return;
+        
+        const serialContainer = document.createElement('div');
+        serialContainer.className = 'absolute bottom-2 right-2 flex flex-col items-center';
+        serialContainer.style.zIndex = '10';
+        
+        const plate = document.createElement('div');
+        plate.className = 'relative px-3 py-1 rounded';
+        
+        if (numbering.number === 1 && numbering.total === 1) {
+            plate.style.background = 'linear-gradient(135deg, #FFD700 0%, #B8860B 50%, #FFD700 100%)';
+            plate.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.5)';
+            plate.className += ' animate-pulse';
+        } else if (numbering.total <= 10) {
+            plate.style.background = 'linear-gradient(135deg, #C0C0C0 0%, #808080 50%, #C0C0C0 100%)';
+            plate.style.boxShadow = '0 0 15px rgba(192, 192, 192, 0.6)';
+        } else if (numbering.total <= 25) {
+            plate.style.background = 'linear-gradient(135deg, #CD7F32 0%, #8B4513 50%, #CD7F32 100%)';
+            plate.style.boxShadow = '0 0 10px rgba(205, 127, 50, 0.5)';
+        } else {
+            plate.style.background = 'rgba(0, 0, 0, 0.8)';
+            plate.style.border = '1px solid #FFD700';
+        }
+        
+        const serialText = document.createElement('div');
+        serialText.textContent = numbering.display;
+        serialText.style.fontFamily = 'monospace';
+        serialText.style.fontSize = '11px';
+        serialText.style.fontWeight = '900';
+        serialText.style.letterSpacing = '0.5px';
+        
+        if (numbering.number === 1 && numbering.total === 1) {
+            serialText.className = 'serial-rainbow';
+        } else if (numbering.number === 1 || numbering.number === numbering.total) {
+            serialText.className = 'serial-foil';
+        } else if (numbering.total <= 25) {
+            serialText.className = 'serial-embossed';
+        } else {
+            serialText.style.color = '#FFD700';
+        }
+        
+        if (numbering.total <= 10) {
+            const label = document.createElement('div');
+            label.textContent = 'SERIAL';
+            label.style.fontSize = '8px';
+            label.style.color = '#FFD700';
+            label.style.letterSpacing = '1px';
+            label.style.opacity = '0.8';
+            plate.appendChild(label);
+        }
+        
+        plate.appendChild(serialText);
+        serialContainer.appendChild(plate);
+        container.appendChild(serialContainer);
+    },
+
+    createCardVisual(cabinetItem) {
+        const card = cabinetItem.card;
+        const visualContainer = document.createElement('div');
+        visualContainer.className = 'relative aspect-[3/4] w-full';
+
+        const graphicCardTypes = [
+            'favorite_player', 
+            'numbered_legend', 
+            'prized_rookie_card', 
+            'holo_legend', 
+            'numbered_rookie_auto', 
+            'autographed_common', 
+            'common_single',
+            'autographed_jersey'
+        ];
+
+        if (graphicCardTypes.includes(card.id)) {
+            this.createCardImageLayers(visualContainer, cabinetItem.layers);
+            if (card.basePrice > GameConfig.rareCardThreshold && card.id !== 'common_single') {
+                visualContainer.classList.add('sparkle');
+            }
+            
+            if (cabinetItem.numbering) {
+                this.addNumberingOverlay(visualContainer, cabinetItem.numbering);
+            }
+        } else {
+            visualContainer.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center text-center';
+            visualContainer.textContent = card.name;
+            if (card.basePrice > GameConfig.rareCardThreshold) {
+                visualContainer.classList.add('sparkle', 'text-black');
+            } else {
+                visualContainer.style.backgroundColor = '#374151';
+            }
+        }
+        return visualContainer;
+    }
+};
+```
+
+## 4. **js/features/trading.js**
+```javascript
+import { GameState } from '../core/gameState.js';
+import { GameConfig } from '../config/gameConfig.js';
+import { GameData } from '../config/gameData.js';
+import { GameLogger } from '../core/gameLogger.js';
+import { UIRenderer } from '../ui/uiRenderer.js';
+
+export const Trading = {
+    buyPriceGuide() {
+        if (GameState.current.cash < GameConfig.priceGuideCost) {
+            GameLogger.addLogMessage(`Not enough cash.`);
+            return;
+        }
+        GameState.current.cash -= GameConfig.priceGuideCost;
+        GameState.current.hasPriceGuide = true;
+        GameLogger.addLogMessage(`Purchased Price Guide!`);
+        UIRenderer.renderAll();
+    },
+
+    buyItemQty(cardId) {
+        const quantity = parseInt(document.getElementById(`buy-qty-${cardId}`).value);
+        if (isNaN(quantity) || quantity <= 0) {
+            GameLogger.addLogMessage(`Invalid quantity.`);
+            return;
+        }
+        
+        const card = GameState.getCardDetails(cardId);
+        const marketInfo = GameState.market[GameState.current.currentLocationId]?.[cardId];
+        if (!marketInfo || quantity > marketInfo.available) {
+            GameLogger.addLogMessage(`Not enough available to buy.`);
+            return;
+        }
+
+        let totalCost = marketInfo.price * quantity;
+        
+        const location = GameState.getCurrentLocation();
+        if (location.specialization === 'volume' && quantity >= 5) {
+            const volumeDiscount = Math.round(totalCost * 0.1);
+            totalCost -= volumeDiscount;
+            GameLogger.addLogMessage(`Volume discount applied: -$${volumeDiscount} (10% off for 5+ cards)`);
+        }
+        
+        if (GameState.current.storeDiscount > 0) {
+            const discountAmount = Math.round(totalCost * (GameState.current.storeDiscount / 100));
+            totalCost -= discountAmount;
+            GameLogger.addLogMessage(`Store discount applied: -$${discountAmount}`);
+        }
+        
+        if (totalCost > GameState.current.cash) {
+            GameLogger.addLogMessage(`Not enough cash. Need $${totalCost.toLocaleString()}.`);
+            return;
+        }
+        
+        GameState.current.cash -= totalCost;
+        marketInfo.available -= quantity;
+        let inventoryItem = GameState.current.inventory.find(item => item.cardId === cardId);
+        if (inventoryItem) {
+            inventoryItem.quantity += quantity;
+            inventoryItem.totalCost += totalCost;
+        } else {
+            GameState.current.inventory.push({ cardId, quantity, totalCost });
+        }
+        GameLogger.addLogMessage(`Bought ${quantity} ${card.name} for $${totalCost.toLocaleString()}.`);
+        UIRenderer.renderAll();
+    },
+
+    buyAllItems(cardId) {
+        const marketInfo = GameState.market[GameState.current.currentLocationId]?.[cardId];
+        if (!marketInfo || marketInfo.available <= 0) {
+            GameLogger.addLogMessage(`None available to buy.`);
+            return;
+        }
+        document.getElementById(`buy-qty-${cardId}`).value = marketInfo.available;
+        this.buyItemQty(cardId);
+    },
+
+    sellItemQty(cardId) {
+        const quantity = parseInt(document.getElementById(`sell-qty-${cardId}`).value);
+        const inventoryItem = GameState.current.inventory.find(item => item.cardId === cardId);
+
+        if (isNaN(quantity) || quantity <= 0) {
+            GameLogger.addLogMessage(`Invalid quantity.`);
+            return;
+        }
+        if (!inventoryItem || quantity > inventoryItem.quantity) {
+            GameLogger.addLogMessage(`You don't have that many to sell.`);
+            return;
+        }
+
+        const card = GameState.getCardDetails(cardId);
+        const currentMarketPrice = GameState.market[GameState.current.currentLocationId]?.[cardId]?.price;
+        if (currentMarketPrice === undefined) {
+            GameLogger.addLogMessage(`Cannot determine sell price.`);
+            return;
+        }
+
+        const totalSaleValue = currentMarketPrice * quantity;
+        const costOfSoldItems = (inventoryItem.totalCost / inventoryItem.quantity) * quantity;
+        
+        GameState.current.cash += totalSaleValue;
+        inventoryItem.quantity -= quantity;
+        inventoryItem.totalCost -= isNaN(costOfSoldItems) ? 0 : costOfSoldItems;
+
+        if (inventoryItem.quantity <= 0) {
+            GameState.current.inventory = GameState.current.inventory.filter(item => item.cardId !== cardId);
+        }
+        GameLogger.addLogMessage(`Sold ${quantity} ${card.name} for $${totalSaleValue.toLocaleString()}.`);
+        UIRenderer.renderAll();
+    },
+
+    sellAllItems(cardId) {
+        const inventoryItem = GameState.current.inventory.find(item => item.cardId === cardId);
+        if (!inventoryItem || inventoryItem.quantity <= 0) {
+            GameLogger.addLogMessage(`None to sell.`);
+            return;
+        }
+        document.getElementById(`sell-qty-${cardId}`).value = inventoryItem.quantity;
+        this.sellItemQty(cardId);
+    },
+
+    executeTradeIn() {
+        const commonItem = GameState.current.inventory.find(item => item.cardId === 'common_single');
+        if (!commonItem || commonItem.quantity < 25) {
+            GameLogger.addLogMessage(`Need 25 Common Singles to trade. You have ${commonItem?.quantity || 0}.`);
+            return;
+        }
+        
+        commonItem.quantity -= 25;
+        commonItem.totalCost = Math.max(0, commonItem.totalCost - (25 * 5));
+        if (commonItem.quantity <= 0) {
+            GameState.current.inventory = GameState.current.inventory.filter(item => item.cardId !== 'common_single');
+        }
+        
+        const eligibleCards = GameData.tradableCards.filter(c => c.id !== 'common_single' && c.basePrice >= 50);
+        const receivedCard = eligibleCards[Math.floor(Math.random() * eligibleCards.length)];
+        
+        let inventoryItem = GameState.current.inventory.find(item => item.cardId === receivedCard.id);
+        if (inventoryItem) {
+            inventoryItem.quantity++;
+        } else {
+            GameState.current.inventory.push({ cardId: receivedCard.id, quantity: 1, totalCost: 0 });
+        }
+        
+        GameLogger.addLogMessage(`Traded 25 Common Singles for a ${receivedCard.name}!`);
+        UIRenderer.renderAll();
+    }
+};
+```
+
+## 5. **js/features/cabinet.js**
+```javascript
+import { GameState } from '../core/gameState.js';
+import { GameConfig } from '../config/gameConfig.js';
+import { GameLogger } from '../core/gameLogger.js';
+import { UIElements } from '../ui/uiElements.js';
+import { UIRenderer } from '../ui/uiRenderer.js';
+import { CardVisuals } from '../ui/cardVisuals.js';
+
+export const Cabinet = {
+    showManageCabinetModal() {
+        UIElements.cabinetModalTitle.textContent = 'Manage Cabinet';
+        UIElements.cabinetModalMessage.textContent = 'Select a card to return to your inventory.';
+        UIElements.cabinetModalOptions.innerHTML = '';
+        
+        GameState.current.displayCabinet.forEach((cabinetItem, index) => {
+            const cardWrapper = document.createElement('div');
+            cardWrapper.className = 'flex flex-col items-center cursor-pointer hover:opacity-80';
+            
+            const cardVisual = CardVisuals.createCardVisual(cabinetItem);
+            cardWrapper.appendChild(cardVisual);
+            
+            const valueDisplay = document.createElement('div');
+            valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+            valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
+            cardWrapper.appendChild(valueDisplay);
+            
+            cardWrapper.onclick = () => this.returnCabinetCardToInventory(index);
+            UIElements.cabinetModalOptions.appendChild(cardWrapper);
+        });
+        UIElements.cabinetModal.classList.remove('hidden');
+    },
+
+    returnCabinetCardToInventory(indexToRemove) {
+        if (indexToRemove < 0 || indexToRemove >= GameState.current.displayCabinet.length) return;
+        const removedCabinetItem = GameState.current.displayCabinet.splice(indexToRemove, 1)[0];
+        if (!removedCabinetItem) return;
+
+        const removedCard = removedCabinetItem.card;
+        let inventoryItem = GameState.current.inventory.find(item => item.cardId === removedCard.id);
+        if (inventoryItem) {
+            inventoryItem.quantity++;
+        } else {
+            GameState.current.inventory.push({ cardId: removedCard.id, quantity: 1, totalCost: 0 });
+        }
+        
+        GameLogger.addLogMessage(`Moved a ${removedCard.name} from the cabinet back to inventory.`);
+        UIElements.cabinetModal.classList.add('hidden');
+        UIRenderer.renderAll();
+    },
+
+    showReplaceCabinetModal(newCardItem, fromButton) {
+        UIElements.cabinetModalTitle.textContent = 'Cabinet Full!';
+        UIElements.cabinetModalMessage.textContent = 'Choose a card to replace with your new pull.';
+        UIElements.cabinetModalOptions.innerHTML = '';
+
+        GameState.current.displayCabinet.forEach((cabinetItem, index) => {
+            const cardWrapper = document.createElement('div');
+            cardWrapper.className = 'flex flex-col items-center cursor-pointer hover:opacity-80';
+            
+            const cardVisual = CardVisuals.createCardVisual(cabinetItem);
+            cardWrapper.appendChild(cardVisual);
+            
+            const valueDisplay = document.createElement('div');
+            valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+            valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
+            cardWrapper.appendChild(valueDisplay);
+            
+            cardWrapper.onclick = () => this.replaceCabinetCard(index, newCardItem, fromButton);
+            UIElements.cabinetModalOptions.appendChild(cardWrapper);
+        });
+        UIElements.cabinetModal.classList.remove('hidden');
+    },
+
+    replaceCabinetCard(indexToRemove, newCardItem, fromButton) {
+        this.returnCabinetCardToInventory(indexToRemove);
+        this.addToDisplayCabinet(newCardItem.card.id, fromButton, true, newCardItem.layers);
+        UIElements.cabinetModal.classList.add('hidden');
+    },
+
+    addToDisplayCabinet(cardId, buttonElement, isReplacing = false, forcedLayers = null) {
+        const cardLayers = forcedLayers || (buttonElement && buttonElement.dataset.layers ? JSON.parse(buttonElement.dataset.layers) : null);
+        const numbering = buttonElement && buttonElement.dataset.numbering ? JSON.parse(buttonElement.dataset.numbering) : null;
+        
+        let currentMarketPrice = GameState.market[GameState.current.currentLocationId]?.[cardId]?.price || GameState.getCardDetails(cardId).basePrice;
+        
+        if (numbering) {
+            currentMarketPrice = Math.round(currentMarketPrice * numbering.multiplier);
+        }
+        
+        const newCabinetItem = {
+            card: GameState.getCardDetails(cardId),
+            layers: cardLayers,
+            numbering: numbering,
+            capturedValue: currentMarketPrice
+        };
+
+        if (!isReplacing) {
+            const inventoryItem = GameState.current.inventory.find(item => item.cardId === cardId);
+            if (!inventoryItem || inventoryItem.quantity < 1) {
+                GameLogger.addLogMessage(`Error: Card not found in inventory.`);
+                return;
+            }
+            inventoryItem.quantity--;
+            if (inventoryItem.quantity <= 0) {
+                GameState.current.inventory = GameState.current.inventory.filter(i => i.cardId !== cardId);
+            }
+        }
+        
+        if (GameState.current.displayCabinet.length < GameConfig.displayCabinetLimit) {
+            GameState.current.displayCabinet.push(newCabinetItem);
+            const serialMsg = numbering ? ` (Serial: ${numbering.display})` : '';
+            GameLogger.addLogMessage(`Added a ${newCabinetItem.card.name} to the Display Cabinet! (Value: $${currentMarketPrice}${serialMsg})`);
+            if (buttonElement) {
+                buttonElement.textContent = 'Added!';
+                buttonElement.disabled = true;
+            }
+            UIRenderer.renderAll();
+        } else if (!isReplacing) {
+            this.showReplaceCabinetModal(newCabinetItem, buttonElement);
+        }
+    },
+
+    showPlayerCabinet(cabinet) {
+        UIElements.viewCabinetList.innerHTML = '';
+        if (cabinet && cabinet.length > 0) {
+            document.getElementById('view-cabinet-title').textContent = "Player's Cabinet";
+            cabinet.forEach(cabinetItem => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'flex flex-col items-center';
+                
+                const cardVisual = CardVisuals.createCardVisual(cabinetItem);
+                cardWrapper.appendChild(cardVisual);
+                
+                if (cabinetItem.capturedValue) {
+                    const valueDisplay = document.createElement('div');
+                    valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+                    valueDisplay.textContent = `$${cabinetItem.capturedValue}`;
+                    cardWrapper.appendChild(valueDisplay);
+                }
+                
+                UIElements.viewCabinetList.appendChild(cardWrapper);
+            });
+        } else {
+            UIElements.viewCabinetList.innerHTML = '<p class="text-gray-500 col-span-full">This player had an empty cabinet.</p>';
+        }
+        UIElements.viewCabinetModal.classList.remove('hidden');
+    }
+};
+```
+
+## 6. **js/features/boosterPacks.js**
+```javascript
+import { GameState } from '../core/gameState.js';
+import { GameConfig } from '../config/gameConfig.js';
+import { GameData } from '../config/gameData.js';
+import { GameLogger } from '../core/gameLogger.js';
+import { UIElements } from '../ui/uiElements.js';
+import { UIRenderer } from '../ui/uiRenderer.js';
+import { CardVisuals } from '../ui/cardVisuals.js';
+import { Cabinet } from './cabinet.js';
+
+export const BoosterPacks = {
+    buyBoosterPack(locationPrice = GameConfig.boosterPack.basePrice) {
+        if (GameState.current.cash < locationPrice) {
+            GameLogger.addLogMessage(`Not enough cash. Need $${locationPrice}.`);
+            return;
+        }
+        if (GameState.current.boosterPacksPurchasedToday >= GameConfig.boosterPack.dailyLimit) {
+            GameLogger.addLogMessage(`Daily pack limit reached.`);
+            return;
+        }
+        if (!GameState.market[GameState.current.currentLocationId].boosterAvailable) {
+            GameLogger.addLogMessage(`Boosters sold out today.`);
+            return;
+        }
+        if (!UIElements.boosterPackModal.classList.contains('hidden')) {
+            return;
+        }
+        
+        GameState.current.cash -= locationPrice;
+        GameState.current.boosterPacksPurchasedToday++;
+        
+        UIRenderer.renderAll();
+
+        const location = GameState.getCurrentLocation();
+        const packSize = Math.floor(Math.random() * 3) + 3;
+        const pulledCards = [];
+        
+        if (location.specialization === 'rookies') {
+            const rookieCards = GameData.tradableCards.filter(c => c.id.includes('rookie'));
+            const otherCards = GameData.tradableCards.filter(c => !c.id.includes('rookie'));
+            
+            if (Math.random() < 0.5 && rookieCards.length > 0) {
+                pulledCards.push(rookieCards[Math.floor(Math.random() * rookieCards.length)]);
+            } else {
+                pulledCards.push(otherCards[Math.floor(Math.random() * otherCards.length)]);
+            }
+            
+            for (let i = 1; i < packSize; i++) {
+                if (Math.random() < 0.3 && rookieCards.length > 0) {
+                    pulledCards.push(rookieCards[Math.floor(Math.random() * rookieCards.length)]);
+                } else {
+                    pulledCards.push(GameData.tradableCards[Math.floor(Math.random() * GameData.tradableCards.length)]);
+                }
+            }
+        } else if (location.specialization === 'mystery') {
+            const rareCards = GameData.tradableCards.filter(c => c.basePrice > GameConfig.rareCardThreshold);
+            const otherCards = GameData.tradableCards.filter(c => c.basePrice <= GameConfig.rareCardThreshold);
+            
+            pulledCards.push(rareCards[Math.floor(Math.random() * rareCards.length)]);
+            
+            for (let i = 1; i < packSize; i++) {
+                pulledCards.push(GameData.tradableCards[Math.floor(Math.random() * GameData.tradableCards.length)]);
+            }
+        } else {
+            const lowValueCards = GameData.tradableCards.filter(c => c.basePrice <= 250);
+            const lowValueLootTable = [];
+            lowValueCards.forEach(card => {
+                const weight = (card.id === 'common_single') ? 6 : 1;
+                for (let i = 0; i < weight; i++) lowValueLootTable.push(card);
+            });
+            const fullLootTable = [];
+            GameData.tradableCards.forEach(card => {
+                let weight = 1;
+                if (card.id === 'common_single') weight = 4;
+                for (let i = 0; i < weight; i++) fullLootTable.push(card);
+            });
+            for (let i = 0; i < Math.min(3, packSize); i++) {
+                pulledCards.push(lowValueLootTable[Math.floor(Math.random() * lowValueLootTable.length)]);
+            }
+            if (packSize > 3) {
+                for (let i = 3; i < packSize; i++) {
+                    pulledCards.push(fullLootTable[Math.floor(Math.random() * fullLootTable.length)]);
+                }
+            }
+        }
+        
+        this.revealCardsSequentially(pulledCards);
+    },
+
+    revealCardsSequentially(cards) {
+        UIElements.packSummaryArea.innerHTML = '';
+        UIElements.closePackModalBtn.style.display = 'none';
+        UIElements.boosterPackModal.classList.remove('hidden');
+        let revealIndex = 0;
+
+        function revealNext() {
+            if (revealIndex < cards.length) {
+                const card = cards[revealIndex];
+                
+                const numbering = CardVisuals.generateCardNumbering(card);
+                
+                let inventoryItem = GameState.current.inventory.find(item => item.cardId === card.id);
+                if (inventoryItem) inventoryItem.quantity++;
+                else GameState.current.inventory.push({ cardId: card.id, quantity: 1, totalCost: 0 });
+
+                const wrapperDiv = document.createElement('div');
+                wrapperDiv.className = 'flex flex-col items-center opacity-0 animate-fade-in w-32';
+                
+                const cabinetButton = document.createElement('button');
+                cabinetButton.className = 'btn btn-secondary btn-sm text-xs mt-2 w-full';
+                cabinetButton.textContent = 'To Cabinet';
+                cabinetButton.onclick = () => Cabinet.addToDisplayCabinet(card.id, cabinetButton);
+                
+                const graphicCardTypes = ['favorite_player', 'numbered_legend', 'prized_rookie_card', 'holo_legend', 'numbered_rookie_auto', 'autographed_common', 'common_single', 'autographed_jersey'];
+                const tempCabinetItem = { card: card, layers: null, numbering: numbering };
+
+                if (graphicCardTypes.includes(card.id)) {
+                    tempCabinetItem.layers = CardVisuals.generateLayerIndices();
+                    cabinetButton.dataset.layers = JSON.stringify(tempCabinetItem.layers);
+                }
+                
+                if (numbering) {
+                    cabinetButton.dataset.numbering = JSON.stringify(numbering);
+                }
+                
+                const cardVisual = CardVisuals.createCardVisual(tempCabinetItem);
+                wrapperDiv.appendChild(cardVisual);
+
+                const cardName = document.createElement('div');
+                cardName.className = 'text-xs text-gray-300 mt-1 mb-1 text-center font-medium';
+                cardName.textContent = card.name;
+                wrapperDiv.appendChild(cardName);
+                
+                const currentPrice = GameState.market[GameState.current.currentLocationId]?.[card.id]?.price || card.basePrice;
+                const priceDisplay = document.createElement('div');
+                priceDisplay.className = 'text-xs text-green-400 font-semibold mb-1';
+                
+                if (numbering) {
+                    const adjustedPrice = Math.round(currentPrice * numbering.multiplier);
+                    priceDisplay.innerHTML = `$${currentPrice} → <span class="text-yellow-400">$${adjustedPrice}</span>`;
+                    
+                    const serialInfo = document.createElement('div');
+                    serialInfo.className = 'text-xs text-amber-400 font-bold';
+                    serialInfo.textContent = `Serial: ${numbering.display}`;
+                    if (numbering.multiplier > 5) {
+                        serialInfo.className += ' animate-pulse';
+                    }
+                    wrapperDiv.appendChild(serialInfo);
+                } else {
+                    priceDisplay.textContent = `$${currentPrice}`;
+                }
+                wrapperDiv.appendChild(priceDisplay);
+                
+                wrapperDiv.appendChild(cabinetButton);
+                UIElements.packSummaryArea.appendChild(wrapperDiv);
+
+                revealIndex++;
+                setTimeout(revealNext, 500);
+            } else {
+                UIElements.closePackModalBtn.style.display = 'inline-block';
+                const summaryLog = cards.map(c => `<li class="ml-4 list-disc pack-item">${c.name}</li>`).join('');
+                GameLogger.addLogMessage(`Opened a pack: <ul>${summaryLog}</ul>`);
+                UIRenderer.renderAll();
+            }
+        }
+        revealNext();
+    }
+};
+```
+
+## 7. **js/features/events.js**
+```javascript
+import { GameState } from '../core/gameState.js';
+import { GameConfig } from '../config/gameConfig.js';
+import { GameData } from '../config/gameData.js';
+import { GameLogger } from '../core/gameLogger.js';
+import { UIElements } from '../ui/uiElements.js';
+import { UIRenderer } from '../ui/uiRenderer.js';
+import { Travel } from './travel.js';
+
+export const Events = {
+    checkForTravelEvent() {
+        if (Math.random() > GameConfig.travelEventChance || GameState.current.pendingEvent) return;
+
+        const localEvents = [{ type: 'player_sighting', weight: 30 }, { type: 'found_card', weight: 30 }];
+        const remoteEvents = [{ type: 'card_show', weight: 20 }, { type: 'market_flood', weight: 20 }];
+        const allEvents = [...localEvents, ...remoteEvents];
+        
+        const totalWeight = allEvents.reduce((sum, event) => sum + event.weight, 0);
+        let random = Math.random() * totalWeight;
+        
+        for (const event of allEvents) {
+            random -= event.weight;
+            if (random <= 0) {
+                if (remoteEvents.find(e => e.type === event.type)) {
+                    const otherLocations = GameData.locations.filter(l => l.id !== GameState.current.currentLocationId);
+                    const eventLocation = otherLocations[Math.floor(Math.random() * otherLocations.length)];
+                    this.executeEvent(event.type, eventLocation.id, true);
+                } else {
+                    this.executeEvent(event.type, GameState.current.currentLocationId, false);
+                }
+                return;
+            }
+        }
+    },
+
+    executeEvent(eventType, locationId, isRemote) {
+        switch (eventType) {
+            case 'card_show':
+                return this.executeCardShow(locationId, isRemote);
+            case 'market_flood':
+                return this.executeMarketFlood(locationId, isRemote);
+            case 'player_sighting':
+                return this.executePlayerSighting();
+            case 'found_card':
+                return this.executeFoundCard();
+        }
+    },
+
+    executeCardShow(locationId, isRemote) {
+        const targetLocation = GameData.locations.find(loc => loc.id === locationId);
+        const numCards = Math.floor(Math.random() * 3) + 3;
+        const selectedCards = [];
+        const availableCards = GameData.tradableCards.filter(c => c.basePrice >= 50);
+        
+        for (let i = 0; i < numCards && i < availableCards.length; i++) {
+            const randomIndex = Math.floor(Math.random() * availableCards.length);
+            const card = availableCards.splice(randomIndex, 1)[0];
+            selectedCards.push({ cardId: card.id });
+        }
+        
+        const eventData = {
+            type: 'card_show',
+            location: locationId,
+            affectedCards: selectedCards,
+            message: `Word is a Card Show is happening over at ${targetLocation.name}, causing some prices to jump.`
+        };
+        
+        if (isRemote) {
+            GameState.current.pendingEvent = eventData;
+            this.showAnnouncementModal(eventData);
+        } else {
+            GameState.current.activeEvents.push(eventData);
+            this.applyEventEffects(eventData);
+            const cardNames = selectedCards.map(sc => GameState.getCardDetails(sc.cardId).name).join(', ');
+            this.showEventModal({
+                title: "Card Show in Town!",
+                message: `A traveling card show has arrived! The following cards have increased in value: ${cardNames}`
+            });
+        }
+    },
+
+    executeMarketFlood(locationId, isRemote) {
+        const targetLocation = GameData.locations.find(loc => loc.id === locationId);
+        const availableCards = GameData.tradableCards.filter(c => c.basePrice >= 20);
+        const targetCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+        
+        const eventData = {
+            type: 'market_flood',
+            location: locationId,
+            affectedCard: targetCard.id,
+            message: `You hear a rumor that a huge collection was found near ${targetLocation.name}, flooding the market.`
+        };
+
+        if (isRemote) {
+            GameState.current.pendingEvent = eventData;
+            this.showAnnouncementModal(eventData);
+        } else {
+            GameState.current.activeEvents.push(eventData);
+            this.applyEventEffects(eventData);
+            this.showEventModal({
+                title: "Market Flooded!",
+                message: `A large collection of ${targetCard.name} cards was just discovered! Prices have dropped.`
+            });
+        }
+    },
+
+    applyEventEffects(eventData) {
+        const locationMarket = GameState.market[eventData.location];
+        if (!locationMarket) return;
+
+        if (eventData.type === 'card_show') {
+            eventData.affectedCards.forEach(({ cardId }) => {
+                if (locationMarket[cardId]) {
+                    const boostPercent = Math.random() * 20 + 10;
+                    locationMarket[cardId].price = Math.round(locationMarket[cardId].price * (1 + boostPercent / 100));
+                    locationMarket[cardId].eventModified = true;
+                }
+            });
+        } else if (eventData.type === 'market_flood') {
+            if (locationMarket[eventData.affectedCard]) {
+                const dropPercent = Math.random() * 30 + 20;
+                locationMarket[eventData.affectedCard].price = Math.round(locationMarket[eventData.affectedCard].price * (1 - dropPercent / 100));
+                locationMarket[eventData.affectedCard].eventModified = true;
+            }
+        }
+    },
+
+    executePlayerSighting() {
+        const commonSingles = GameState.current.inventory.find(item => item.cardId === 'common_single');
+        if (!commonSingles || commonSingles.quantity < 1) {
+            const bonus = Math.floor(Math.random() * 50) + 25;
+            GameState.current.cash += bonus;
+            this.showEventModal({
+                title: "Near Miss!",
+                message: `You spotted a famous player but had no cards to sign! A fan gave you $${bonus} for pointing them out.`
+            });
+            return;
+        }
+        
+        commonSingles.quantity--;
+        if (commonSingles.quantity <= 0) {
+            GameState.current.inventory = GameState.current.inventory.filter(item => item.cardId !== 'common_single');
+        }
+        
+        let autographedItem = GameState.current.inventory.find(item => item.cardId === 'autographed_common');
+        if (autographedItem) {
+            autographedItem.quantity++;
+        } else {
+            GameState.current.inventory.push({ cardId: 'autographed_common', quantity: 1, totalCost: 0 });
+        }
+
+        this.showEventModal({
+            title: "Player Sighting!",
+            message: "You spotted a famous player at a café! They signed one of your common cards, transforming it into an Autographed Common Card!"
+        });
+        UIRenderer.renderAll();
+    },
+
+    executeFoundCard() {
+        const lootTable = [];
+        GameData.tradableCards.forEach(card => {
+            let weight = 1;
+            if (card.basePrice < 50) weight = 10;
+            else if (card.basePrice < 100) weight = 5;
+            else if (card.basePrice < 200) weight = 2;
+            for (let i = 0; i < weight; i++) lootTable.push(card);
+        });
+        
+        const foundCard = lootTable[Math.floor(Math.random() * lootTable.length)];
+        GameState.current.tempFoundCard = foundCard;
+        
+        this.showEventModal({
+            title: "Lucky Find!",
+            message: `You found a ${foundCard.name} on the ground! Keep it or return it to the store?`,
+            showChoices: true,
+            type: 'found_card'
+        });
+    },
+
+    keepFoundCard() {
+        const foundCard = GameState.current.tempFoundCard;
+        if (!foundCard) return;
+        
+        let inventoryItem = GameState.current.inventory.find(item => item.cardId === foundCard.id);
+        if (inventoryItem) {
+            inventoryItem.quantity++;
+        } else {
+            GameState.current.inventory.push({ cardId: foundCard.id, quantity: 1, totalCost: 0 });
+        }
+        
+        GameLogger.addLogMessage(`You kept the ${foundCard.name}!`);
+        delete GameState.current.tempFoundCard;
+        UIElements.eventModal.classList.add('hidden');
+        UIRenderer.renderAll();
+    },
+
+    returnFoundCard() {
+        const foundCard = GameState.current.tempFoundCard;
+        if (!foundCard) return;
+        
+        let discountPercent;
+        if (foundCard.basePrice < 50) discountPercent = Math.random() * 2 + 3;
+        else if (foundCard.basePrice < 200) discountPercent = Math.random() * 3 + 5;
+        else discountPercent = Math.random() * 3 + 7;
+        
+        GameState.current.storeDiscount = discountPercent;
+        
+        GameLogger.addLogMessage(`You returned the ${foundCard.name} to the store. They gave you a ${Math.round(discountPercent)}% discount for today!`);
+        delete GameState.current.tempFoundCard;
+        UIElements.eventModal.classList.add('hidden');
+        UIRenderer.renderAll();
+    },
+
+    clearOldEvents(locationId) {
+        const locationMarket = GameState.market[locationId];
+        if (!locationMarket) return;
+
+        Object.keys(locationMarket).forEach(cardId => {
+            if (locationMarket[cardId] && locationMarket[cardId].eventModified) {
+                delete locationMarket[cardId].eventModified;
+            }
+        });
+        GameState.current.activeEvents = [];
+    },
+
+    showEventModal(eventResult) {
+        document.getElementById('event-title').textContent = eventResult.title;
+        document.getElementById('event-message').textContent = eventResult.message;
+        
+        const modalContent = UIElements.eventModal.querySelector('.modal-content');
+        const existingChoices = modalContent.querySelector('.event-choices');
+        if (existingChoices) existingChoices.remove();
+        
+        if (eventResult.showChoices && eventResult.type === 'found_card') {
+            UIElements.closeEventModalBtn.style.display = 'none';
+            
+            const choicesDiv = document.createElement('div');
+            choicesDiv.className = 'event-choices flex gap-4 justify-center mt-4';
+            
+            const keepBtn = document.createElement('button');
+            keepBtn.className = 'btn btn-success';
+            keepBtn.textContent = 'Keep It';
+            keepBtn.onclick = () => this.keepFoundCard();
+            
+            const returnBtn = document.createElement('button');
+            returnBtn.className = 'btn btn-primary';
+            returnBtn.textContent = 'Return to Store';
+            returnBtn.onclick = () => this.returnFoundCard();
+            
+            choicesDiv.appendChild(keepBtn);
+            choicesDiv.appendChild(returnBtn);
+            modalContent.appendChild(choicesDiv);
+        } else {
+            UIElements.closeEventModalBtn.style.display = 'inline-block';
+        }
+        
+        UIElements.eventModal.classList.remove('hidden');
+    },
+
+    showAnnouncementModal(eventData) {
+        document.getElementById('announcement-title').textContent = 
+            (eventData.type === 'card_show') ? "Card Show Announced!" : "Market Flood Rumor!";
+        document.getElementById('announcement-message').textContent = eventData.message;
+        
+        const choicesDiv = document.getElementById('announcement-choices');
+        choicesDiv.innerHTML = '';
+
+        const travelBtn = document.createElement('button');
+        travelBtn.className = 'btn btn-success';
+        travelBtn.textContent = `Travel to ${GameData.locations.find(l => l.id === eventData.location).name}`;
+        travelBtn.onclick = () => {
+            UIElements.announcementModal.classList.add('hidden');
+            Travel.travelTo(eventData.location);
+        };
+
+        const ignoreBtn = document.createElement('button');
+        ignoreBtn.className = 'btn btn-danger';
+        ignoreBtn.textContent = 'Ignore';
+        ignoreBtn.onclick = () => {
+            GameState.current.pendingEvent = null;
+            UIElements.announcementModal.classList.add('hidden');
+        };
+
+        choicesDiv.appendChild(travelBtn);
+        choicesDiv.appendChild(ignoreBtn);
+
+        UIElements.announcementModal.classList.remove('hidden');
+    }
+};
+```
+
+## 8. **js/features/travel.js**
+```javascript
+import { GameState } from '../core/gameState.js';
+import { GameData } from '../config/gameData.js';
+import { GameLogger } from '../core/gameLogger.js';
+import { UIRenderer } from '../ui/uiRenderer.js';
+import { Market } from './market.js';
+import { Events } from './events.js';
+import { GameEnd } from './gameEnd.js';
+
+export const Travel = {
+    async travelTo(destinationLocationId) {
+        const previousLocationId = GameState.current.currentLocationId;
+        const travelCostDays = GameData.travelDurations[previousLocationId]?.[destinationLocationId];
+
+        if (travelCostDays === undefined) {
+            GameLogger.addLogMessage("Cannot travel to that location.");
+            return;
+        }
+        if (GameState.current.daysRemaining < travelCostDays) {
+            GameLogger.addLogMessage("Not enough days left to travel!");
+            await GameEnd.checkGameOver();
+            return;
+        }
+        
+        Events.clearOldEvents(previousLocationId);
+        GameState.current.storeDiscount = 0;
+        
+        GameState.current.daysRemaining -= travelCostDays;
+        GameState.current.currentLocationId = destinationLocationId;
+        GameLogger.addLogMessage(`Traveled to ${GameState.getCurrentLocation().name}. Lost ${travelCostDays} day${travelCostDays > 1 ? 's' : ''}.`);
+        GameState.current.boosterPacksPurchasedToday = 0;
+        
+        if (GameState.current.pendingEvent && GameState.current.pendingEvent.location === destinationLocationId) {
+            GameState.current.activeEvents.push(GameState.current.pendingEvent);
+            Events.applyEventEffects(GameState.current.pendingEvent);
+            GameLogger.addLogMessage(`You've arrived just in time for the ${GameState.current.pendingEvent.type.replace(/_/g, ' ')}!`);
+            GameState.current.pendingEvent = null;
+        }
+        
+        Market.updateMarketForCurrentLocation();
+        Events.checkForTravelEvent();
+
+        if (await GameEnd.checkGameOver()) return;
+        UIRenderer.renderAll();
+    }
+};
+```
+
+## 9. **js/features/leaderboard.js**
+```javascript
+import { db } from '../firebase/firebaseConfig.js';
+import { collection, onSnapshot, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { GameState } from '../core/gameState.js';
+import { GameConfig } from '../config/gameConfig.js';
+import { GameLogger } from '../core/gameLogger.js';
+import { UIElements } from '../ui/uiElements.js';
+import { UIRenderer } from '../ui/uiRenderer.js';
+import { GameEnd } from './gameEnd.js';
+
+export const Leaderboard = {
+    getLeaderboardCollection() {
+        return collection(db, 'artifacts', GameConfig.appId, 'public', 'data', 'leaderboard');
+    },
+
+    async listenForLeaderboardUpdates() {
+        onSnapshot(this.getLeaderboardCollection(), (snapshot) => {
+            const scores = [];
+            snapshot.forEach(doc => {
+                scores.push({ id: doc.id, ...doc.data() });
+            });
+            GameState.leaderboardScores = scores.sort((a, b) => b.score - a.score);
+            const topScores = GameState.leaderboardScores.slice(0, GameConfig.leaderboard.inGameSize);
+            UIElements.inGameLeaderboardTitle.textContent = `Global Top ${GameConfig.leaderboard.inGameSize}`;
+            UIRenderer.renderLeaderboard(topScores, UIElements.leaderboardList);
+        });
+    },
+
+    async submitHighScore() {
+        const initials = document.getElementById('player-initials').value.trim().toUpperCase();
+        if (initials.length !== 3 || !/^[A-Z]{3}$/.test(initials)) {
+            alert("Please enter exactly 3 letters.");
+            return;
+        }
+        UIElements.submitScoreBtn.disabled = true;
+        UIElements.submitScoreBtn.textContent = "Submitting...";
+        
+        let cabinetValue = 0;
+        GameState.current.displayCabinet.forEach(item => {
+            cabinetValue += (item.capturedValue || 0);
+        });
+        const totalScore = GameState.current.cash + cabinetValue;
+        
+        const scoreData = {
+            initials: initials,
+            score: totalScore,
+            cash: GameState.current.cash,
+            cabinetValue: cabinetValue,
+            timestamp: new Date(),
+            cabinet: GameState.current.displayCabinet
+        };
+
+        try {
+            await addDoc(this.getLeaderboardCollection(), scoreData);
+            const snapshot = await getDocs(this.getLeaderboardCollection());
+            if (snapshot.docs.length > GameConfig.leaderboard.size) {
+                const allScores = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allScores.sort((a, b) => b.score - a.score);
+                const scoresToDelete = allScores.slice(GameConfig.leaderboard.size);
+                for (const score of scoresToDelete) {
+                    await deleteDoc(doc(db, 'artifacts', GameConfig.appId, 'public', 'data', 'leaderboard', score.id));
+                }
+            }
+            GameLogger.addLogMessage(`High score of ${totalScore.toLocaleString()} submitted for ${initials}!`);
+            await GameEnd.showGameOverScreen();
+        } catch (error) {
+            console.error("Error submitting high score: ", error);
+            GameLogger.addLogMessage("Error: Could not submit high score.");
+            await GameEnd.showGameOverScreen();
+        } finally {
+            UIElements.highScoreModal.classList.add('hidden');
+            UIElements.submitScoreBtn.disabled = false;
+            UIElements.submitScoreBtn.textContent = "Submit Score";
+        }
+    }
+};
+```
+
+## 10. **js/features/gameEnd.js**
+```javascript
+import { GameState } from '../core/gameState.js';
+import { GameConfig } from '../config/gameConfig.js';
+import { GameLogger } from '../core/gameLogger.js';
+import { UIElements } from '../ui/uiElements.js';
+import { UIRenderer } from '../ui/uiRenderer.js';
+import { CardVisuals } from '../ui/cardVisuals.js';
+
+export const GameEnd = {
+    async checkGameOver() {
+        if (GameState.current.daysRemaining <= 0) {
+            let cabinetValue = 0;
+            GameState.current.displayCabinet.forEach(item => {
+                cabinetValue += (item.capturedValue || 0);
+            });
+            const totalScore = GameState.current.cash + cabinetValue;
+            
+            GameLogger.addLogMessage(`Game Over! Final cash: ${GameState.current.cash.toLocaleString()}, Cabinet value: ${cabinetValue}, Total: ${totalScore.toLocaleString()}.`);
+            
+            const lowestHighScore = GameState.leaderboardScores.length > 0 ? 
+                GameState.leaderboardScores[Math.min(GameState.leaderboardScores.length - 1, GameConfig.leaderboard.size - 1)].score : 0;
+            if (totalScore > lowestHighScore || GameState.leaderboardScores.length < GameConfig.leaderboard.size) {
+                document.getElementById('high-score-final-score').innerHTML = 
+                    `${GameState.current.cash.toLocaleString()} + ${cabinetValue} cabinet = <span class="text-green-400">${totalScore.toLocaleString()}</span>`;
+                UIElements.highScoreModal.classList.remove('hidden');
+            } else {
+                await this.showGameOverScreen();
+            }
+            return true;
+        }
+        return false;
+    },
+
+    async showGameOverScreen() {
+        const gameOverCabinetList = document.getElementById('game-over-cabinet-list');
+        gameOverCabinetList.innerHTML = '';
+        
+        let cabinetValue = 0;
+        
+        if (GameState.current.displayCabinet.length > 0) {
+            GameState.current.displayCabinet.forEach(cabinetItem => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'flex flex-col items-center';
+                
+                const cardVisual = CardVisuals.createCardVisual(cabinetItem);
+                cardWrapper.appendChild(cardVisual);
+                
+                const valueDisplay = document.createElement('div');
+                valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+                valueDisplay.textContent = `${cabinetItem.capturedValue || 0}`;
+                cardWrapper.appendChild(valueDisplay);
+                
+                gameOverCabinetList.appendChild(cardWrapper);
+                cabinetValue += (cabinetItem.capturedValue || 0);
+            });
+            document.getElementById('game-over-cabinet-section').style.display = 'block';
+        } else {
+            document.getElementById('game-over-cabinet-section').style.display = 'none';
+        }
+
+        const totalScore = GameState.current.cash + cabinetValue;
+        
+        const topScores = GameState.leaderboardScores.slice(0, GameConfig.leaderboard.size);
+        document.getElementById('final-score').innerHTML = 
+            `${GameState.current.cash.toLocaleString()} <span class="text-lg">(+ ${cabinetValue} cabinet)</span> = <span class="text-green-400">${totalScore.toLocaleString()}</span>`;
+        UIRenderer.renderLeaderboard(topScores, document.getElementById('game-over-leaderboard-list'));
+        UIElements.gameOverModal.classList.remove('hidden');
+    }
+};
+```
+
+## 11. **js/config/gameData.js** (Complete Version)
+```javascript
+import { GameConfig } from './gameConfig.js';
+
+export const GameData = {
+    locations: [
+        { 
+            id: 'toots_and_rips', 
+            name: 'Toots and Rips', 
+            description: 'High-end collectibles and rare finds. Specializes in autographed and jersey cards.', 
+            priceBias: 1.15, 
+            availabilityBias: 0.85,
+            specialization: 'high_end',
+            boosterPrice: GameConfig.boosterPack.basePrice
+        },
+        { 
+            id: 'tree_city_cards', 
+            name: 'Tree City Cards', 
+            description: 'A local favorite for all types of trading cards. Best source for rookie cards.', 
+            priceBias: 1.0, 
+            availabilityBias: 1.0,
+            specialization: 'rookies',
+            boosterPrice: 300
+        },
+        { 
+            id: 'cards_r_us', 
+            name: 'Cards\'R\'us', 
+            description: 'Large inventory, volume dealer. Buy 5+ of any card for 10% discount.', 
+            priceBias: 1.05, 
+            availabilityBias: 1.1,
+            specialization: 'volume',
+            boosterPrice: GameConfig.boosterPack.basePrice
+        },
+        { 
+            id: 'all_cards', 
+            name: 'All Cards', 
+            description: 'Massive inventory (5-50 of each card) but 2 days from everywhere.', 
+            priceBias: 0.9, 
+            availabilityBias: 1.15,
+            specialization: 'bulk',
+            boosterPrice: GameConfig.boosterPack.basePrice
+        },
+        { 
+            id: 'klpa_emporium', 
+            name: 'KLPA Emporium', 
+            description: 'A massive emporium with mystery packs containing guaranteed rares.', 
+            priceBias: 1.1, 
+            availabilityBias: 1.05,
+            specialization: 'mystery',
+            boosterPrice: 400
+        },
+        { 
+            id: 'mom_and_pops', 
+            name: 'Mom and Pop\'s', 
+            description: 'A cozy shop with trade-in service: 25 commons for 1 random better card.', 
+            priceBias: 0.95, 
+            availabilityBias: 0.95,
+            specialization: 'trade_in',
+            boosterPrice: GameConfig.boosterPack.basePrice
+        },
+    ],
+    
+    travelDurations: {
+        'toots_and_rips':  { 'tree_city_cards': 1, 'cards_r_us': 2, 'all_cards': 2, 'klpa_emporium': 2, 'mom_and_pops': 1 },
+        'tree_city_cards': { 'toots_and_rips': 1, 'cards_r_us': 1, 'all_cards': 2, 'klpa_emporium': 2, 'mom_and_pops': 1 },
+        'cards_r_us':      { 'toots_and_rips': 2, 'tree_city_cards': 1, 'all_cards': 2, 'klpa_emporium': 3, 'mom_and_pops': 2 },
+        'all_cards':       { 'toots_and_rips': 2, 'tree_city_cards': 2, 'cards_r_us': 2, 'klpa_emporium': 2, 'mom_and_pops': 2 },
+        'klpa_emporium':   { 'toots_and_rips': 2, 'tree_city_cards': 2, 'cards_r_us': 3, 'all_cards': 2, 'mom_and_pops': 1 },
+        'mom_and_pops':    { 'toots_and_rips': 1, 'tree_city_cards': 1, 'cards_r_us': 2, 'all_cards': 2, 'klpa_emporium': 1 }
+    },
+
+    cards: [
+        { id: 'autographed_jersey', name: 'Autographed Jersey Card', basePrice: 650, description: 'Features a piece of player-worn jersey and a signature.' },
+        { id: 'numbered_rookie_auto', name: 'Numbered Rookie Auto', basePrice: 500, description: 'A rookie card with a signature, serial numbered to 99.' },
+        { id: 'holo_legend', name: 'Holo Legend Card', basePrice: 220, description: 'A holographic card of an iconic player from the past.' },
+        { id: 'numbered_legend', name: 'Numbered Legend', basePrice: 420, description: 'A card of a legendary player numbered to 25.' },
+        { id: 'game_worn_relic', name: 'Game-Worn Relic', basePrice: 180, description: 'Contains a piece of a game-used, jesery, ball, net or cleat.' },
+        { id: 'prized_rookie_card', name: 'Prized Rookie Card', basePrice: 120, description: 'A highly sought-after rookie card of a top prospect.' },
+        { id: 'favorite_player', name: 'Favorite Player Card', basePrice: 75, description: 'A standard card of a fan-favorite player.' },
+        { id: 'autographed_common', name: 'Autographed Common Card', basePrice: 95, description: 'A common card, now with a valuable signature.' },
+        { id: 'common_single', name: 'Common Single', basePrice: 5, description: 'A single common card.' },
+        { id: 'booster_pack', name: 'Booster Pack', basePrice: GameConfig.boosterPack.basePrice, special: true },
+    ],
+
+    get tradableCards() {
+        return this.cards.filter(card => !card.special);
+    }
+};
+```
+
+## 12. **js/core/gameController.js** (Complete Version with missing imports)
+```javascript
+import { GameState } from './gameState.js';
+import { GameConfig } from '../config/gameConfig.js';
+import { Market } from '../features/market.js';
+import { GameLogger } from './gameLogger.js';
+import { UIRenderer } from '../ui/uiRenderer.js';
+import { UIElements } from '../ui/uiElements.js';
+import { Trading } from '../features/trading.js';
+import { Travel } from '../features/travel.js';
+import { Cabinet } from '../features/cabinet.js';
+import { Leaderboard } from '../features/leaderboard.js';
+import { Events } from '../features/events.js';
+import { GameEnd } from '../features/gameEnd.js';
+
+export const GameController = {
+    initializeGame() {
+        GameState.initialize();
+        Market.generateAllMarketPrices();
+        Market.updateMarketForCurrentLocation();
+        GameLogger.addLogMessage(`Welcome! You have ${GameConfig.initialDays} days. Starting at ${GameState.getCurrentLocation().name}.`);
+        UIRenderer.renderAll();
+        UIElements.gameOverModal.classList.add('hidden');
+        UIElements.highScoreModal.classList.add('hidden');
+    },
+
+    setupEventHandlers() {
+        // Market click handler
+        UIElements.marketItems.addEventListener('click', (e) => {
+            const button = e.target.closest('button[data-action]');
+            if (!button) return;
+            const action = button.dataset.action;
+            const cardId = button.dataset.cardId;
+            if (!action || !cardId) return;
+
+            if (action === 'buy-qty') Trading.buyItemQty(cardId);
+            else if (action === 'buy-all') Trading.buyAllItems(cardId);
+        });
+        
+        // Inventory click handler
+        UIElements.inventoryItems.addEventListener('click', (e) => {
+            const button = e.target.closest('button[data-action]');
+            if (!button) return;
+            const action = button.dataset.action;
+            const cardId = button.dataset.cardId;
+            if (!action || !cardId) return;
+
+            if (action === 'sell-qty') Trading.sellItemQty(cardId);
+            else if (action === 'sell-all') Trading.sellAllItems(cardId);
+        });
+
+        // Leaderboard click handler
+        const handleLeaderboardClick = (e) => {
+            const button = e.target.closest('button[data-action="view-cabinet"]');
+            if (button) {
+                const scoreId = button.dataset.scoreId;
+                const score = GameState.leaderboardScores.find(s => s.id === scoreId);
+                if (score && score.cabinet) {
+                    Cabinet.showPlayerCabinet(score.cabinet);
+                }
+            }
+        };
+        
+        UIElements.leaderboardList.addEventListener('click', handleLeaderboardClick);
+        UIElements.gameOverLeaderboardList.addEventListener('click', handleLeaderboardClick);
+
+        // Button handlers
+        UIElements.restartGameBtn.addEventListener('click', () => {
+            GameLogger.addLogMessage("Restarting game...");
+            this.initializeGame();
+        });
+        UIElements.playAgainBtn.addEventListener('click', () => {
+            UIElements.gameOverModal.classList.add('hidden');
+            this.initializeGame();
+        });
+        UIElements.closePackModalBtn.addEventListener('click', () => {
+            UIElements.boosterPackModal.classList.add('hidden');
+        });
+        UIElements.closeEventModalBtn.addEventListener('click', () => {
+            UIElements.eventModal.classList.add('hidden');
+        });
+        UIElements.helpTextToggle.addEventListener('change', (e) => {
+            GameState.current.showHelpText = e.target.checked;
+            UIRenderer.renderAll();
+        });
+        UIElements.submitScoreBtn.addEventListener('click', () => Leaderboard.submitHighScore());
+        UIElements.cancelCabinetModalBtn.addEventListener('click', () => {
+            UIElements.cabinetModal.classList.add('hidden');
+        });
+        UIElements.manageCabinetBtn.addEventListener('click', () => Cabinet.showManageCabinetModal());
+        UIElements.closeViewCabinetBtn.addEventListener('click', () => {
+            UIElements.viewCabinetModal.classList.add('hidden');
+        });
+    }
+};
+```
