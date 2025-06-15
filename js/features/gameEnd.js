@@ -6,6 +6,11 @@ import { UIRenderer } from '../ui/uiRenderer.js';
 import { CardVisuals } from '../ui/cardVisuals.js';
 
 export const GameEnd = {
+    async forceEndGame() {
+        GameLogger.addLogMessage("You have chosen to end your journey.");
+        GameState.current.daysRemaining = 0;
+        await this.checkGameOver();
+    },
     async checkGameOver() {
         if (GameState.current.daysRemaining <= 0) {
             let cabinetValue = 0;
