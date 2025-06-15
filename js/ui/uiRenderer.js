@@ -7,6 +7,7 @@ import { Trading } from '../features/trading.js';
 import { BoosterPacks } from '../features/boosterPacks.js';
 import { Travel } from '../features/travel.js';
 import { Cabinet } from '../features/cabinet.js';
+import { GameEnd } from '../features/gameEnd.js'
 
 export const UIRenderer = {
     renderAll() {
@@ -200,19 +201,52 @@ export const UIRenderer = {
         });
     },
 
-    renderTravelOptions() {
-        UIElements.travelOptions.innerHTML = '';
-        const currentLocationId = GameState.current.currentLocationId;
-        GameData.locations.forEach(location => {
-            if (location.id === currentLocationId) return;
-            const travelCost = GameData.travelDurations[currentLocationId]?.[location.id] || 99;
-            const button = document.createElement('button');
-            button.className = 'btn btn-primary w-full text-left';
-            button.textContent = `${location.name} (${travelCost} day${travelCost > 1 ? 's' : ''})`;
-            button.title = location.description;
-            button.onclick = () => Travel.travelTo(location.id);
-            UIElements.travelOptions.appendChild(button);
-        });
+renderTravelOptions() {
+        UIElements.travelOptions.innerHTML = ''; //  Clear existing options first
+        const daysLeft = GameState.current.daysRemaining; //  Get the current days remaining
+        const currentLocationId = GameState.current.currentLocationId; //  Get the current location
+
+        // Create the "End Game" button to be used in the conditions below
+        const endGameBtn = document.createElement('button');
+        endGameBtn.className = 'btn btn-danger w-full text-left'; // Use danger style for emphasis
+        endGameBtn.textContent = 'End Your Journey';
+        endGameBtn.title = 'Finish the game with your current cash and see your final score.';
+        endGameBtn.onclick = () => GameEnd.forceEndGame();
+
+        if (daysLeft <= 1) {
+            // Case 1: 1 day or less left, only show the "End Game" button
+            UIElements.travelOptions.appendChild(endGameBtn);
+        } else if (daysLeft === 2) {
+            // Case 2: Exactly 2 days left, show "End Game" and 1-day travel options
+            UIElements.travelOptions.appendChild(endGameBtn);
+
+            GameData.locations.forEach(location => { // 
+                if (location.id === currentLocationId) return; // 
+                const travelCost = GameData.travelDurations[currentLocationId]?.[location.id] || 99; // 
+                
+                // Only show locations that are 1 day away
+                if (travelCost === 1) {
+                    const button = document.createElement('button'); // 
+                    button.className = 'btn btn-primary w-full text-left'; // 
+                    button.textContent = `${location.name} (${travelCost} day)`; // 
+                    button.title = location.description; // 
+                    button.onclick = () => Travel.travelTo(location.id); // 
+                    UIElements.travelOptions.appendChild(button); // 
+                }
+            });
+        } else {
+            // Case 3: More than 2 days left, show all normal travel options
+            GameData.locations.forEach(location => { // 
+                if (location.id === currentLocationId) return; // 
+                const travelCost = GameData.travelDurations[currentLocationId]?.[location.id] || 99; // 
+                const button = document.createElement('button'); // 
+                button.className = 'btn btn-primary w-full text-left'; // 
+                button.textContent = `${location.name} (${travelCost} day${travelCost > 1 ? 's' : ''})`; // 
+                button.title = location.description; // 
+                button.onclick = () => Travel.travelTo(location.id); // 
+                UIElements.travelOptions.appendChild(button); // 
+            });
+        }
     },
 
     renderLog() {
