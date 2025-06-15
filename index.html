@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collectible Trader Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div id="game-container" class="container mx-auto max-w-6xl">
+        <header class="mb-6 text-center">
+            <h1 class="text-4xl font-bold text-red-400">Soccer Card Trader</h1>
+        </header>
+
+        <div id="player-stats-container" class="card mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+             <div><p class="text-sm text-gray-400">Cash</p><p id="cash" class="text-2xl font-semibold text-green-400">$0</p></div>
+             <div><p class="text-sm text-gray-400">Days Remaining</p><p id="days" class="text-2xl font-semibold text-amber-400">0</p></div>
+             <div><p class="text-sm text-gray-400">Current Location</p><p id="current-location-name" class="text-xl font-semibold text-gray-300">-</p></div>
+             <div><button id="restart-game-btn" class="btn btn-danger w-full mt-2 md:mt-0">Restart Game</button></div>
+        </div>
+
+       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div id="market-section" class="card lg:col-span-2">
+                <div class="flex justify-between items-start mb-3"><h2 class="text-2xl font-semibold" id="market-location-name">-</h2><div id="special-actions-container" class="flex flex-col sm:flex-row gap-2 items-center"></div></div>
+                <div class="overflow-x-auto"><table class="w-full min-w-max">
+                    <thead class="bg-gray-700/50">
+                        <tr>
+                            <th class="table-cell">Card Type</th>
+                            <th class="table-cell">Price</th>
+                            <th class="table-cell">Supply</th>
+                            <th class="table-cell">Quantity</th>
+                            <th class="table-cell">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="market-items"></tbody>
+                </table></div>
+            </div>
+
+            <div class="space-y-6">
+                <div id="travel-section" class="card">
+                    <h2 class="text-2xl font-semibold mb-3">Travel To:</h2>
+                    <div id="travel-options" class="space-y-2"></div>
+                </div>
+                <div id="log-section" class="card">
+                    <h2 class="text-2xl font-semibold mb-3">Game Log</h2>
+                    <div id="log-messages" class="h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-md p-2 text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <div id="inventory-section" class="card">
+                <h2 class="text-2xl font-semibold mb-3">Your Portfolio & Selling</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-max">
+                        <thead class="bg-gray-700/50">
+                            <tr>
+                                <th class="table-cell">Card Type</th>
+                                <th class="table-cell">Held</th>
+                                <th class="table-cell">Avg. Buy Price</th>
+                                <th class="table-cell">Current Sell Price</th>
+                                <th class="table-cell">Quantity</th>
+                                <th class="table-cell">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-items"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div id="display-cabinet-section" class="card lg:col-span-2">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-2xl font-semibold text-cyan-400">Display Cabinet</h2>
+                    <button id="manage-cabinet-btn" class="btn btn-secondary">Manage</button>
+                </div>
+                <div id="display-cabinet-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4">
+                    <p id="display-cabinet-placeholder" class="text-gray-500 col-span-full">Your best pulls will be shown here. Open a booster pack to add cards!</p>
+                </div>
+            </div>
+
+            <div id="leaderboard-section" class="card">
+                <h2 id="in-game-leaderboard-title" class="text-2xl font-semibold mb-3 text-amber-400">Global Top 3</h2>
+                <div id="leaderboard-list" class="space-y-2">
+                    <p class="text-gray-500">Loading leaderboard...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 text-center"><label class="flex items-center justify-center space-x-2"><input type="checkbox" id="help-text-toggle" class="form-checkbox h-5 w-5 bg-gray-700 border-gray-600 text-red-500 focus:ring-red-500" checked><span class="text-gray-400">Show Help Text</span></label></div>
+    </div>
+
+    <div id="game-over-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="game-over-title" class="text-3xl font-bold mb-4">Game Over!</h2>
+            <p id="game-over-message" class="text-lg mb-2">You've completed your trading journey.</p>
+            <p class="text-xl mb-4">Your Final Score: <span id="final-score" class="text-2xl font-bold text-green-400">$0</span></p>
+            <div id="game-over-cabinet-section" class="mt-4">
+                <h3 class="text-xl font-semibold text-cyan-400">Your Final Cabinet</h3>
+                <div id="game-over-cabinet-list" class="grid grid-cols-3 gap-4 mt-2"></div>
+            </div>
+            <hr class="border-gray-600 my-4">
+            <h3 class="text-2xl font-semibold mb-3 text-amber-400">Global Top 10</h3>
+            <div id="game-over-leaderboard-list" class="space-y-2 text-left max-h-64 overflow-y-auto"></div>
+            <button id="play-again-btn" class="btn btn-primary text-lg px-8 py-3 mt-6">Try Again</button>
+        </div>
+    </div>
+    
+    <div id="booster-pack-modal" class="modal hidden"><div class="modal-content"><h2 class="text-3xl font-bold mb-4">Your Haul!</h2><div id="pack-summary-area" class="flex flex-row flex-wrap justify-center items-center gap-4 my-6 min-h-[144px]"></div><div class="text-center"><button id="close-pack-modal-btn" class="btn btn-primary mt-4">Awesome!</button></div></div></div>
+    <div id="event-modal" class="modal hidden"><div class="modal-content"><h2 id="event-title" class="text-3xl font-bold mb-4 text-red-400">Random Event!</h2><p id="event-message" class="text-lg mb-6">Something unexpected happened...</p><button id="close-event-modal-btn" class="btn btn-primary">Continue</button></div></div>
+    <div id="high-score-modal" class="modal hidden"><div class="modal-content"><h2 class="text-3xl font-bold mb-2 text-amber-400">New High Score!</h2><p class="text-lg mb-4">You made the global leaderboard!</p><p class="text-xl mb-2">Final Score:</p><p id="high-score-final-score" class="text-4xl font-bold text-green-400 mb-6">$0</p><div class="mb-6"><label for="player-initials" class="block text-lg mb-2">Enter Your Initials (3 letters)</label><input type="text" id="player-initials" maxlength="3" class="mx-auto w-24 text-2xl font-bold uppercase p-2 tracking-widest" pattern="[A-Za-z]{3}"></div><button id="submit-score-btn" class="btn btn-success text-lg px-8 py-3">Submit Score</button></div></div>
+    <div id="cabinet-modal" class="modal hidden"><div class="modal-content"><h2 id="cabinet-modal-title" class="text-3xl font-bold mb-2 text-cyan-400">Cabinet Full!</h2><p id="cabinet-modal-message" class="text-lg mb-4">Choose a card to replace with your new pull.</p><div id="cabinet-modal-options" class="grid grid-cols-3 gap-4 my-6"></div><button id="cancel-cabinet-modal-btn" class="btn btn-danger">Cancel</button></div></div>
+    <div id="view-cabinet-modal" class="modal hidden"><div class="modal-content"><h2 id="view-cabinet-title" class="text-3xl font-bold mb-4 text-cyan-400">Player's Cabinet</h2><div id="view-cabinet-list" class="grid grid-cols-3 gap-4 my-6"></div><button id="close-view-cabinet-btn" class="btn btn-primary">Close</button></div></div>
+    <div id="announcement-modal" class="modal hidden"><div class="modal-content"><h2 id="announcement-title" class="text-3xl font-bold mb-4 text-amber-400">Heads Up!</h2><p id="announcement-message" class="text-lg mb-6">A market event is happening elsewhere...</p><div id="announcement-choices" class="event-choices flex gap-4 justify-center mt-4"></div></div></div>
+
+    <script type="module" src="js/main.js"></script>
+
+</body>
+</html>
