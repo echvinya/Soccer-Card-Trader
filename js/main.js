@@ -1,16 +1,29 @@
+// js/main.js
+
 import { auth } from './firebase/firebaseConfig.js';
 import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { GameController } from './core/gameController.js';
 import { Leaderboard } from './features/leaderboard.js';
+import { UIElements } from './ui/uiElements.js'; // <-- Import UIElements
 
-// This function starts the application
+// This function will run once the HTML document is fully loaded.
+document.addEventListener('DOMContentLoaded', () => {
+    // This is the perfect place to initialize our UI Elements
+    UIElements.init();
+
+    // Now that the elements are loaded, we can start the app authentication
+    startApp();
+});
+
+
+// This function handles Firebase auth and starts the game logic
 function startApp() {
     onAuthStateChanged(auth, user => {
         if (user) {
             // User is signed in anonymously.
             console.log("User is signed in:", user.uid);
             
-            // Initialize the game
+            // Initialize the game state and render the UI
             GameController.initializeGame();
 
             // Setup all the button and input event handlers
@@ -39,6 +52,3 @@ function startApp() {
         }
     });
 }
-
-// Start the application
-startApp();
