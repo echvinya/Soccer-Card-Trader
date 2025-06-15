@@ -8,6 +8,8 @@ import { Trading } from '../features/trading.js';
 import { Travel } from '../features/travel.js';
 import { Cabinet } from '../features/cabinet.js';
 import { Leaderboard } from '../features/leaderboard.js';
+import { Events } from '../features/events.js';
+import { GameEnd } from '../features/gameEnd.js';
 
 export const GameController = {
     initializeGame() {
