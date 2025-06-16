@@ -52,38 +52,97 @@ export const UIRenderer = {
         });
     },
 
-    renderMarket() {
-        UIElements.marketItems.innerHTML = '';
-        const locationMarket = GameState.market[GameState.current.currentLocationId];
-        if (!locationMarket) {
-            UIElements.marketItems.innerHTML = '<div class="p-4 text-center">Market data not available.</div>';
-            return;
-        }
+   renderMarket() {
+    // Clear previous market items and special actions
+    UIElements.marketItems.innerHTML = '';
+    UIElements.specialActionsContainer.innerHTML = '';
 
-        GameData.tradableCards.forEach(card => {
-            const marketInfo = locationMarket[card.id];
-            if (!marketInfo) return;
+    const location = GameState.getCurrentLocation();
+    const locationMarket = GameState.market[GameState.current.currentLocationId];
 
-            const priceColorClass = GameState.current.hasPriceGuide ? (marketInfo.price > card.basePrice ? 'text-green-400' : 'text-red-400') : 'text-gray-300';
-            const priceIndicatorHtml = GameState.current.hasPriceGuide ? (marketInfo.price > card.basePrice ? `<span class="ml-2 text-green-400" title="Price is above base value">▲</span>` : `<span class="ml-2 text-red-400" title="Price is below base value">▼</span>`) : '';
+    if (!locationMarket) {
+        UIElements.marketItems.innerHTML = '<div class="p-4 text-center">Market data not available.</div>';
+        return;
+    }
 
-            const cardWrapper = document.createElement('div');
-            cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-3 md:p-0';
-            
-            cardWrapper.innerHTML = `
-                <div class="block md:table-cell align-middle p-1 md:p-2"><div class="font-bold">${card.name}</div><div class="text-xs text-gray-400 font-normal block md:hidden mt-1">${card.description}</div></div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Price: </span><span class="${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Supply: </span>${marketInfo.available}</div>
-                <div class="block md:table-cell align-middle p-1 md:p-2 mt-2 md:mt-0">
-                    <div class="flex items-center justify-between md:justify-start gap-3">
-                        <input type="number" id="buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1" class="w-16 text-center">
-                        <div class="flex items-center gap-2"><button class="btn btn-success btn-compact" title="Buy Quantity" data-card-id="${card.id}" data-action="buy-qty" ${marketInfo.available === 0 ? 'disabled' : ''}>Buy</button><button class="btn btn-success btn-compact" title="Buy All" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>All</button></div>
-                    </div>
+    // --- START: RE-ADDED BUTTON LOGIC ---
+    // This entire block was missing and has been restored.
+
+    // Logic for Price Guide Button 
+    if (!GameState.current.hasPriceGuide) {
+        const priceGuideBtn = document.createElement('button');
+        priceGuideBtn.className = 'btn btn-secondary';
+        priceGuideBtn.innerHTML = `Buy Price Guide <span class="font-bold ml-2">$${GameConfig.priceGuideCost}</span>`;
+        priceGuideBtn.title = `Reveals if a card's current price is above or below its base value.`;
+        priceGuideBtn.onclick = () => Trading.buyPriceGuide();
+        UIElements.specialActionsContainer.appendChild(priceGuideBtn);
+    }
+
+    // Logic for Trade-In Button 
+    if (location.specialization === 'trade_in') {
+        const commonCount = GameState.current.inventory.find(item => item.cardId === 'common_single')?.quantity || 0;
+        const tradeInBtn = document.createElement('button');
+        tradeInBtn.className = 'btn btn-secondary';
+        tradeInBtn.innerHTML = `Trade 25 Commons <span class="font-bold ml-2">(Have: ${commonCount})</span>`;
+        tradeInBtn.title = 'Trade 25 Common Singles for 1 random better card';
+        tradeInBtn.disabled = commonCount < 25;
+        tradeInBtn.onclick = () => Trading.executeTradeIn();
+        UIElements.specialActionsContainer.appendChild(tradeInBtn);
+    }
+
+    // Logic for Booster Pack Button 
+    const boosterPackBtn = document.createElement('button');
+    boosterPackBtn.className = 'btn btn-special';
+    const locationBoosterPrice = location.boosterPrice;
+    boosterPackBtn.innerHTML = `Buy Booster Pack <span class="font-bold ml-2">$${locationBoosterPrice}</span>`;
+
+    if (location.specialization === 'rookies') {
+        boosterPackBtn.title = 'Get 3-5 random cards with higher chance of rookies!';
+    } else if (location.specialization === 'mystery') {
+        boosterPackBtn.title = 'Mystery pack: Guaranteed to contain at least one rare card!';
+    } else {
+        boosterPackBtn.title = 'Get 3-5 random cards. A high-risk, high-reward gamble!';
+    }
+    
+    if (!locationMarket.boosterAvailable) {
+        boosterPackBtn.disabled = true;
+        boosterPackBtn.textContent = 'Boosters Sold Out Today';
+    } else if (GameState.current.boosterPacksPurchasedToday >= GameConfig.boosterPack.dailyLimit) {
+        boosterPackBtn.disabled = true;
+        boosterPackBtn.textContent = `Daily Limit Reached (${GameConfig.boosterPack.dailyLimit})`;
+    } else {
+        boosterPackBtn.onclick = () => BoosterPacks.buyBoosterPack(locationBoosterPrice);
+    }
+    UIElements.specialActionsContainer.appendChild(boosterPackBtn);
+
+    // --- END: RE-ADDED BUTTON LOGIC ---
+
+
+    // This is the existing logic for rendering the market items as cards.
+    GameData.tradableCards.forEach(card => {
+        const marketInfo = locationMarket[card.id];
+        if (!marketInfo) return;
+
+        const priceColorClass = GameState.current.hasPriceGuide ? (marketInfo.price > card.basePrice ? 'text-green-400' : 'text-red-400') : 'text-gray-300';
+        const priceIndicatorHtml = GameState.current.hasPriceGuide ? (marketInfo.price > card.basePrice ? `<span class="ml-2 text-green-400" title="Price is above base value">▲</span>` : `<span class="ml-2 text-red-400" title="Price is below base value">▼</span>`) : '';
+
+        const cardWrapper = document.createElement('div');
+        cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-3 md:p-0';
+        
+        cardWrapper.innerHTML = `
+            <div class="block md:table-cell align-middle p-1 md:p-2"><div class="font-bold">${card.name}</div><div class="text-xs text-gray-400 font-normal block md:hidden mt-1">${card.description}</div></div>
+            <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Price: </span><span class="${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div>
+            <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Supply: </span>${marketInfo.available}</div>
+            <div class="block md:table-cell align-middle p-1 md:p-2 mt-2 md:mt-0">
+                <div class="flex items-center justify-between md:justify-start gap-3">
+                    <input type="number" id="buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1" class="w-16 text-center">
+                    <div class="flex items-center gap-2"><button class="btn btn-success btn-compact" title="Buy Quantity" data-card-id="${card.id}" data-action="buy-qty" ${marketInfo.available === 0 ? 'disabled' : ''}>Buy</button><button class="btn btn-success btn-compact" title="Buy All" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>All</button></div>
                 </div>
-            `;
-            UIElements.marketItems.appendChild(cardWrapper);
-        });
-    },
+            </div>
+        `;
+        UIElements.marketItems.appendChild(cardWrapper);
+    });
+},
 
     renderInventory() {
         UIElements.inventoryItems.innerHTML = '';
