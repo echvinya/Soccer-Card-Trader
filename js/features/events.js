@@ -103,26 +103,40 @@ export const Events = {
         }
     },
 
-    applyEventEffects(eventData) {
-        const locationMarket = GameState.market[eventData.location];
-        if (!locationMarket) return;
+applyEventEffects(eventData) {
+    const locationMarket = GameState.market[eventData.location];
+    if (!locationMarket) return;
 
-        if (eventData.type === 'card_show') {
-            eventData.affectedCards.forEach(({ cardId }) => {
-                if (locationMarket[cardId]) {
-                    const boostPercent = Math.random() * 20 + 10;
-                    locationMarket[cardId].price = Math.round(locationMarket[cardId].price * (1 + boostPercent / 100));
-                    locationMarket[cardId].eventModified = true;
-                }
-            });
-        } else if (eventData.type === 'market_flood') {
-            if (locationMarket[eventData.affectedCard]) {
-                const dropPercent = Math.random() * 30 + 20;
-                locationMarket[eventData.affectedCard].price = Math.round(locationMarket[eventData.affectedCard].price * (1 - dropPercent / 100));
-                locationMarket[eventData.affectedCard].eventModified = true;
+    if (eventData.type === 'card_show') {
+        eventData.affectedCards.forEach(({ cardId }) => {
+            if (locationMarket[cardId]) {
+                const card = GameState.getCardDetails(cardId); // Get card details for basePrice
+                if (!card) return;
+
+                // New Logic: Calculate a 150% to 250% increase from the BASE price.
+                // A 150% increase means the final price is 2.5x the base price.
+                const boostMultiplier = Math.random() * 1.0 + 1.5; // Random multiplier between 1.5 and 2.5
+                const newPrice = Math.round(card.basePrice * boostMultiplier);
+                
+                locationMarket[cardId].price = newPrice;
+                locationMarket[cardId].eventModified = true;
             }
+        });
+    } else if (eventData.type === 'market_flood') {
+        const cardId = eventData.affectedCard;
+        if (locationMarket[cardId]) {
+            const card = GameState.getCardDetails(cardId); // Get card details for basePrice
+            if (!card) return;
+
+            // New Logic: Calculate a 50% to 75% decrease from the BASE price.
+            const dropPercent = Math.random() * 0.25 + 0.50; // Random percentage between 0.50 and 0.75
+            const newPrice = Math.round(card.basePrice * (1 - dropPercent));
+
+            locationMarket[cardId].price = Math.max(1, newPrice); // Ensure price doesn't drop below $1
+            locationMarket[cardId].eventModified = true;
         }
-    },
+    }
+},
 
     executePlayerSighting() {
         const commonSingles = GameState.current.inventory.find(item => item.cardId === 'common_single');
