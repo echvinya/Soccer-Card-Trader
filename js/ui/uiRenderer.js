@@ -20,45 +20,41 @@ export const UIRenderer = {
     },
 
     renderPlayerStats() {
-        UIElements.cash.textContent = `$${GameState.current.cash.toLocaleString()}`; [cite: 2]
-        UIElements.days.textContent = GameState.current.daysRemaining; [cite: 2, 9]
-        const location = GameState.getCurrentLocation(); [cite: 2]
-        UIElements.currentLocationName.textContent = location.name; [cite: 2]
-        UIElements.marketLocationName.textContent = location.name; [cite: 2]
+        UIElements.cash.textContent = `$${GameState.current.cash.toLocaleString()}`;
+        UIElements.days.textContent = GameState.current.daysRemaining;
+        const location = GameState.getCurrentLocation();
+        UIElements.currentLocationName.textContent = location.name;
+        UIElements.marketLocationName.textContent = location.name;
     },
 
     renderLeaderboard(scores, targetElement) {
-        targetElement.innerHTML = ''; [cite: 2]
-        if (scores.length === 0) { [cite: 2, 11]
-            targetElement.innerHTML = '<p class="text-gray-500 text-center">No high scores yet. Be the first!</p>'; [cite: 2, 11, 12]
-            return; [cite: 2]
+        targetElement.innerHTML = '';
+        if (scores.length === 0) {
+            targetElement.innerHTML = '<p class="text-gray-500 text-center">No high scores yet. Be the first!</p>';
+            return;
         }
-        scores.forEach((entry, index) => { [cite: 2]
-            const div = document.createElement('div'); [cite: 2]
-            div.className = 'flex justify-between items-center text-lg p-1 rounded'; [cite: 2]
-            if (index === 0) div.classList.add('bg-amber-500/20'); [cite: 2]
+        scores.forEach((entry, index) => {
+            const div = document.createElement('div');
+            div.className = 'flex justify-between items-center text-lg p-1 rounded';
+            if (index === 0) div.classList.add('bg-amber-500/20');
             
             const cabinetButton = (entry.cabinet && entry.cabinet.length > 0) 
-                ? `<button class="btn btn-secondary btn-sm text-xs" data-score-id="${entry.id}" data-action="view-cabinet">Cabinet</button>` [cite: 2, 13]
-                : ''; [cite: 2]
+                ? `<button class="btn btn-secondary btn-sm text-xs" data-score-id="${entry.id}" data-action="view-cabinet">Cabinet</button>`
+                : '';
 
             div.innerHTML = `
                 <div class="flex items-center">
                     <span class="font-bold mr-3">${index + 1}. ${entry.initials}</span>
                     ${cabinetButton}
                 </div>
-                <span class="text-green-400 font-semibold">$${entry.score.toLocaleString()}</span>`; [cite: 2, 14]
-            targetElement.appendChild(div); [cite: 2]
+                <span class="text-green-400 font-semibold">$${entry.score.toLocaleString()}</span>`;
+            targetElement.appendChild(div);
         });
     },
 
     renderMarket() {
         UIElements.marketItems.innerHTML = '';
         const locationMarket = GameState.market[GameState.current.currentLocationId];
-        
-        // You can add your logic for special actions and banners here
-        // ...
-
         if (!locationMarket) {
             UIElements.marketItems.innerHTML = '<div class="p-4 text-center">Market data not available.</div>';
             return;
@@ -70,7 +66,6 @@ export const UIRenderer = {
 
             const priceColorClass = GameState.current.hasPriceGuide ? (marketInfo.price > card.basePrice ? 'text-green-400' : 'text-red-400') : 'text-gray-300';
             const priceIndicatorHtml = GameState.current.hasPriceGuide ? (marketInfo.price > card.basePrice ? `<span class="ml-2 text-green-400" title="Price is above base value">▲</span>` : `<span class="ml-2 text-red-400" title="Price is below base value">▼</span>`) : '';
-            // You can re-add your event indicator logic here if needed
 
             const cardWrapper = document.createElement('div');
             cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-3 md:p-0';
@@ -163,7 +158,7 @@ export const UIRenderer = {
     },
 
     renderLog() {
-        UIElements.logMessages.innerHTML = GameState.current.log.map(msg => `<div class="log-message">${msg}</div>`).join(''); [cite: 2, 57]
+        UIElements.logMessages.innerHTML = GameState.current.log.map(msg => `<div class="log-message">${msg}</div>`).join('');
     },
 
     renderDisplayCabinet() {
@@ -181,20 +176,20 @@ export const UIRenderer = {
             if (placeholderEl && cabinetListEl.contains(placeholderEl)) {
                  placeholderEl.style.display = 'none';
             }
-            UIElements.manageCabinetBtn.style.display = 'inline-block'; [cite: 2, 61]
-            GameState.current.displayCabinet.forEach(cabinetItem => { [cite: 2]
-                const cardWrapper = document.createElement('div'); [cite: 2]
-                cardWrapper.className = 'flex flex-col items-center'; [cite: 2]
+            UIElements.manageCabinetBtn.style.display = 'inline-block';
+            GameState.current.displayCabinet.forEach(cabinetItem => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'flex flex-col items-center';
                 
-                const cardVisual = CardVisuals.createCardVisual(cabinetItem); [cite: 2]
-                cardWrapper.appendChild(cardVisual); [cite: 2]
+                const cardVisual = CardVisuals.createCardVisual(cabinetItem);
+                cardWrapper.appendChild(cardVisual);
                 
-                const valueDisplay = document.createElement('div'); [cite: 2, 62]
-                valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1'; [cite: 2, 62]
-                valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`; [cite: 2, 62]
-                cardWrapper.appendChild(valueDisplay); [cite: 2, 62]
+                const valueDisplay = document.createElement('div');
+                valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+                valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
+                cardWrapper.appendChild(valueDisplay);
                 
-                cabinetListEl.appendChild(cardWrapper); [cite: 2, 63]
+                cabinetListEl.appendChild(cardWrapper);
             });
         }
     }
