@@ -54,6 +54,7 @@ export const UIElements = {
         this.gradingCompleteCardName = document.getElementById('grading-complete-card-name');
         this.gradingCompleteGradeName = document.getElementById('grading-complete-grade-name');
         this.gradingCompleteGradeValue = document.getElementById('grading-complete-grade-value');
+        this.gradingCompleteOldValue = document.getElementById('grading-complete-old-value'); // <<< ADD THIS LINE
         this.gradingCompleteNewValue = document.getElementById('grading-complete-new-value');
         this.closeGradingCompleteModalBtn = document.getElementById('close-grading-complete-modal-btn');
     }

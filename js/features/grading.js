@@ -7,23 +7,33 @@ import { GameConfig } from '../config/gameConfig.js';
 export const GRADING_COST = 75; // Fixed cost as per user feedback
 
 export const GRADING_SCALE = [
-    { value: 1, name: "Poor", multiplier: 0.5 },
-    { value: 2, name: "Fair", multiplier: 0.7 },
-    { value: 3, name: "Good", multiplier: 1.0 },
-    { value: 4, name: "Very Good", multiplier: 1.2 },
-    { value: 5, name: "Fine", multiplier: 1.5 },
-    { value: 6, name: "Very Fine", multiplier: 2.0 },
-    { value: 7, name: "Near Mint", multiplier: 2.5 },
-    { value: 8, name: "Near Mint/Mint", multiplier: 3.0 },
-    { value: 9, name: "Mint", multiplier: 4.0 },
-    { value: 10, name: "Gem Mint", multiplier: 5.0 }
+    { value: 1,  name: "Poor",           multiplier: 0.5, weight: 3 },
+    { value: 2,  name: "Fair",           multiplier: 0.7, weight: 5 },
+    { value: 3,  name: "Good",           multiplier: 1.0, weight: 8 },
+    { value: 4,  name: "Very Good",      multiplier: 1.2, weight: 12 },
+    { value: 5,  name: "Fine",           multiplier: 1.5, weight: 16 },
+    { value: 6,  name: "Very Fine",      multiplier: 2.0, weight: 20 },
+    { value: 7,  name: "Near Mint",      multiplier: 2.5, weight: 24 }, // Peak
+    { value: 8,  name: "Near Mint/Mint", multiplier: 3.0, weight: 18 },
+    { value: 9,  name: "Mint",           multiplier: 4.0, weight: 10 },
+    { value: 10, name: "Gem Mint",       multiplier: 5.0, weight: 4 }
 ];
 
 // Helper function to get a random grade.
 // For now, it's a simple random choice. Could be weighted later.
 function getRandomGrade() {
-    const randomIndex = Math.floor(Math.random() * GRADING_SCALE.length);
-    return GRADING_SCALE[randomIndex];
+    const totalWeight = GRADING_SCALE.reduce((sum, grade) => sum + grade.weight, 0);
+    let randomThreshold = Math.random() * totalWeight;
+
+    for (const grade of GRADING_SCALE) {
+        if (randomThreshold < grade.weight) {
+            return grade; // Return the whole grade object
+        }
+        randomThreshold -= grade.weight;
+    }
+    // Fallback: should ideally not be reached if weights are positive and sum correctly.
+    // Return the last grade in case of any floating point inaccuracies leading to overshoot.
+    return GRADING_SCALE[GRADING_SCALE.length - 1];
 }
 
 export const Grading = {

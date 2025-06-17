@@ -292,6 +292,11 @@ export const UIRenderer = {
         UIElements.gradingCompleteCardName.textContent = card.name;
         UIElements.gradingCompleteGradeName.textContent = gradedCabinetItem.gradeName;
         UIElements.gradingCompleteGradeValue.textContent = gradedCabinetItem.gradeValue;
+
+        // Populate the Old Value
+        UIElements.gradingCompleteOldValue.textContent = `$${(gradedCabinetItem.capturedValue || 0).toLocaleString()}`; // <<< ADD THIS LINE
+
+        // Populate the New Value (already there)
         UIElements.gradingCompleteNewValue.textContent = `$${(gradedCabinetItem.valueAfterGrading || 0).toLocaleString()}`;
 
         UIElements.gradingCompleteCardVisualArea.innerHTML = ''; // Clear previous visual
