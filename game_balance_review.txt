@@ -1,0 +1,72 @@
+Game Balance Review - SCT (Simulated Card Trader)
+
+Date: 2024-03-15
+
+**Overall Impression:**
+The game has a solid foundation with interesting strategic choices stemming from location specializations, market dynamics, and player progression avenues. The balance seems to offer a reasonable challenge with opportunities for both strategic play and luck-based windfalls. The core loop of buying, traveling, and selling, augmented by events and side-activities like booster packs and trade-ins, appears engaging.
+
+**Key Aspects Reviewed:**
+
+**1. Initial Setup (gameConfig.js)**
+*   `initialCash: 2000`: Appears balanced. Allows for initial purchases without making the player immediately wealthy. Forces early choices (e.g., invest in price guide vs. cards).
+*   `initialDays: 30`: Creates a sense of urgency. Travel times (1-3 days per trip) make efficient planning crucial.
+    *   *Observation*: While promoting efficiency, this could feel restrictive for players wanting to explore all locations thoroughly. If feedback suggests games are too short, a minor increase (e.g., to 35-40 days) could be considered.
+
+**2. Market Fluctuations (gameConfig.js, gameData.js, features/market.js)**
+*   `priceMultiplier: { min: 0.4, max: 2.0 }`: This wide range (40% to 200% of base price) is a primary driver of market excitement and profit opportunity.
+    *   *Strength*: Creates significant highs and lows, rewarding players who identify and act on them.
+    *   *Potential Concern*: High variance can lead to strong luck dependency. A series of unfavorable price swings on key cards could be very punishing, while consistent favorable swings could make the game too easy.
+    *   *Recommendation*: Monitor player feedback. If randomness feels excessive, consider slightly narrowing the range (e.g., 0.5x to 1.75x) to retain dynamism while reducing extreme outliers.
+*   `availability: { min: 0, max: 20 }` (plus `Math.pow(fluctuation, 2)`): Generally good, making lower availability more common. `min: 0` is key for realism.
+*   **Location Biases & Specializations**: These are well-implemented and provide clear strategic differentiation between locations.
+    *   `priceBias` & `availabilityBias` in `gameData.js` create distinct market characteristics (e.g., "Toots and Rips" for high-end, "All Cards" for bulk but expensive travel).
+    *   Specializations (`high_end`, `rookies`, `bulk`) further enhance this by directly influencing availability calculations in `market.js`. This system works well.
+
+**3. Trading Costs/Benefits (gameConfig.js, features/trading.js)**
+*   `priceGuideCost: 1000`: A significant early-game investment (50% of initial cash).
+    *   *Balance*: Its utility in a market with wide price swings justifies the cost, making it a meaningful strategic decision.
+*   **Volume Discount** (Cards'R'Us): 10% for 5+ cards. Clear, thematic, and encourages a specific playstyle at that location.
+*   **Store Discount** (Found Card Event): 3-10%. Small, temporary, positive reward. Balanced.
+*   **Trade-In** (Mom and Pop's): 25 Common Singles (base value ~$125) for a random card (base value >= $50).
+    *   *Balance*: Good sink for common cards and offers a fun gamble. The recent addition of refunding commons if no eligible reward cards are found is an excellent balancing factor.
+
+**4. Event Impact (gameConfig.js, features/events.js)**
+*   `travelEventChance: 0.3`: Seems appropriate to make travel feel eventful without being chaotic.
+*   **Market Events** (`card_show`, `market_flood`): Price changes based on *base price* (1.5x-2.5x for shows, 0.25x-0.5x for floods) are significant but have a stable reference point, preventing uncontrolled escalation/collapse. This is well-balanced.
+*   **Item/Player Events** (`player_sighting`, `found_card`): Offer minor positive impacts, adding flavor and small boosts.
+*   **Event Clearing**: `clearOldEvents` being called on leaving a location is crucial and correctly implemented in `Travel.js`, ensuring event effects are not permanent market distortions.
+*   *Overall*: Events provide good dynamism and opportunities without feeling overly punishing or unbalancing.
+
+**5. Booster Packs (gameConfig.js, features/boosterPacks.js, gameData.js)**
+*   `basePrice: 250`, `dailyLimit: 3`, `chancePerDay: 0.8`: These settings make packs an accessible, regular, but not unlimited option.
+*   **Pack Contents & Value:**
+    *   `packSize`: 3-5 cards is a decent amount.
+    *   **Location Specializations:**
+        *   `rookies` (Tree City Cards, $300): Increased rookie chance is thematic and potentially valuable.
+        *   `mystery` (KLPA Emporium, $400): Guaranteed rare (base price > $200). The increased cost needs to be justified by the average value of these rare pulls. If "rare" often means just slightly above $200, this might be a weak investment.
+    *   **Default Pack Logic:** Weighted towards common singles for the first few slots.
+        *   *Potential Concern*: This might make the $250 default packs feel unrewarding too frequently, as common singles have very low base value ($5).
+        *   *Recommendation*: Review the weighting. While some low-value cards are expected, ensure there's a reasonable chance of pulling something that at least recoups the pack's cost or provides moderate excitement. Otherwise, players might ignore default packs entirely in favor of specialized ones or direct market purchases.
+
+**6. Progression & Difficulty (Overall)**
+*   **Goal:** Clear (maximize cash + cabinet value for leaderboard).
+*   **Paths:** Multiple viable strategies (flipping, packs, events) exist.
+*   **Difficulty Curve:**
+    *   Early game is tight due to limited cash and days. Travel decisions are impactful.
+    *   Mid-game allows for more capital accumulation and strategic diversification.
+    *   The 30-day limit maintains pressure.
+*   **RNG Factor:** High reliance on RNG for market prices, pack contents, and event occurrences. While this adds replayability, excessive negative RNG could frustrate players. The current range of price multipliers is a key contributor here.
+*   *Observation*: The game seems to offer a good challenge. Success will likely depend on understanding location specializations, reacting to events, and some degree of luck in market timing and pack pulls.
+
+**7. Cabinet Feature (gameConfig.js, features/cabinet.js)**
+*   `displayCabinetLimit: 3`: Small limit, makes choices meaningful.
+*   `capturedValue` for scoring: Good mechanic to "bank" value.
+*   *Balance*: The feature seems well-integrated and adds a strategic layer to score optimization. The cost of removing a card from active trading to place in the cabinet is a good trade-off.
+
+**Recommendations Summary:**
+1.  **Monitor Price Volatility:** The `priceMultiplier` range (0.4-2.0) is the most significant balance lever with potential for creating very swingy gameplay. Consider if a slightly narrower range would improve consistency without sacrificing too much excitement.
+2.  **Review Default Booster Pack Value:** Assess if the $250 default booster pack offers a reasonable chance of valuable pulls relative to its cost, given the weighting towards common cards.
+3.  **Game Length (Minor Observation):** While 30 days encourages efficiency, if players consistently feel they don't have enough time to engage with the core mechanics and locations, a small increase might be warranted.
+4.  **Mystery Booster Pack Rares:** Ensure the `rareCardThreshold` ($200) combined with typical rare card values makes the $400 "Mystery" pack a worthwhile (though risky) investment.
+
+This review is based on static analysis of the configuration and code. Playtesting would be essential to validate these observations and identify unforeseen balance issues.

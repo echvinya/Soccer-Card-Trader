@@ -6,32 +6,52 @@ import { UIElements } from '../ui/uiElements.js';
 import { UIRenderer } from '../ui/uiRenderer.js';
 import { Travel } from './travel.js';
 
+/**
+ * Events Module
+ * Manages the triggering, execution, and effects of various random events that can occur
+ * during gameplay, particularly when traveling. Events can be local (affecting the current location)
+ * or remote (affecting other locations, potentially prompting player travel).
+ */
 export const Events = {
+    // Checks if a travel event should occur based on GameConfig.travelEventChance.
+    // If an event is triggered, it uses a weighted random selection from predefined local and remote event types.
+    // Remote events are set as 'pendingEvent' in GameState, local events are executed immediately.
     checkForTravelEvent() {
+        // Do not trigger a new travel event if one is already pending or if random chance fails.
         if (Math.random() > GameConfig.travelEventChance || GameState.current.pendingEvent) return;
 
+        // Define possible local (current location) and remote (other locations) events with weights.
+        // Higher weight means higher chance relative to other events.
         const localEvents = [{ type: 'player_sighting', weight: 30 }, { type: 'found_card', weight: 30 }];
         const remoteEvents = [{ type: 'card_show', weight: 20 }, { type: 'market_flood', weight: 20 }];
-        const allEvents = [...localEvents, ...remoteEvents];
+        const allEvents = [...localEvents, ...remoteEvents]; // Combine for weighted selection.
         
         const totalWeight = allEvents.reduce((sum, event) => sum + event.weight, 0);
-        let random = Math.random() * totalWeight;
+        let random = Math.random() * totalWeight; // Random value within the total weight range.
         
+        // Determine which event to trigger based on weights.
         for (const event of allEvents) {
             random -= event.weight;
             if (random <= 0) {
+                // Check if the selected event is a remote type.
                 if (remoteEvents.find(e => e.type === event.type)) {
+                    // Select a random location different from the current one for the remote event.
                     const otherLocations = GameData.locations.filter(l => l.id !== GameState.current.currentLocationId);
+                    // Ensure there are other locations to target.
+                    if (otherLocations.length === 0) return; // Cannot trigger remote event if no other locations.
                     const eventLocation = otherLocations[Math.floor(Math.random() * otherLocations.length)];
-                    this.executeEvent(event.type, eventLocation.id, true);
+                    this.executeEvent(event.type, eventLocation.id, true); // True for isRemote.
                 } else {
-                    this.executeEvent(event.type, GameState.current.currentLocationId, false);
+                    // Execute local event at the current location.
+                    this.executeEvent(event.type, GameState.current.currentLocationId, false); // False for isRemote.
                 }
-                return;
+                return; // Event triggered, exit.
             }
         }
     },
 
+    // Dispatches to the appropriate event execution function based on eventType.
+    // locationId is where the event occurs. isRemote indicates if it's a pending event for another location.
     executeEvent(eventType, locationId, isRemote) {
         switch (eventType) {
             case 'card_show':
@@ -39,23 +59,35 @@ export const Events = {
             case 'market_flood':
                 return this.executeMarketFlood(locationId, isRemote);
             case 'player_sighting':
-                return this.executePlayerSighting();
+                return this.executePlayerSighting(); // Local event, locationId is implicitly current.
             case 'found_card':
-                return this.executeFoundCard();
+                return this.executeFoundCard(); // Local event, locationId is implicitly current.
         }
     },
 
+    /**
+     * Event: Card Show.
+     * Simulates a card show event at the target location, increasing prices of selected valuable cards.
+     * If remote, it becomes a pending event. If local, effects are applied immediately.
+     * `eventData` structure: { type, location, affectedCards: [{cardId}], message }
+     */
     executeCardShow(locationId, isRemote) {
         const targetLocation = GameData.locations.find(loc => loc.id === locationId);
-        const numCards = Math.floor(Math.random() * 3) + 3;
+        if (!targetLocation) return; // Safety check
+
+        const numCards = Math.floor(Math.random() * 3) + 3; // 3-5 cards affected
         const selectedCards = [];
+        // Filter for cards with basePrice >= 50 to be affected by a card show
         const availableCards = GameData.tradableCards.filter(c => c.basePrice >= 50);
         
-        for (let i = 0; i < numCards && i < availableCards.length; i++) {
+        // Randomly select unique cards to be affected.
+        for (let i = 0; i < numCards && availableCards.length > 0; i++) {
             const randomIndex = Math.floor(Math.random() * availableCards.length);
             const card = availableCards.splice(randomIndex, 1)[0];
             selectedCards.push({ cardId: card.id });
         }
+
+        if (selectedCards.length === 0) return; // No eligible cards to affect.
         
         const eventData = {
             type: 'card_show',
@@ -70,7 +102,7 @@ export const Events = {
         } else {
             GameState.current.activeEvents.push(eventData);
             this.applyEventEffects(eventData);
-            const cardNames = selectedCards.map(sc => GameState.getCardDetails(sc.cardId).name).join(', ');
+            const cardNames = selectedCards.map(sc => GameState.getCardDetails(sc.cardId)?.name || 'Unknown Card').join(', ');
             this.showEventModal({
                 title: "Card Show in Town!",
                 message: `A traveling card show has arrived! The following cards have increased in value: ${cardNames}`
@@ -78,16 +110,28 @@ export const Events = {
         }
     },
 
+    /**
+     * Event: Market Flood.
+     * Simulates a discovery that floods the market for a specific card, decreasing its price.
+     * If remote, it's a pending event. If local, effects are immediate.
+     * `eventData` structure: { type, location, affectedCard: cardId, message }
+     */
     executeMarketFlood(locationId, isRemote) {
         const targetLocation = GameData.locations.find(loc => loc.id === locationId);
+        if (!targetLocation) return; // Safety check
+
+        // Filter for cards with basePrice >= 20 to be affected by a market flood
         const availableCards = GameData.tradableCards.filter(c => c.basePrice >= 20);
+        if (availableCards.length === 0) return; // No eligible cards.
+
         const targetCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+        if (!targetCard) return; // Should not happen if availableCards is not empty.
         
         const eventData = {
             type: 'market_flood',
             location: locationId,
             affectedCard: targetCard.id,
-            message: `You hear a rumor that a huge collection was found near ${targetLocation.name}, flooding the market.`
+            message: `You hear a rumor that a huge collection was found near ${targetLocation.name}, flooding the market for ${targetCard.name} cards.`
         };
 
         if (isRemote) {
@@ -103,6 +147,10 @@ export const Events = {
         }
     },
 
+// Applies the market effects of events like 'card_show' or 'market_flood'.
+// It modifies the price of affected cards in GameState.market and sets an 'eventModified' flag.
+// This flag is crucial to prevent regular market updates from overwriting event-driven prices
+// until the event is cleared (e.g., by clearOldEvents).
 applyEventEffects(eventData) {
     const locationMarket = GameState.market[eventData.location];
     if (!locationMarket) return;
@@ -110,12 +158,10 @@ applyEventEffects(eventData) {
     if (eventData.type === 'card_show') {
         eventData.affectedCards.forEach(({ cardId }) => {
             if (locationMarket[cardId]) {
-                const card = GameState.getCardDetails(cardId); // Get card details for basePrice
+                const card = GameState.getCardDetails(cardId);
                 if (!card) return;
 
-                // New Logic: Calculate a 150% to 250% increase from the BASE price.
-                // A 150% increase means the final price is 2.5x the base price.
-                const boostMultiplier = Math.random() * 1.0 + 1.5; // Random multiplier between 1.5 and 2.5
+                const boostMultiplier = Math.random() * 1.0 + 1.5;
                 const newPrice = Math.round(card.basePrice * boostMultiplier);
                 
                 locationMarket[cardId].price = newPrice;
@@ -125,19 +171,23 @@ applyEventEffects(eventData) {
     } else if (eventData.type === 'market_flood') {
         const cardId = eventData.affectedCard;
         if (locationMarket[cardId]) {
-            const card = GameState.getCardDetails(cardId); // Get card details for basePrice
+            const card = GameState.getCardDetails(cardId);
             if (!card) return;
 
-            // New Logic: Calculate a 50% to 75% decrease from the BASE price.
-            const dropPercent = Math.random() * 0.25 + 0.50; // Random percentage between 0.50 and 0.75
+            const dropPercent = Math.random() * 0.25 + 0.50;
             const newPrice = Math.round(card.basePrice * (1 - dropPercent));
 
-            locationMarket[cardId].price = Math.max(1, newPrice); // Ensure price doesn't drop below $1
+            locationMarket[cardId].price = Math.max(1, newPrice);
             locationMarket[cardId].eventModified = true;
         }
     }
 },
 
+    /**
+     * Event: Player Sighting. A local event that occurs at the player's current location.
+     * If player has common singles, one is exchanged for an autographed common (more valuable).
+     * Otherwise, player gets a small cash bonus as a consolation.
+     */
     executePlayerSighting() {
         const commonSingles = GameState.current.inventory.find(item => item.cardId === 'common_single');
         if (!commonSingles || commonSingles.quantity < 1) {
@@ -169,6 +219,11 @@ applyEventEffects(eventData) {
         UIRenderer.renderAll();
     },
 
+    /**
+     * Event: Found Card. A local event where the player stumbles upon a random card.
+     * The card's rarity/value is determined by a weighted loot table.
+     * Player is presented with a choice to keep the card or return it to a store for a small reward.
+     */
     executeFoundCard() {
         const lootTable = [];
         GameData.tradableCards.forEach(card => {
@@ -179,6 +234,8 @@ applyEventEffects(eventData) {
             for (let i = 0; i < weight; i++) lootTable.push(card);
         });
         
+        if (lootTable.length === 0) return; // Should not happen if tradableCards exist.
+
         const foundCard = lootTable[Math.floor(Math.random() * lootTable.length)];
         GameState.current.tempFoundCard = foundCard;
         
@@ -190,6 +247,10 @@ applyEventEffects(eventData) {
         });
     },
 
+    /**
+     * Handles the player's choice to keep a card found via the 'Found Card' event.
+     * Adds the card to the player's inventory.
+     */
     keepFoundCard() {
         const foundCard = GameState.current.tempFoundCard;
         if (!foundCard) return;
@@ -207,14 +268,18 @@ applyEventEffects(eventData) {
         UIRenderer.renderAll();
     },
 
+    /**
+     * Handles the player's choice to return a card found via the 'Found Card' event.
+     * Grants the player a temporary store discount for the current day.
+     */
     returnFoundCard() {
         const foundCard = GameState.current.tempFoundCard;
         if (!foundCard) return;
         
-        let discountPercent;
-        if (foundCard.basePrice < 50) discountPercent = Math.random() * 2 + 3;
-        else if (foundCard.basePrice < 200) discountPercent = Math.random() * 3 + 5;
-        else discountPercent = Math.random() * 3 + 7;
+        let discountPercent; // Discount varies by the value of the returned card.
+        if (foundCard.basePrice < 50) discountPercent = Math.random() * 2 + 3;       // 3-5%
+        else if (foundCard.basePrice < 200) discountPercent = Math.random() * 3 + 5; // 5-8%
+        else discountPercent = Math.random() * 3 + 7;                               // 7-10%
         
         GameState.current.storeDiscount = discountPercent;
         
@@ -224,6 +289,14 @@ applyEventEffects(eventData) {
         UIRenderer.renderAll();
     },
 
+    // Clears event-related modifications from a specific location's market data.
+    // This function is CRITICAL for resetting event-driven price changes.
+    // It should be called when appropriate, for example:
+    // - When the player leaves a location where an event was active.
+    // - After a certain number of days if events are time-limited (not implemented here).
+    // - Potentially at the start of a new day for the current location if events are daily.
+    // Currently, it also clears ALL activeEvents globally, which might be too broad if multiple
+    // events in different locations were meant to persist simultaneously.
     clearOldEvents(locationId) {
         const locationMarket = GameState.market[locationId];
         if (!locationMarket) return;
@@ -236,11 +309,19 @@ applyEventEffects(eventData) {
         GameState.current.activeEvents = [];
     },
 
+    // Displays a modal for local events (Player Sighting, Found Card, or local Card Show/Market Flood).
+    // Handles showing choices for 'found_card' type events.
     showEventModal(eventResult) {
+        if (!UIElements.eventModal || !document.getElementById('event-title') || !document.getElementById('event-message') || !UIElements.closeEventModalBtn) {
+            console.error("Event modal UI elements not found.");
+            return;
+        }
         document.getElementById('event-title').textContent = eventResult.title;
         document.getElementById('event-message').textContent = eventResult.message;
         
         const modalContent = UIElements.eventModal.querySelector('.modal-content');
+        if (!modalContent) return;
+
         const existingChoices = modalContent.querySelector('.event-choices');
         if (existingChoices) existingChoices.remove();
         
@@ -270,7 +351,13 @@ applyEventEffects(eventData) {
         UIElements.eventModal.classList.remove('hidden');
     },
 
+    // Displays an announcement modal for remote events (Card Show or Market Flood in another town).
+    // Provides choices to travel to the event location or ignore the event.
     showAnnouncementModal(eventData) {
+        if (!UIElements.announcementModal || !document.getElementById('announcement-title') || !document.getElementById('announcement-message') || !document.getElementById('announcement-choices')) {
+            console.error("Announcement modal UI elements not found.");
+            return;
+        }
         document.getElementById('announcement-title').textContent = 
             (eventData.type === 'card_show') ? "Card Show Announced!" : "Market Flood Rumor!";
         document.getElementById('announcement-message').textContent = eventData.message;
@@ -280,7 +367,8 @@ applyEventEffects(eventData) {
 
         const travelBtn = document.createElement('button');
         travelBtn.className = 'btn btn-success';
-        travelBtn.textContent = `Travel to ${GameData.locations.find(l => l.id === eventData.location).name}`;
+        const eventLocationDetails = GameData.locations.find(l => l.id === eventData.location);
+        travelBtn.textContent = `Travel to ${eventLocationDetails?.name || 'Unknown Location'}`;
         travelBtn.onclick = () => {
             UIElements.announcementModal.classList.add('hidden');
             Travel.travelTo(eventData.location);
