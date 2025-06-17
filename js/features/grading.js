@@ -67,39 +67,38 @@ export const Grading = {
     },
 
     /**
-     * Processes daily updates for cards currently being graded.
-     * This should be called at the end of each day.
+     * Processes daily updates for cards currently being graded for a single day.
+     * This should be called for each day that passes.
+     * @returns {Array<Object>} An array of cabinet items (cards) that completed grading on this day.
      */
-    processDailyGradingUpdate() {
-        let gradingCompletedThisDay = false;
+    processSingleDayGradingUpdate() {
+        const newlyGradedCards = [];
         GameState.current.displayCabinet.forEach((card, index) => {
             if (card.isGrading && card.daysUntilGraded > 0) {
                 card.daysUntilGraded--;
                 if (card.daysUntilGraded === 0) {
-                    this.finalizeGrading(index);
-                    gradingCompletedThisDay = true;
+                    this.finalizeGrading(index); // finalizeGrading updates the card object in GameState
+                    newlyGradedCards.push(card); // Add the now-finalized card to the list
                 }
             }
         });
-        // if (gradingCompletedThisDay) {
-        //     // UIRenderer.showModal(...) or trigger event for GameController to handle modal
-        //     console.log("A card has finished grading today!");
-        // }
+        return newlyGradedCards;
     },
 
     /**
      * Finalizes the grading process for a card.
      * Assigns a grade and calculates its new value.
+     * (This function is mostly the same, just ensure it's correctly updating the card object)
      * @param {number} cabinetSlotIndex - The index of the card in the displayCabinet array.
      */
     finalizeGrading(cabinetSlotIndex) {
         const cabinet = GameState.current.displayCabinet;
         if (cabinetSlotIndex < 0 || cabinetSlotIndex >= cabinet.length) {
             console.error(`Invalid cabinetSlotIndex for finalizing grade: ${cabinetSlotIndex}`);
-            return;
+            return; // Return the original card object if invalid
         }
 
-        const gradedCard = cabinet[cabinetSlotIndex];
+        const gradedCard = cabinet[cabinetSlotIndex]; // This is a reference to the object in GameState
         if (!gradedCard.isGrading || gradedCard.daysUntilGraded !== 0) {
             console.error("Card is not ready to be finalized for grading:", gradedCard);
             return;
@@ -112,15 +111,15 @@ export const Grading = {
         gradedCard.gradeName = assignedGrade.name;
         gradedCard.gradeValue = assignedGrade.value;
         gradedCard.gradeMultiplier = assignedGrade.multiplier;
-        gradedCard.valueAfterGrading = Math.round(gradedCard.capturedValue * assignedGrade.multiplier);
+        // Ensure capturedValue is a number before multiplication
+        const baseValue = Number(gradedCard.capturedValue) || 0;
+        gradedCard.valueAfterGrading = Math.round(baseValue * assignedGrade.multiplier);
 
-        console.log(`Card ${gradedCard.name} grading complete. Grade: ${gradedCard.gradeName} (${gradedCard.gradeValue}). New Value: $${gradedCard.valueAfterGrading}`);
-        // GameState.addLog(`${gradedCard.name} has been graded: ${gradedCard.gradeName}. New value: $${gradedCard.valueAfterGrading}.`);
-
-        // This is where we'd trigger the modal to show the user the graded card.
-        // For now, we'll just log it. The GameController will likely manage showing the modal.
-        // GameController.triggerGradingCompleteModal(gradedCard);
-
-        // UIRenderer.renderAll(); // Or specific render for cabinet
+        console.log(`Card ${gradedCard.card.name} grading complete. Grade: ${gradedCard.gradeName} (${gradedCard.gradeValue}). New Value: $${gradedCard.valueAfterGrading}`);
+        // GameLogger.addLogMessage(`${gradedCard.card.name} has been graded: ${gradedCard.gradeName}. New value: $${gradedCard.valueAfterGrading}.`);
+        // The actual showing of the modal will be handled by GameController based on what processSingleDayGradingUpdate returns.
     }
 };
+// js/features/grading.js
+// ... (rest of the file, imports, constants, initiateGrading method should be preserved)
+// Note: The diff tool might require the full context. Assuming GRADING_COST, GRADING_SCALE, getRandomGrade, and initiateGrading are correctly maintained above this section.

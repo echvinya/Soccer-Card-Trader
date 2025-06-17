@@ -118,6 +118,19 @@
     <div id="view-cabinet-modal" class="modal hidden"><div class="modal-content"><h2 id="view-cabinet-title" class="text-3xl font-bold mb-4 text-cyan-400">Player's Cabinet</h2><div id="view-cabinet-list" class="grid grid-cols-3 gap-4 my-6"></div><button id="close-view-cabinet-btn" class="btn btn-primary">Close</button></div></div>
     <div id="announcement-modal" class="modal hidden"><div class="modal-content"><h2 id="announcement-title" class="text-3xl font-bold mb-4 text-amber-400">Heads Up!</h2><p id="announcement-message" class="text-lg mb-6">A market event is happening elsewhere...</p><div id="announcement-choices" class="event-choices flex gap-4 justify-center mt-4"></div></div></div>
 
+    <div id="grading-complete-modal" class="modal hidden">
+        <div class="modal-content text-center">
+            <h2 id="grading-complete-title" class="text-3xl font-bold mb-4 text-green-400">Grading Complete!</h2>
+            <div id="grading-complete-card-visual-area" class="my-6 mx-auto w-48 h-64 bg-gray-700 rounded-lg flex items-center justify-center">
+                <!-- Card visual will be injected here by JS -->
+            </div>
+            <p class="text-xl mb-2">Your <span id="grading-complete-card-name" class="font-semibold">-</span> has been graded!</p>
+            <p class="text-2xl mb-1">Grade: <span id="grading-complete-grade-name" class="font-bold text-amber-400">-</span> (<span id="grading-complete-grade-value" class="font-bold text-amber-400">-</span>/10)</p>
+            <p class="text-lg mb-6">New Value: <span id="grading-complete-new-value" class="font-bold text-green-400">$0</span></p>
+            <button id="close-grading-complete-modal-btn" class="btn btn-primary">Awesome!</button>
+        </div>
+    </div>
+
     <script type="module" src="js/main.js"></script>
 
 </body>

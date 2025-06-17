@@ -118,38 +118,113 @@ export const CardVisuals = {
         container.appendChild(serialContainer);
     },
 
+
     createCardVisual(cabinetItem) {
-        const card = cabinetItem.card;
+        const card = cabinetItem.card; // This is the card definition object
         const visualContainer = document.createElement('div');
         visualContainer.className = 'relative aspect-[3/4] w-full';
 
-        const graphicCardTypes = [
-            'favorite_player', 
-            'numbered_legend', 
-            'prized_rookie_card', 
-            'holo_legend', 
-            'numbered_rookie_auto', 
-            'autographed_common', 
-            'common_single',
-            'autographed_jersey'
-        ];
+        if (cabinetItem.isGraded) {
+            // SLABBED VISUAL
+            visualContainer.classList.add('p-2'); // Add some padding for the slab border effect if needed
 
-        if (graphicCardTypes.includes(card.id)) {
-            this.createCardImageLayers(visualContainer, cabinetItem.layers);
-            if (card.basePrice > GameConfig.rareCardThreshold && card.id !== 'common_single') {
-                visualContainer.classList.add('sparkle');
-            }
-            
-            if (cabinetItem.numbering) {
-                this.addNumberingOverlay(visualContainer, cabinetItem.numbering);
-            }
-        } else {
-            visualContainer.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center text-center';
-            visualContainer.textContent = card.name;
-            if (card.basePrice > GameConfig.rareCardThreshold) {
-                visualContainer.classList.add('sparkle', 'text-black');
+            // Slab background
+            const slabImg = document.createElement('img');
+            // ***** IMPORTANT: Use a generic placeholder path for now. Actual path might change. *****
+            slabImg.src = 'Images/Common/Slab/slab.png';
+            slabImg.className = 'absolute inset-0 w-full h-full object-cover rounded-lg'; // cover and rounded
+            visualContainer.appendChild(slabImg);
+
+            // Container for card image and grade text, to overlay on slab
+            const contentOverlayContainer = document.createElement('div');
+            contentOverlayContainer.className = 'relative z-10 w-full h-full flex flex-col'; // Use flex to position elements
+            visualContainer.appendChild(contentOverlayContainer);
+
+            // Grade header on the slab (typical for PSA/BGS like slabs)
+            const gradeHeader = document.createElement('div');
+            gradeHeader.className = 'bg-gray-700/70 text-white p-1 text-center rounded-t-md'; // Semi-transparent header
+            gradeHeader.style.minHeight = '40px'; // Ensure space for grade text
+
+            const gradeTextLine1 = document.createElement('p');
+            gradeTextLine1.className = 'font-bold text-sm';
+            gradeTextLine1.textContent = `${cabinetItem.gradeValue || ''} - ${cabinetItem.gradeName || 'N/A'}`;
+            gradeHeader.appendChild(gradeTextLine1);
+
+            // Optionally add card name to header if it fits and looks good
+            const cardNameInHeader = document.createElement('p');
+            cardNameInHeader.className = 'text-xs truncate';
+            cardNameInHeader.textContent = card.name;
+            // gradeHeader.appendChild(cardNameInHeader); // Uncomment if desired
+
+            contentOverlayContainer.appendChild(gradeHeader);
+
+            // Card image area (smaller, within the slab)
+            const cardImageContainer = document.createElement('div');
+            cardImageContainer.className = 'relative flex-grow mx-auto mt-1 mb-1'; // Centered, takes up space
+            // Adjust width/height to make the card image appear smaller on the slab
+            cardImageContainer.style.width = '85%';
+            cardImageContainer.style.height = '65%'; // Adjust as needed
+
+            // Use existing logic to create the card image itself
+            // This assumes cabinetItem.layers and cabinetItem.numbering are still relevant
+            // for the visual representation of the card *on* the slab.
+            const graphicCardTypes = [
+                'favorite_player', 'numbered_legend', 'prized_rookie_card',
+                'holo_legend', 'numbered_rookie_auto', 'autographed_common',
+                'common_single', 'autographed_jersey'
+            ];
+
+            if (graphicCardTypes.includes(card.id)) {
+                this.createCardImageLayers(cardImageContainer, cabinetItem.layers);
+                if (card.basePrice > GameConfig.rareCardThreshold && card.id !== 'common_single') {
+                    // Add sparkle to the image container if it's a rare card
+                    // visualContainer.classList.add('sparkle'); // Apply sparkle to main container or image container?
+                }
+                if (cabinetItem.numbering) {
+                    // May need to adjust positioning/size of numbering for slab
+                    this.addNumberingOverlay(cardImageContainer, cabinetItem.numbering);
+                }
             } else {
-                visualContainer.style.backgroundColor = '#374151';
+                cardImageContainer.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center text-center';
+                cardImageContainer.textContent = card.name;
+                 if (card.basePrice > GameConfig.rareCardThreshold) {
+                    cardImageContainer.classList.add('sparkle', 'text-black');
+                } else {
+                    cardImageContainer.style.backgroundColor = '#374151';
+                }
+            }
+            contentOverlayContainer.appendChild(cardImageContainer);
+            
+            // Optional: if sparkle effect is desired for graded cards, add it here
+            if (cabinetItem.gradeValue && cabinetItem.gradeValue >= 8) { // e.g. sparkle for grades 8+
+                 visualContainer.classList.add('sparkle-graded'); // A new sparkle style for graded
+            }
+
+
+        } else {
+            // NON-GRADED VISUAL (existing logic)
+            const graphicCardTypes = [
+                'favorite_player', 'numbered_legend', 'prized_rookie_card',
+                'holo_legend', 'numbered_rookie_auto', 'autographed_common',
+                'common_single', 'autographed_jersey'
+            ];
+
+            if (graphicCardTypes.includes(card.id)) {
+                this.createCardImageLayers(visualContainer, cabinetItem.layers);
+                if (card.basePrice > GameConfig.rareCardThreshold && card.id !== 'common_single') {
+                    visualContainer.classList.add('sparkle');
+                }
+                if (cabinetItem.numbering) {
+                    this.addNumberingOverlay(visualContainer, cabinetItem.numbering);
+                }
+            } else {
+                visualContainer.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center text-center';
+                visualContainer.textContent = card.name;
+                if (card.basePrice > GameConfig.rareCardThreshold) {
+                    visualContainer.classList.add('sparkle', 'text-black');
+                } else {
+                    visualContainer.style.backgroundColor = '#374151';
+                }
             }
         }
         return visualContainer;

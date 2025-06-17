@@ -10,6 +10,8 @@ import { Cabinet } from '../features/cabinet.js';
 import { Leaderboard } from '../features/leaderboard.js';
 import { Events } from '../features/events.js';
 import { GameEnd } from '../features/gameEnd.js';
+// Add this import
+import { Grading } from '../features/grading.js';
 
 export const GameController = {
     initializeGame() {
@@ -89,5 +91,42 @@ export const GameController = {
         UIElements.closeViewCabinetBtn.addEventListener('click', () => {
             UIElements.viewCabinetModal.classList.add('hidden');
         });
+    },
+
+    /**
+     * Processes effects that occur due to the passage of one or more days.
+     * This includes updating card grading progress and showing completion modals.
+     * @param {number} daysPassed - The number of days that have advanced.
+     */
+    advanceDayEffects(daysPassed) {
+        if (daysPassed <= 0) return;
+
+        console.log(`Advancing day effects for ${daysPassed} day(s).`);
+        for (let i = 0; i < daysPassed; i++) {
+            // GameState.current.daysRemaining has already been decremented by the caller (e.g., Travel.travelTo)
+            // So, here we just process the consequences of that day passing.
+            console.log(`Processing daily updates for day ${i + 1} of ${daysPassed}`);
+
+            // Process grading for one day
+            const newlyGradedCards = Grading.processSingleDayGradingUpdate();
+
+            if (newlyGradedCards.length > 0) {
+                console.log(`${newlyGradedCards.length} card(s) finished grading this day.`);
+                newlyGradedCards.forEach(gradedCardItem => {
+                    // GameLogger.addLogMessage(`${gradedCardItem.card.name} has finished grading!`); // Log it
+                    UIRenderer.showGradingCompleteModal(gradedCardItem); // Show the modal
+                });
+            }
+
+            // Future daily processes (e.g., random events, market fluctuations) could be called here for each day.
+            // Events.processDailyEvents();
+            // Market.processDailyFluctuations();
+        }
+        // After all days have been processed, a single UIRenderer.renderAll() will typically be called
+        // by the function that initiated the day advance (e.g., Travel.travelTo),
+        // so individual renders might not be needed here unless a modal blocks execution.
+        // The modal UIRenderer.showGradingCompleteModal itself is non-blocking in terms of game loop.
     }
+    // Make sure to export GameController if it's not already fully exported for Travel.js to use it.
+    // (It is, as it's an object literal assigned to an export const)
 };

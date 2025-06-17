@@ -267,12 +267,7 @@ export const UIRenderer = {
                     valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
                     // Use valueAfterGrading if it exists, otherwise capturedValue
                     valueDisplay.textContent = `$${cabinetItem.valueAfterGrading !== null && cabinetItem.valueAfterGrading !== undefined ? cabinetItem.valueAfterGrading : (cabinetItem.capturedValue || 0)}`;
-                    // Add grade name as well for graded cards
-                    const gradeNameDisplay = document.createElement('div');
-                    gradeNameDisplay.className = 'text-xs text-purple-400';
-                    gradeNameDisplay.textContent = `${cabinetItem.gradeName} (${cabinetItem.gradeValue})`;
-                    cardWrapper.appendChild(valueDisplay);
-                    cardWrapper.appendChild(gradeNameDisplay);
+                    cardWrapper.appendChild(valueDisplay); // Only append the value display
 
                 } else if (!cabinetItem.isGrading) { // Only show normal value if not grading and not yet graded
                     const valueDisplay = document.createElement('div');
@@ -284,5 +279,46 @@ export const UIRenderer = {
                 cabinetListEl.appendChild(cardWrapper);
             });
         }
+    },
+
+    showGradingCompleteModal(gradedCabinetItem) {
+        if (!gradedCabinetItem || !gradedCabinetItem.card) {
+            console.error("Invalid card data for grading complete modal", gradedCabinetItem);
+            return;
+        }
+
+        const card = gradedCabinetItem.card; // This is the card definition
+
+        UIElements.gradingCompleteCardName.textContent = card.name;
+        UIElements.gradingCompleteGradeName.textContent = gradedCabinetItem.gradeName;
+        UIElements.gradingCompleteGradeValue.textContent = gradedCabinetItem.gradeValue;
+        UIElements.gradingCompleteNewValue.textContent = `$${(gradedCabinetItem.valueAfterGrading || 0).toLocaleString()}`;
+
+        UIElements.gradingCompleteCardVisualArea.innerHTML = ''; // Clear previous visual
+        // Create and append the card visual using the same structure as in displayCabinet
+        // cabinetItem for createCardVisual expects the card definition under a .card property,
+        // and layers/numbering if applicable. gradedCabinetItem already has this structure.
+        const cardVisualElement = CardVisuals.createCardVisual(gradedCabinetItem);
+        UIElements.gradingCompleteCardVisualArea.appendChild(cardVisualElement);
+
+        // Potentially add slab visual to cardVisualElement here if needed in modal specifically,
+        // or ensure createCardVisual handles it if the card isGraded.
+        // For now, createCardVisual will just show the card image.
+        // Step 9 will focus on making the main cabinet visual "slabbed".
+
+        UIElements.gradingCompleteModal.classList.remove('hidden');
+
+        // Event listener for the close button (should only be added once or managed carefully)
+        // A simple way is to replace the button with a clone to remove old listeners, then add new.
+        const oldBtn = UIElements.closeGradingCompleteModalBtn;
+        const newBtn = oldBtn.cloneNode(true);
+        oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+        UIElements.closeGradingCompleteModalBtn = newBtn; // Re-assign in UIElements if you want to keep the reference updated, or just use newBtn here.
+
+        newBtn.onclick = () => {
+            UIElements.gradingCompleteModal.classList.add('hidden');
+            // Potentially trigger a UIRenderer.renderAll() if changes need to be reflected immediately elsewhere,
+            // though GameController will likely call renderAll after the modal is closed.
+        };
     }
 };
