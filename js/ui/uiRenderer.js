@@ -8,6 +8,9 @@ import { BoosterPacks } from '../features/boosterPacks.js';
 import { Travel } from '../features/travel.js';
 import { Cabinet } from '../features/cabinet.js';
 import { GameEnd } from '../features/gameEnd.js';
+// GradingService might be needed if we add "Send to Grading" button logic directly here,
+// but for now, it's assumed GameController will handle the call to GradingService.
+// import { GradingService } from '../features/grading.js';
 
 /**
  * UIRenderer Module
@@ -24,13 +27,12 @@ export const UIRenderer = {
         try {
             this.renderPlayerStats();
             this.renderMarket();
-            this.renderInventory();
+            this.renderInventory(); // Must be rendered before cabinet if cabinet actions affect inventory
+            this.renderDisplayCabinet(); // Render cabinet after inventory
             this.renderTravelOptions();
             this.renderLog();
-            this.renderDisplayCabinet();
         } catch (error) {
             console.error("UIRenderer Error: Critical error in renderAll:", error);
-            // Potentially show a generic error message to the user on the UI itself
             if (UIElements.cash) UIElements.cash.textContent = "Error";
             if (UIElements.marketItems) UIElements.marketItems.innerHTML = "<p>Error loading UI. Please refresh.</p>";
         }
@@ -46,13 +48,10 @@ export const UIRenderer = {
                 console.warn("UIRenderer Warning: GameState.current not ready for renderPlayerStats.");
                 return;
             }
-            // Display cash, ensuring it's a number and formatted.
             if (UIElements.cash) UIElements.cash.textContent = `$${(GameState.current.cash ?? 0).toLocaleString()}`;
-            // Display days remaining.
             if (UIElements.days) UIElements.days.textContent = GameState.current.daysRemaining ?? 'N/A';
 
             const location = GameState.getCurrentLocation();
-            // Display current location name in multiple UI spots.
             if (location && location.name) {
                 if (UIElements.currentLocationName) UIElements.currentLocationName.textContent = location.name;
                 if (UIElements.marketLocationName) UIElements.marketLocationName.textContent = location.name;
@@ -77,26 +76,23 @@ export const UIRenderer = {
                 console.warn("UIRenderer Warning: Target element for leaderboard is missing.");
                 return;
             }
-            targetElement.innerHTML = ''; // Clear previous scores
+            targetElement.innerHTML = '';
 
             if (!Array.isArray(scores) || scores.length === 0) {
                 targetElement.innerHTML = '<p class="text-gray-500 text-center">No high scores yet. Be the first!</p>';
                 return;
             }
 
-            // Create and append each score entry.
             scores.forEach((entry, index) => {
-                // Validate each score entry.
                 if (!entry || typeof entry.initials !== 'string' || typeof entry.score !== 'number' || typeof entry.id === 'undefined') {
                     console.warn("UIRenderer Warning: Invalid score entry found in leaderboard data:", entry);
-                    return; // Skip this invalid entry
+                    return;
                 }
 
                 const div = document.createElement('div');
                 div.className = 'flex justify-between items-center text-lg p-1 rounded';
-                if (index === 0) div.classList.add('bg-amber-500/20'); // Highlight top score
+                if (index === 0) div.classList.add('bg-amber-500/20');
 
-                // Add a "Cabinet" button if the player has a saved cabinet.
                 const cabinetButton = (entry.cabinet && Array.isArray(entry.cabinet) && entry.cabinet.length > 0)
                     ? `<button class="btn btn-secondary btn-sm text-xs" data-score-id="${entry.id}" data-action="view-cabinet">Cabinet</button>`
                     : '';
@@ -117,13 +113,9 @@ export const UIRenderer = {
 
     /**
      * Renders the market items for the current location.
-     * Displays cards available for purchase, their prices, supply, and buy controls.
-     * Also renders special action buttons like "Buy Price Guide", "Trade-In", and "Buy Booster Pack".
-     * Shows event indicators (e.g., card show, market flood) and price guide indicators.
      */
     renderMarket() {
         try {
-            // Ensure necessary UI elements and game state components are available.
             if (!UIElements.marketItems || !UIElements.specialActionsContainer) {
                 console.warn("UIRenderer Warning: Market items or special actions container missing.");
                 return;
@@ -138,7 +130,6 @@ export const UIRenderer = {
             }
 
             const location = GameState.getCurrentLocation();
-            // Validate current location data.
             if (!location || !location.id || typeof location.specialization !== 'string' || typeof location.boosterPrice !== 'number') {
                 console.warn("UIRenderer Warning: Current location data is invalid or missing for renderMarket.");
                 UIElements.marketItems.innerHTML = '<div class="p-4 text-center">Current location data unavailable.</div>';
@@ -146,7 +137,6 @@ export const UIRenderer = {
             }
             const locationMarket = GameState.market[location.id];
 
-            // Display store discount banner if active.
             const existingBanner = document.querySelector('.discount-banner');
             if (existingBanner) existingBanner.remove();
             if (GameState.current.storeDiscount > 0 && typeof GameState.current.storeDiscount === 'number') {
@@ -161,7 +151,6 @@ export const UIRenderer = {
                 }
             }
 
-            // Render "Buy Price Guide" button if not already owned.
             if (!GameState.current.hasPriceGuide) {
                 const priceGuideCost = GameConfig.priceGuideCost ?? 500;
                 const priceGuideBtn = document.createElement('button');
@@ -172,7 +161,6 @@ export const UIRenderer = {
                 UIElements.specialActionsContainer.appendChild(priceGuideBtn);
             }
 
-            // Render "Trade-In" button if location has this specialization.
             if (location.specialization === 'trade_in') {
                 const commonCount = GameState.current.inventory?.find(item => item.cardId === 'common_single')?.quantity || 0;
                 const tradeInBtn = document.createElement('button');
@@ -184,7 +172,6 @@ export const UIRenderer = {
                 UIElements.specialActionsContainer.appendChild(tradeInBtn);
             }
 
-            // Render "Buy Booster Pack" button.
             const boosterPackBtn = document.createElement('button');
             boosterPackBtn.className = 'btn btn-special';
             const locationBoosterPrice = location.boosterPrice;
@@ -192,7 +179,6 @@ export const UIRenderer = {
             boosterPackBtn.title = 'Get 3-5 random cards. A high-risk, high-reward gamble!';
 
             const dailyLimit = GameConfig?.boosterPack?.dailyLimit ?? 1;
-            // Disable button based on availability or daily purchase limit.
             if (locationMarket && !locationMarket.boosterAvailable) {
                 boosterPackBtn.disabled = true;
                 boosterPackBtn.textContent = 'Boosters Sold Out Today';
@@ -214,21 +200,17 @@ export const UIRenderer = {
                 return;
             }
 
-            // Iterate through tradable cards and render each market item.
             GameData.tradableCards.forEach(card => {
-                // Validate card data.
                 if (!card || !card.id || !card.name || typeof card.basePrice !== 'number' || typeof card.description !== 'string') {
                     console.warn("UIRenderer Warning: Invalid card data in GameData.tradableCards:", card);
                     return;
                 }
                 const marketInfo = locationMarket[card.id];
-                // Validate market info for the card.
                 if (!marketInfo || typeof marketInfo.price !== 'number' || typeof marketInfo.available !== 'number') {
                     console.warn(`UIRenderer Warning: Market info for ${card.name} incomplete or missing.`, marketInfo);
                     return;
                 }
 
-                // Add event indicators (star for card show, drop for market flood).
                 let eventIndicator = '';
                 if (Array.isArray(GameState.current.activeEvents)) {
                     const activeCardShow = GameState.current.activeEvents.find(e => e.type === 'card_show' && Array.isArray(e.affectedCards) && e.affectedCards.some(ac => ac.cardId === card.id));
@@ -237,14 +219,12 @@ export const UIRenderer = {
                     if (activeFlood) eventIndicator = '<span class="ml-2 text-blue-400" title="Market Flooded!">💧</span>';
                 }
 
-                // Add price guide indicators (arrow up/down if price guide owned).
                 const priceColorClass = GameState.current.hasPriceGuide ? (marketInfo.price > card.basePrice ? 'text-green-400' : 'text-red-400') : 'text-gray-300';
                 const priceIndicatorHtml = GameState.current.hasPriceGuide ? (marketInfo.price > card.basePrice ? `<span class="ml-2 text-green-400" title="Price is above base value">▲</span>` : `<span class="ml-2 text-red-400" title="Price is below base value">▼</span>`) : '';
 
                 const cardWrapper = document.createElement('div');
                 cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-3 md:p-0';
 
-                // Populate card details, price, supply, quantity input, and action buttons.
                 cardWrapper.innerHTML = `
                     <div class="block md:table-cell align-middle p-1 md:p-2">
                         <div class="font-bold">${card.name}${eventIndicator}</div>
@@ -265,7 +245,6 @@ export const UIRenderer = {
 
     /**
      * Renders the player's current inventory.
-     * Displays each card owned, quantity, average buy price, current market sell price, and sell controls.
      */
     renderInventory() {
         try {
@@ -286,35 +265,43 @@ export const UIRenderer = {
                 return;
             }
 
-            // Iterate through inventory items and render each.
             GameState.current.inventory.forEach(item => {
-                // Validate inventory item and associated card data.
                 if (!item || item.quantity <= 0 || !item.cardId) {
                      console.warn("UIRenderer Warning: Invalid item in inventory:", item);
                     return;
                 }
-                const card = GameState.getCardDetails(item.cardId);
+                // For unique instances, baseCard holds the original card data. For stacks, item itself is the base data.
+                const card = item.baseCard || GameState.getCardDetails(item.cardId);
                 if (!card || !card.name || !card.id) {
                     console.warn(`UIRenderer Warning: Card details not found for inventory item cardId: ${item.cardId}`);
                     return;
                 }
 
-                // Determine current market sell price and average buy price for the item.
-                const currentMarketPrice = GameState.market?.[GameState.current?.currentLocationId]?.[item.cardId]?.price || 0;
-                const averageBuyPrice = (typeof item.totalCost === 'number' && item.quantity > 0) ? item.totalCost / item.quantity : 0;
+                const currentMarketPrice = GameState.market?.[GameState.current?.currentLocationId]?.[card.id]?.price || card.basePrice || 0;
+                // For unique instances, totalCost might not be relevant or might be packPullValue.
+                // For stacks, it's the accumulated cost.
+                const averageBuyPrice = (item.instanceId && typeof item.packPullValue === 'number') ? item.packPullValue : ((typeof item.totalCost === 'number' && item.quantity > 0) ? item.totalCost / item.quantity : 0);
+                const displayCardId = item.instanceId || card.id; // Use instanceId if available for unique elements
 
                 const cardWrapper = document.createElement('div');
                 cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-3 md:p-0';
 
-                // Populate card name, quantity held, average buy price, current sell price, quantity input, and action buttons.
+                let gradeInfo = '';
+                if (item.instanceId && item.grade) {
+                    gradeInfo = `<span class="text-xs text-blue-400 ml-2">(Grade: ${item.grade.score} - ${item.grade.gradeName})</span>`;
+                } else if (item.instanceId && !item.grade) {
+                     gradeInfo = `<span class="text-xs text-gray-500 ml-2">(Ungraded)</span>`;
+                }
+
+
                 cardWrapper.innerHTML = `
-                    <div class="block md:table-cell align-middle p-1 md:p-2"><div class="font-bold">${card.name}</div></div>
+                    <div class="block md:table-cell align-middle p-1 md:p-2"><div class="font-bold">${card.name}${gradeInfo}</div></div>
                     <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Held: </span>${item.quantity}</div>
-                    <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Avg. Buy Price: </span>$${averageBuyPrice.toFixed(2)}</div>
+                    <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Avg. Buy/Pull $: </span>$${averageBuyPrice.toFixed(2)}</div>
                     <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Current Sell Price: </span><span class="text-green-400">$${currentMarketPrice.toLocaleString()}</span></div>
-                    <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Quantity: </span><input type="number" id="sell-qty-${card.id}" min="1" max="${item.quantity}" value="1" class="w-16 text-center"></div>
-                    <div class="block md:table-cell align-middle p-1 md:p-2 mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-2"><button class="btn btn-danger btn-compact" title="Sell Quantity" data-card-id="${card.id}" data-action="sell-qty">$</button><button class="btn btn-danger btn-compact" title="Sell All" data-card-id="${card.id}" data-action="sell-all">All</button></div></div>
-                `;
+                    <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Quantity: </span><input type="number" id="sell-qty-${displayCardId}" min="1" max="${item.quantity}" value="1" class="w-16 text-center" ${item.instanceId ? 'disabled' : ''}></div>
+                    <div class="block md:table-cell align-middle p-1 md:p-2 mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-2"><button class="btn btn-danger btn-compact" title="Sell Quantity" data-card-id="${card.id}" data-instance-id="${item.instanceId || ''}" data-action="sell-qty">$</button><button class="btn btn-danger btn-compact" title="Sell All" data-card-id="${card.id}" data-instance-id="${item.instanceId || ''}" data-action="sell-all" ${item.instanceId ? 'disabled' : ''}>All</button></div></div>
+                `; // Selling unique instances one by one is fine, "Sell All" disabled for them.
                 UIElements.inventoryItems.appendChild(cardWrapper);
             });
         } catch (error) {
@@ -325,8 +312,6 @@ export const UIRenderer = {
 
     /**
      * Renders the travel options available to the player.
-     * Dynamically creates buttons for each possible destination based on GameData.locations
-     * and GameData.travelDurations. Also handles logic for "End Journey" button.
      */
     renderTravelOptions() {
         try {
@@ -336,7 +321,6 @@ export const UIRenderer = {
             }
             UIElements.travelOptions.innerHTML = '';
 
-            // Validate necessary game state and data.
             if (!GameState.current || typeof GameState.current.daysRemaining !== 'number' || !GameState.current.currentLocationId) {
                 console.warn("UIRenderer Warning: GameState not ready for renderTravelOptions.");
                 return;
@@ -349,22 +333,20 @@ export const UIRenderer = {
             const daysLeft = GameState.current.daysRemaining;
             const currentLocationId = GameState.current.currentLocationId;
 
-            // "End Journey" button is always an option, but especially prominent if days are low.
             const endGameBtn = document.createElement('button');
             endGameBtn.className = 'btn btn-danger w-full text-left';
             endGameBtn.textContent = 'End Your Journey';
             endGameBtn.title = 'Finish the game with your current cash and see your final score.';
             endGameBtn.onclick = () => GameEnd.forceEndGame();
 
-            // Logic for displaying travel options based on days remaining.
-            if (daysLeft <= 1) { // Only option is to end game if 1 or fewer days left.
+            if (daysLeft <= 1) {
                 UIElements.travelOptions.appendChild(endGameBtn);
-            } else if (daysLeft === 2) { // If 2 days left, can only travel to locations 1 day away.
-                UIElements.travelOptions.appendChild(endGameBtn); // End game is still an option.
+            } else if (daysLeft === 2) {
+                UIElements.travelOptions.appendChild(endGameBtn);
                 GameData.locations.forEach(location => {
                     if (!location || !location.id || location.id === currentLocationId) return;
-                    const travelCost = GameData.travelDurations[currentLocationId]?.[location.id] || 99; // Default high cost if undefined.
-                    if (travelCost === 1) { // Only show 1-day trips.
+                    const travelCost = GameData.travelDurations[currentLocationId]?.[location.id] || 99;
+                    if (travelCost === 1) {
                         const button = document.createElement('button');
                         button.className = 'btn btn-primary w-full text-left';
                         button.textContent = `${location.name || 'Unknown'} (${travelCost} day)`;
@@ -373,7 +355,7 @@ export const UIRenderer = {
                         UIElements.travelOptions.appendChild(button);
                     }
                 });
-            } else { // More than 2 days left, show all travel options.
+            } else {
                 GameData.locations.forEach(location => {
                     if (!location || !location.id || location.id === currentLocationId) return;
                     const travelCost = GameData.travelDurations[currentLocationId]?.[location.id] || 99;
@@ -384,8 +366,7 @@ export const UIRenderer = {
                     button.onclick = () => Travel.travelTo(location.id);
                     UIElements.travelOptions.appendChild(button);
                 });
-                 // Add End Journey button as the last option if many days are left.
-                UIElements.travelOptions.appendChild(document.createElement('hr')); // Visual separator
+                UIElements.travelOptions.appendChild(document.createElement('hr'));
                 UIElements.travelOptions.appendChild(endGameBtn);
             }
         } catch (error) {
@@ -396,7 +377,6 @@ export const UIRenderer = {
 
     /**
      * Renders the game log messages.
-     * Displays messages from `GameState.current.log`. Basic HTML sanitization is applied.
      */
     renderLog() {
         try {
@@ -405,7 +385,6 @@ export const UIRenderer = {
                 return;
             }
             if (GameState.current && Array.isArray(GameState.current.log)) {
-                // Map log messages to HTML, sanitizing angle brackets to prevent HTML injection.
                 UIElements.logMessages.innerHTML = GameState.current.log.map(msg =>
                     `<div class="log-message">${typeof msg === 'string' ? msg.replace(/</g, "&lt;").replace(/>/g, "&gt;") : 'Invalid log message'}</div>`
                 ).join('');
@@ -421,7 +400,8 @@ export const UIRenderer = {
 
     /**
      * Renders the player's display cabinet.
-     * Shows visual representations of cards the player has chosen to display.
+     * Shows cards, their status (e.g., away for grading), grade if available,
+     * and provides a button to send eligible cards for grading.
      */
     renderDisplayCabinet() {
         try {
@@ -433,38 +413,41 @@ export const UIRenderer = {
                 console.warn("UIRenderer Warning: Display cabinet UI elements missing.");
                 return;
             }
-            cabinetListEl.innerHTML = ''; // Clear previous cabinet items.
+            cabinetListEl.innerHTML = '';
 
             if (!GameState.current || !Array.isArray(GameState.current.displayCabinet)) {
                  console.warn("UIRenderer Warning: GameState.current.displayCabinet not ready for render.");
                  if (placeholderEl) {
-                    cabinetListEl.appendChild(placeholderEl); // Show placeholder if data not ready.
+                    cabinetListEl.appendChild(placeholderEl);
                     placeholderEl.style.display = 'block';
                  }
                  manageBtn.style.display = 'none';
                  return;
             }
 
-            // Display placeholder or cabinet items.
             if (GameState.current.displayCabinet.length === 0) {
                 if (!cabinetListEl.contains(placeholderEl)) {
                      cabinetListEl.appendChild(placeholderEl);
                 }
-                placeholderEl.style.display = 'block'; // Show placeholder for empty cabinet.
-                manageBtn.style.display = 'none';      // Hide manage button if cabinet is empty.
+                placeholderEl.style.display = 'block';
+                manageBtn.style.display = 'none';
             } else {
                 if (cabinetListEl.contains(placeholderEl)) {
-                     placeholderEl.style.display = 'none'; // Hide placeholder if cabinet has items.
+                     placeholderEl.style.display = 'none';
                 }
-                manageBtn.style.display = 'inline-block'; // Show manage button.
-                // Iterate and render each cabinet item.
-                GameState.current.displayCabinet.forEach(cabinetItem => {
-                    if (!cabinetItem || typeof cabinetItem.capturedValue === 'undefined' || !cabinetItem.card) {
+                manageBtn.style.display = 'inline-block';
+                GameState.current.displayCabinet.forEach((cabinetItem, index) => {
+                    if (!cabinetItem || !cabinetItem.card) {
                         console.warn("UIRenderer Warning: Invalid item in display cabinet:", cabinetItem);
+                        // Render an empty slot or error message for this slot
+                        const emptySlot = document.createElement('div');
+                        emptySlot.className = 'flex flex-col items-center justify-center w-full h-48 bg-gray-700/50 rounded p-2 text-center';
+                        emptySlot.textContent = 'Slot Error';
+                        cabinetListEl.appendChild(emptySlot);
                         return;
                     }
                     const cardWrapper = document.createElement('div');
-                    cardWrapper.className = 'flex flex-col items-center';
+                    cardWrapper.className = 'flex flex-col items-center p-2 border border-gray-700 rounded bg-gray-800 w-full'; // Ensure consistent width
 
                     const cardVisual = CardVisuals.createCardVisual(cabinetItem);
                     if (cardVisual) {
@@ -472,15 +455,41 @@ export const UIRenderer = {
                     } else {
                         console.warn("UIRenderer Warning: Failed to create card visual for cabinet item:", cabinetItem);
                         const errorVisual = document.createElement('div');
-                        errorVisual.textContent = 'Error';
+                        errorVisual.textContent = 'Visual Error';
                         errorVisual.className = 'w-24 h-32 border border-red-500 bg-gray-700 flex items-center justify-center text-xs';
                         cardWrapper.appendChild(errorVisual);
                     }
 
                     const valueDisplay = document.createElement('div');
                     valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
-                    valueDisplay.textContent = `$${(cabinetItem.capturedValue || 0).toLocaleString()}`; // Display captured value.
+                    // Use currentDisplayValue if available (reflects grade), otherwise capturedValue
+                    const displayValue = cabinetItem.currentDisplayValue ?? cabinetItem.capturedValue ?? 0;
+                    valueDisplay.textContent = `$${displayValue.toLocaleString()}`;
                     cardWrapper.appendChild(valueDisplay);
+
+                    if (cabinetItem.isAwayForGrading) {
+                        const gradingStatus = document.createElement('div');
+                        gradingStatus.className = 'text-xs text-yellow-400 mt-1';
+                        gradingStatus.textContent = `Grading: ${cabinetItem.daysUntilGradingComplete} days left`;
+                        cardWrapper.appendChild(gradingStatus);
+                        const lockedText = document.createElement('div');
+                        lockedText.className = 'text-xs text-red-500 mt-1';
+                        lockedText.textContent = '(Slot Locked)';
+                        cardWrapper.appendChild(lockedText);
+                    } else if (cabinetItem.grade) {
+                        const gradeText = document.createElement('div');
+                        gradeText.className = 'text-xs text-blue-400 mt-1';
+                        gradeText.textContent = `Grade: ${cabinetItem.grade.score}/10 - ${cabinetItem.grade.gradeName}`;
+                        cardWrapper.appendChild(gradeText);
+                    } else if (cabinetItem.instanceId && !cabinetItem.grade) { // Is a unique, ungraded card
+                        const sendToGradeBtn = document.createElement('button');
+                        sendToGradeBtn.className = 'btn btn-primary btn-xs mt-2';
+                        sendToGradeBtn.textContent = 'Send for Grading';
+                        sendToGradeBtn.dataset.instanceId = cabinetItem.instanceId;
+                        sendToGradeBtn.dataset.cabinetSlotIndex = index.toString();
+                        // Event listener will be attached in GameController.js using these data attributes
+                        cardWrapper.appendChild(sendToGradeBtn);
+                    }
 
                     cabinetListEl.appendChild(cardWrapper);
                 });
@@ -488,6 +497,66 @@ export const UIRenderer = {
         } catch (error) {
             console.error("UIRenderer Error: Failed to render display cabinet:", error);
             if (UIElements.displayCabinetList) UIElements.displayCabinetList.innerHTML = "<p>Error displaying cabinet.</p>";
+        }
+    },
+
+    /**
+     * Shows the grading reveal modal with details of the graded card.
+     * @param {Object} revealData - Data object from GameState.current.pendingGradingReveal.
+     * Expected properties: cabinetSlotIndex, cardName, revealedGrade, currentDisplayValue, baseCard, layers, numbering.
+     */
+    showGradingRevealModal(revealData) {
+        try {
+            if (!UIElements.gradingRevealModal || !revealData || !revealData.revealedGrade) {
+                console.error("UIRenderer Error: Grading reveal modal or reveal data missing/invalid.", revealData);
+                return;
+            }
+
+            const { cardName, revealedGrade, currentDisplayValue, baseCard, layers, numbering } = revealData;
+
+            if (UIElements.gradingRevealCardName) UIElements.gradingRevealCardName.textContent = cardName || 'N/A';
+            if (UIElements.gradingRevealGradeText) UIElements.gradingRevealGradeText.textContent = `Grade: ${revealedGrade.score}/10 - ${revealedGrade.gradeName}`;
+            if (UIElements.gradingRevealNewValue) UIElements.gradingRevealNewValue.textContent = `New Cabinet Value: $${(currentDisplayValue || 0).toLocaleString()}`;
+
+            if (UIElements.gradingRevealCardArea && UIElements.gradingRevealSlabImage && UIElements.gradingRevealCardPlaceholder) {
+                UIElements.gradingRevealCardArea.innerHTML = ''; // Clear previous
+
+                // For now, just show the slab image.
+                // A more advanced version would composite the card art onto the slab.
+                const slabImg = UIElements.gradingRevealSlabImage;
+                slabImg.src = revealedGrade.slabImage || 'Images/slabs/slab_default.png'; // Fallback slab image
+                slabImg.alt = `${cardName} - Grade ${revealedGrade.score}`;
+                slabImg.classList.remove('hidden');
+                UIElements.gradingRevealCardPlaceholder.classList.add('hidden');
+                UIElements.gradingRevealCardArea.appendChild(slabImg); // Add the configured slab image
+            }
+
+            UIElements.gradingRevealModal.classList.remove('hidden');
+            // Do NOT clear pendingGradingReveal here, GameController or hide function should do it after acknowledgment.
+        } catch (error) {
+            console.error("UIRenderer Error: Failed to show grading reveal modal:", error);
+        }
+    },
+
+    /**
+     * Hides the grading reveal modal and finalizes UI updates for the graded card slot.
+     */
+    hideGradingRevealModal() {
+        try {
+            if (!UIElements.gradingRevealModal) return;
+            UIElements.gradingRevealModal.classList.add('hidden');
+
+            if (GameState.current.pendingGradingReveal && typeof GameState.current.pendingGradingReveal.cabinetSlotIndex === 'number') {
+                const slotIndex = GameState.current.pendingGradingReveal.cabinetSlotIndex;
+                if (GameState.current.displayCabinet[slotIndex]) {
+                    GameState.current.displayCabinet[slotIndex].lockedByGrading = false; // Unlock the slot
+                }
+            }
+            GameState.current.pendingGradingReveal = null; // Clear the pending reveal data
+
+            this.renderDisplayCabinet(); // Re-render to show the final state of the cabinet slot
+        } catch (error) {
+            console.error("UIRenderer Error: Failed to hide grading reveal modal:", error);
         }
     }
 };

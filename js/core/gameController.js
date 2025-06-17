@@ -15,6 +15,8 @@ import { Leaderboard } from '../features/leaderboard.js';
 import { Events } from '../features/events.js';
 // Handles game over conditions and final scoring.
 import { GameEnd } from '../features/gameEnd.js';
+// Handles card grading submissions and processing.
+import { GradingService } from '../features/grading.js';
 
 /**
  * GameController
@@ -213,5 +215,70 @@ export const GameController = {
         addSafeEventListener(UIElements.closeViewCabinetBtn, 'click', () => {
             if (UIElements.viewCabinetModal) UIElements.viewCabinetModal.classList.add('hidden');
         });
+
+        // Event listener for "Send for Grading" buttons in the display cabinet
+        if (UIElements.displayCabinetList) {
+            addSafeEventListener(UIElements.displayCabinetList, 'click', (e) => {
+                const button = e.target.closest('button[data-action="send-to-grading"]');
+                if (button) {
+                    const cabinetSlotIndex = parseInt(button.dataset.cabinetSlotIndex);
+                    // instanceId is primarily for client-side clarity if needed,
+                    // but submitCardForGrading uses cabinetSlotIndex to get the item.
+                    // const instanceId = button.dataset.instanceId;
+
+                    if (isNaN(cabinetSlotIndex)) {
+                        console.error("GameController Error: Invalid cabinetSlotIndex for grading submission from button:", button.dataset.cabinetSlotIndex);
+                        GameLogger.addLogMessage("Error initiating grading. Invalid slot information.");
+                        return;
+                    }
+
+                    const success = GradingService.submitCardForGrading(cabinetSlotIndex);
+                    if (success) {
+                        // Re-render relevant UI parts immediately after submission
+                        UIRenderer.renderDisplayCabinet();
+                        UIRenderer.renderPlayerStats();
+                    }
+                }
+            });
+        } else {
+            console.warn("Display cabinet list (UIElements.displayCabinetList) not found. Cannot attach grading event handlers.");
+        }
+
+        // Event listener for the "Close Grading Reveal Modal" button
+        if (UIElements.closeGradingRevealModalBtn) {
+            addSafeEventListener(UIElements.closeGradingRevealModalBtn, 'click', () => {
+                UIRenderer.hideGradingRevealModal();
+                // hideGradingRevealModal should handle re-rendering the cabinet.
+            });
+        } else {
+            console.warn("Close grading reveal modal button (UIElements.closeGradingRevealModalBtn) not found.");
+        }
+    },
+
+    /**
+     * Advances the game by one day.
+     * This is a conceptual placement for daily processing logic.
+     * Actual implementation might be in a main game loop or a dedicated "Next Day" button handler.
+     */
+    advanceDay() {
+        // Example of how daily processing would be integrated:
+        // GameState.current.daysRemaining--;
+        // GameLogger.addLogMessage(`Advanced to next day. ${GameState.current.daysRemaining} days left.`);
+
+        // Process any cards currently in grading.
+        GradingService.processDailyGrading();
+
+        // After all daily processing, check if a grading reveal is pending.
+        if (GameState.current.pendingGradingReveal) {
+            UIRenderer.showGradingRevealModal(GameState.current.pendingGradingReveal);
+            // Note: showGradingRevealModal does not clear pendingGradingReveal itself.
+            // It's cleared when the modal is closed by the user via hideGradingRevealModal.
+        }
+
+        // Market.updateMarketForCurrentLocation(); // Example: Market might update daily
+        // Events.checkForTravelEvent(); // Or new events might occur
+        // UIRenderer.renderAll();
+        // GameEnd.checkGameOver();
+        console.log("Conceptual advanceDay called: Grading processed, reveal checked.");
     }
 };

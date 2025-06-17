@@ -94,5 +94,47 @@ export const GameConfig = {
             { folder: 'hair', count: 21 },
             { folder: 'Frame', count: 5 }
         ]
+    },
+
+    /**
+     * @property {Object} grading - Configuration for the card grading feature.
+     *      @property {Object} costs - Cost and time for grading a card.
+     *          @property {number} cash - Cash amount required to submit a card for grading.
+     *          @property {number} days - Number of days the grading process takes.
+     *      @property {Array<Object>} scales - Defines the grading scale, scores, and their value multipliers.
+     *          @property {number} score - The numerical grade (e.g., 1-10).
+     *          @property {string} name - The descriptive name of the grade (e.g., "Gem Mint", "Mint").
+     *          @property {number} multiplier - Value multiplier applied to the card's packPullValue based on this grade.
+     *          @property {string} slabImage - Path to the image for the graded card's slab.
+     *      @property {Array<Object>} ungradedConditions - Defines possible hidden conditions of ungraded cards and their potential grade outcomes.
+     *          @property {string} id - Unique identifier for the condition.
+     *          @property {string} label - Display label for the condition (e.g., "Pristine", "Very Good").
+     *          @property {Array<number>} gradePotential - A [min, max] array indicating the possible grade range for this condition.
+     *          @property {number} probability - The chance (0-1) of a newly pulled card having this condition. Sum of probabilities should ideally be 1.
+     *      @property {string} defaultPackPullValueSource - Determines how the `packPullValue` of a gradable card is set.
+     *                                                    Typically 'basePrice' of the card at the moment it's pulled.
+     */
+    grading: {
+        costs: { cash: 50, days: 5 },
+        scales: [
+            { score: 10, name: 'Gem Mint', multiplier: 3.0, slabImage: 'Images/slabs/slab_10.png' },
+            { score: 9, name: 'Mint', multiplier: 2.0, slabImage: 'Images/slabs/slab_9.png' },
+            { score: 8, name: 'Near Mint-Mint', multiplier: 1.5, slabImage: 'Images/slabs/slab_8.png' },
+            { score: 7, name: 'Near Mint', multiplier: 1.2, slabImage: 'Images/slabs/slab_7.png' },
+            { score: 6, name: 'Excellent-Mint', multiplier: 1.0, slabImage: 'Images/slabs/slab_6.png' },
+            { score: 5, name: 'Excellent', multiplier: 0.8, slabImage: 'Images/slabs/slab_5.png' },
+            { score: 4, name: 'Very Good-Excellent', multiplier: 0.6, slabImage: 'Images/slabs/slab_4.png' },
+            { score: 3, name: 'Very Good', multiplier: 0.4, slabImage: 'Images/slabs/slab_3.png' },
+            { score: 2, name: 'Good', multiplier: 0.3, slabImage: 'Images/slabs/slab_2.png' },
+            { score: 1, name: 'Poor', multiplier: 0.2, slabImage: 'Images/slabs/slab_1.png' }
+        ],
+        ungradedConditions: [
+            { id: 'Pristine', label: 'Pristine', gradePotential: [8, 10], probability: 0.1 },
+            { id: 'Minty', label: 'Looks Mint', gradePotential: [7, 9], probability: 0.3 },
+            { id: 'VeryGood', label: 'Very Good', gradePotential: [5, 7], probability: 0.4 },
+            { id: 'Good', label: 'Good', gradePotential: [3, 5], probability: 0.15 },
+            { id: 'Fair', label: 'Fair', gradePotential: [1, 3], probability: 0.05 }
+        ],
+        defaultPackPullValueSource: 'basePrice'
     }
 };

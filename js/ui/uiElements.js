@@ -46,5 +46,15 @@ export const UIElements = {
         this.viewCabinetList = document.getElementById('view-cabinet-list');
         this.closeViewCabinetBtn = document.getElementById('close-view-cabinet-btn');
         this.announcementModal = document.getElementById('announcement-modal');
+
+        // Grading Reveal Modal Elements
+        this.gradingRevealModal = document.getElementById('grading-reveal-modal');
+        this.gradingRevealCardArea = document.getElementById('grading-reveal-card-area');
+        this.gradingRevealSlabImage = document.getElementById('grading-reveal-slab-image'); // For the slab image
+        this.gradingRevealCardPlaceholder = document.getElementById('grading-reveal-card-placeholder'); // Placeholder text
+        this.gradingRevealCardName = document.getElementById('grading-reveal-card-name');
+        this.gradingRevealGradeText = document.getElementById('grading-reveal-grade-text');
+        this.gradingRevealNewValue = document.getElementById('grading-reveal-new-value');
+        this.closeGradingRevealModalBtn = document.getElementById('close-grading-reveal-modal-btn');
     }
 };
