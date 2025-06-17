@@ -4,6 +4,8 @@ import { GameLogger } from '../core/gameLogger.js';
 import { UIElements } from '../ui/uiElements.js';
 import { UIRenderer } from '../ui/uiRenderer.js';
 import { CardVisuals } from '../ui/cardVisuals.js';
+// Make sure Grading is imported
+import { Grading } from './grading.js';
 
 export const Cabinet = {
     showManageCabinetModal() {
@@ -22,8 +24,59 @@ export const Cabinet = {
             valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
             valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
             cardWrapper.appendChild(valueDisplay);
+
+            // Add "Send to Grade" button if applicable
+            if (!cabinetItem.isGrading && !cabinetItem.isGraded) {
+                const gradeButton = document.createElement('button');
+                gradeButton.className = 'btn btn-primary btn-sm mt-2 text-xs px-2 py-1'; // Adjusted for better fit
+                gradeButton.textContent = 'Send to Grade';
+                gradeButton.title = `Cost: $${Grading.GRADING_COST}`; // Show cost on hover
+
+                gradeButton.onclick = (event) => {
+                    event.stopPropagation(); // Prevent cardWrapper's onclick from firing
+
+                    const success = Grading.initiateGrading(index);
+                    if (success) {
+                        GameLogger.addLogMessage(`Sent ${cabinetItem.card.name} for grading.`); // Log success
+                        UIElements.cabinetModal.classList.add('hidden');
+                        UIRenderer.renderAll(); // Re-render to show changes (e.g., cash, cabinet slot status)
+                    } else {
+                        // Optional: Show a message if grading couldn't be initiated (e.g., not enough cash)
+                        // This might already be handled by a modal/log in Grading.initiateGrading
+                        // For now, just log to console if initiateGrading handles user feedback
+                        console.warn(`Could not initiate grading for ${cabinetItem.card.name}.`);
+                        // If initiateGrading doesn't show a modal for "not enough cash", we might need one here.
+                        // However, initiateGrading has a console warning and could be expanded for UI feedback.
+                    }
+                };
+                cardWrapper.appendChild(gradeButton);
+            } else if (cabinetItem.isGrading) {
+                const gradingStatusDisplay = document.createElement('div');
+                gradingStatusDisplay.className = 'text-xs text-amber-400 mt-1';
+                gradingStatusDisplay.textContent = `Grading: ${cabinetItem.daysUntilGraded} days left`;
+                cardWrapper.appendChild(gradingStatusDisplay);
+                // Prevent returning to inventory if it's out for grading.
+                cardWrapper.onclick = (event) => {
+                    event.stopPropagation();
+                    // Maybe show a small message: "This card is currently out for grading."
+                    GameLogger.addLogMessage(`${cabinetItem.card.name} is currently being graded.`);
+                };
+            } else if (cabinetItem.isGraded) {
+                const gradedDisplay = document.createElement('div');
+                gradedDisplay.className = 'text-xs text-green-400 mt-1';
+                gradedDisplay.textContent = `Graded: ${cabinetItem.gradeName} (${cabinetItem.gradeValue})`;
+                cardWrapper.appendChild(gradedDisplay);
+                // Keep original onclick to allow returning graded card to inventory.
+            }
+
+            // The original onclick to return to inventory should be the default.
+            // If a grade button was added, its stopPropagation handles it.
+            // If it's currently grading, we override cardWrapper.onclick to do nothing/log.
+            // If it's already graded, the default click to return to inventory is fine.
+            if (!cabinetItem.isGrading) { // Only allow return to inventory if not actively grading
+                cardWrapper.onclick = () => this.returnCabinetCardToInventory(index);
+            }
             
-            cardWrapper.onclick = () => this.returnCabinetCardToInventory(index);
             UIElements.cabinetModalOptions.appendChild(cardWrapper);
         });
         UIElements.cabinetModal.classList.remove('hidden');
@@ -31,6 +84,14 @@ export const Cabinet = {
 
     returnCabinetCardToInventory(indexToRemove) {
         if (indexToRemove < 0 || indexToRemove >= GameState.current.displayCabinet.length) return;
+
+        // Ensure card is not currently grading before returning
+        const cabinetItem = GameState.current.displayCabinet[indexToRemove];
+        if (cabinetItem && cabinetItem.isGrading) {
+            GameLogger.addLogMessage(`Cannot return ${cabinetItem.card.name} to inventory as it is currently being graded.`);
+            return;
+        }
+
         const removedCabinetItem = GameState.current.displayCabinet.splice(indexToRemove, 1)[0];
         if (!removedCabinetItem) return;
 

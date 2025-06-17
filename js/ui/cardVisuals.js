@@ -153,5 +153,30 @@ export const CardVisuals = {
             }
         }
         return visualContainer;
+    },
+
+    createGradingStatusVisual(cabinetItem) {
+        const visualContainer = document.createElement('div');
+        visualContainer.className = 'relative aspect-[3/4] w-full border-2 border-dashed border-amber-500 rounded-lg p-2 flex flex-col items-center justify-center text-center bg-gray-700'; // Style as a placeholder
+
+        const statusText = document.createElement('p');
+        statusText.className = 'text-amber-400 font-semibold';
+        statusText.textContent = 'Out for Grading';
+        visualContainer.appendChild(statusText);
+
+        if (cabinetItem.daysUntilGraded !== undefined) {
+            const daysText = document.createElement('p');
+            daysText.className = 'text-xs text-gray-300 mt-1';
+            daysText.textContent = `Days Left: ${cabinetItem.daysUntilGraded}`;
+            visualContainer.appendChild(daysText);
+        }
+        // Add reference to original card name for clarity
+        if (cabinetItem.card && cabinetItem.card.name) {
+            const cardNameText = document.createElement('p');
+            cardNameText.className = 'text-xs text-gray-400 mt-2 italic';
+            cardNameText.textContent = `(${cabinetItem.card.name})`;
+            visualContainer.appendChild(cardNameText);
+        }
+        return visualContainer;
     }
 };
