@@ -94,11 +94,20 @@ export const Trading = {
         }
 
         const totalSaleValue = currentMarketPrice * quantity;
-        const costOfSoldItems = (inventoryItem.totalCost / inventoryItem.quantity) * quantity;
+        let costOfSoldItems;
+        if (quantity === inventoryItem.quantity) {
+            costOfSoldItems = inventoryItem.totalCost;
+        } else {
+            costOfSoldItems = (inventoryItem.totalCost / inventoryItem.quantity) * quantity;
+        }
         
         GameState.current.cash += totalSaleValue;
         inventoryItem.quantity -= quantity;
         inventoryItem.totalCost -= isNaN(costOfSoldItems) ? 0 : costOfSoldItems;
+
+        if (inventoryItem.quantity === 0) {
+            inventoryItem.totalCost = 0;
+        }
 
         if (inventoryItem.quantity <= 0) {
             GameState.current.inventory = GameState.current.inventory.filter(item => item.cardId !== cardId);
