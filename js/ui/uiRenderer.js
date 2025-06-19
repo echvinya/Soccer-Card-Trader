@@ -20,11 +20,28 @@ export const UIRenderer = {
     },
 
     renderPlayerStats() {
-        UIElements.cash.textContent = `$${GameState.current.cash.toLocaleString()}`;
-        UIElements.days.textContent = GameState.current.daysRemaining;
+        // Update new mobile cash display
+        if (UIElements.mobileCash) {
+            UIElements.mobileCash.textContent = `$${GameState.current.cash.toLocaleString()}`;
+        }
+
+        // Update legacy desktop elements if they exist (for compatibility if some logic still uses them)
+        // These will eventually be phased out or handled differently.
+        if (UIElements.cash) {
+            UIElements.cash.textContent = `$${GameState.current.cash.toLocaleString()}`;
+        }
+        if (UIElements.days) {
+            UIElements.days.textContent = GameState.current.daysRemaining;
+        }
         const location = GameState.getCurrentLocation();
-        UIElements.currentLocationName.textContent = location.name;
-        UIElements.marketLocationName.textContent = location.name;
+        if (location) {
+            if (UIElements.currentLocationName) {
+                UIElements.currentLocationName.textContent = location.name;
+            }
+            if (UIElements.marketLocationName) { // This is also a legacy element now
+                UIElements.marketLocationName.textContent = location.name;
+            }
+        }
     },
 
     renderLeaderboard(scores, targetElement) {
@@ -130,19 +147,17 @@ export const UIRenderer = {
             const priceIndicatorHtml = GameState.current.hasPriceGuide ? (marketInfo.price > card.basePrice ? `<span class="ml-2 text-green-400" title="Price is above base value">▲</span>` : `<span class="ml-2 text-red-400" title="Price is below base value">▼</span>`) : '';
 
             const cardWrapper = document.createElement('div');
-            cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-2 md:p-0'; // Adjusted padding for mobile view
+            cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-3 md:p-0';
             
-            // Adding sm:p-2 for slightly larger padding on small screens beyond the smallest
-            // Using p-1 for the smallest screens (mobile landscape)
             cardWrapper.innerHTML = `
-                <div class="block md:table-cell align-middle p-1 sm:p-2">
+                <div class="block md:table-cell align-middle p-1 md:p-2">
                     <div class="font-bold">${card.name}${eventIndicator}</div>
                     <div class="text-xs text-gray-400 font-normal block mt-1">${card.description}</div>
                 </div>
-                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Price: </span><span class="${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div>
-                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Supply: </span>${marketInfo.available}</div>
-                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Quantity: </span><input type="number" id="buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1" class="w-14 sm:w-16 text-center text-xs sm:text-sm p-1"></div>
-                <div class="block md:table-cell align-middle p-1 sm:p-2 mt-1 sm:mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-1 sm:gap-2"><button class="btn btn-success btn-compact text-xs sm:text-sm" title="Buy Quantity" data-card-id="${card.id}" data-action="buy-qty" ${marketInfo.available === 0 ? 'disabled' : ''}>$</button><button class="btn btn-success btn-compact text-xs sm:text-sm" title="Buy All" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>All</button></div></div>
+                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Price: </span><span class="${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div>
+                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Supply: </span>${marketInfo.available}</div>
+                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Quantity: </span><input type="number" id="buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1" class="w-16 text-center"></div>
+                <div class="block md:table-cell align-middle p-1 md:p-2 mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-2"><button class="btn btn-success btn-compact" title="Buy Quantity" data-card-id="${card.id}" data-action="buy-qty" ${marketInfo.available === 0 ? 'disabled' : ''}>$</button><button class="btn btn-success btn-compact" title="Buy All" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>All</button></div></div>
             `;
             UIElements.marketItems.appendChild(cardWrapper);
         });
@@ -162,17 +177,15 @@ export const UIRenderer = {
             const averageBuyPrice = item.totalCost / item.quantity;
 
             const cardWrapper = document.createElement('div');
-            cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-2 md:p-0'; // Adjusted padding for mobile view
+            cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-3 md:p-0';
 
-            // Adding sm:p-2 for slightly larger padding on small screens beyond the smallest
-            // Using p-1 for the smallest screens (mobile landscape)
             cardWrapper.innerHTML = `
-                <div class="block md:table-cell align-middle p-1 sm:p-2"><div class="font-bold">${card.name}</div></div>
-                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Held: </span>${item.quantity}</div>
-                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Avg. Buy Price: </span>$${averageBuyPrice.toFixed(2)}</div>
-                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Current Sell Price: </span><span class="text-green-400">$${currentMarketPrice.toLocaleString()}</span></div>
-                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Quantity: </span><input type="number" id="sell-qty-${card.id}" min="1" max="${item.quantity}" value="1" class="w-14 sm:w-16 text-center text-xs sm:text-sm p-1"></div>
-                <div class="block md:table-cell align-middle p-1 sm:p-2 mt-1 sm:mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-1 sm:gap-2"><button class="btn btn-danger btn-compact text-xs sm:text-sm" title="Sell Quantity" data-card-id="${card.id}" data-action="sell-qty">$</button><button class="btn btn-danger btn-compact text-xs sm:text-sm" title="Sell All" data-card-id="${card.id}" data-action="sell-all">All</button></div></div>
+                <div class="block md:table-cell align-middle p-1 md:p-2"><div class="font-bold">${card.name}</div></div>
+                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Held: </span>${item.quantity}</div>
+                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Avg. Buy Price: </span>$${averageBuyPrice.toFixed(2)}</div>
+                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Current Sell Price: </span><span class="text-green-400">$${currentMarketPrice.toLocaleString()}</span></div>
+                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Quantity: </span><input type="number" id="sell-qty-${card.id}" min="1" max="${item.quantity}" value="1" class="w-16 text-center"></div>
+                <div class="block md:table-cell align-middle p-1 md:p-2 mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-2"><button class="btn btn-danger btn-compact" title="Sell Quantity" data-card-id="${card.id}" data-action="sell-qty">$</button><button class="btn btn-danger btn-compact" title="Sell All" data-card-id="${card.id}" data-action="sell-all">All</button></div></div>
             `;
             UIElements.inventoryItems.appendChild(cardWrapper);
         });
@@ -224,22 +237,418 @@ export const UIRenderer = {
     },
 
     renderDisplayCabinet() {
-        // Update the count badge on the "View Display Cabinet" button
-        if (UIElements.cabinetCountBadge) {
-            UIElements.cabinetCountBadge.textContent = `${GameState.current.displayCabinet.length}/${GameConfig.displayCabinetLimit}`;
-        }
+        const cabinetListEl = UIElements.displayCabinetList;
+        const placeholderEl = UIElements.displayCabinetPlaceholder;
+        cabinetListEl.innerHTML = '';
 
-        // Show or hide the "Manage Cabinet" button based on whether the cabinet has items
-        if (UIElements.manageCabinetBtn) {
-            if (GameState.current.displayCabinet.length === 0) {
-                UIElements.manageCabinetBtn.style.display = 'none';
-            } else {
-                UIElements.manageCabinetBtn.style.display = 'inline-block';
+        if (GameState.current.displayCabinet.length === 0) {
+            if (placeholderEl && !cabinetListEl.contains(placeholderEl)) {
+                 cabinetListEl.appendChild(placeholderEl);
             }
+            if(placeholderEl) placeholderEl.style.display = 'block';
+            UIElements.manageCabinetBtn.style.display = 'none';
+        } else {
+            if (placeholderEl && cabinetListEl.contains(placeholderEl)) {
+                 placeholderEl.style.display = 'none';
+            }
+            UIElements.manageCabinetBtn.style.display = 'inline-block';
+            GameState.current.displayCabinet.forEach(cabinetItem => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'flex flex-col items-center';
+
+                const cardVisual = CardVisuals.createCardVisual(cabinetItem);
+                cardWrapper.appendChild(cardVisual);
+
+                const valueDisplay = document.createElement('div');
+                valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+                valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
+                cardWrapper.appendChild(valueDisplay);
+
+                cabinetListEl.appendChild(cardWrapper);
+            });
+        }
+    },
+
+    // --- Mobile View Renderers ---
+    renderMobileMarketView(containerElement) {
+        containerElement.innerHTML = ''; // Clear container
+        const location = GameState.getCurrentLocation();
+        const locationMarket = GameState.market[GameState.current.currentLocationId];
+        const itemsPerPage = 5; // Show 5 items per page
+
+        if (!location || !locationMarket) {
+            containerElement.innerHTML = '<p class="text-center text-gray-400">Market data not available.</p>';
+            return;
         }
 
-        // The actual rendering of cabinet items is now done when the modal is opened.
-        // See Cabinet.showPlayerCabinetModal() - though we might rename it or make a new one
-        // for the player's own cabinet vs. viewing others.
+        // Header for market view
+        const header = document.createElement('div');
+        header.className = 'mb-3';
+        header.innerHTML = `<h2 class="text-xl font-semibold text-center text-amber-400">${location.name} Market</h2>`;
+        // TODO: Add special actions like booster pack button here, styled for mobile.
+        containerElement.appendChild(header);
+
+        const tradableCardsInMarket = GameData.tradableCards.filter(card => locationMarket[card.id]);
+
+        const page = GameState.current.mobileMarketPage || 0;
+        const startIndex = page * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const itemsToShow = tradableCardsInMarket.slice(startIndex, endIndex);
+
+        if (itemsToShow.length === 0 && page === 0) {
+            containerElement.innerHTML += '<p class="text-center text-gray-400">No items in this market currently.</p>';
+        }
+
+        itemsToShow.forEach(card => {
+            const marketInfo = locationMarket[card.id];
+            if (!marketInfo) return;
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'bg-gray-800 p-3 rounded-md mb-2 shadow'; // Tailwind classes for list item
+
+            let eventIndicator = ''; // Placeholder for event indicators
+            const priceColorClass = GameState.current.hasPriceGuide ? (marketInfo.price > card.basePrice ? 'text-green-400' : 'text-red-400') : 'text-gray-300';
+            const priceIndicatorHtml = GameState.current.hasPriceGuide ? (marketInfo.price > card.basePrice ? `<span class="ml-1 text-xs text-green-400">▲</span>` : `<span class="ml-1 text-xs text-red-400">▼</span>`) : '';
+
+            itemDiv.innerHTML = `
+                <div class="flex justify-between items-center mb-1">
+                    <h3 class="text-md font-semibold text-sky-400">${card.name} ${eventIndicator}</h3>
+                    <span class="text-xs text-gray-400">Supply: ${marketInfo.available}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <p class="text-sm ${priceColorClass}">Price: $${marketInfo.price.toLocaleString()}${priceIndicatorHtml}</p>
+                    <div class="flex items-center space-x-2">
+                        <input type="number" id="mobile-buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1" class="w-14 text-center bg-gray-700 text-white rounded p-1 text-xs appearance-none focus:outline-none focus:ring-1 focus:ring-red-500">
+                        <button data-action="buy" data-card-id="${card.id}" class="btn-compact btn-success text-xs py-1 px-2" ${marketInfo.available === 0 ? 'disabled' : ''}>Buy</button>
+                    </div>
+                </div>
+            `;
+            // Add event listener for the buy button
+            const buyButton = itemDiv.querySelector('button[data-action="buy"]');
+            if (buyButton) {
+                buyButton.addEventListener('click', () => {
+                    const quantityInput = document.getElementById(`mobile-buy-qty-${card.id}`);
+                    const quantity = parseInt(quantityInput.value, 10);
+                    if (quantity > 0) {
+                        Trading.buyItem(card.id, quantity, marketInfo.price); // Assuming Trading.buyItem exists and is suitable
+                        // After buying, re-render this view to update supply, cash etc.
+                        // GameState.current.mobileMarketPage must be preserved or re-evaluated
+                        this.renderMobileMarketView(containerElement);
+                        UIRenderer.renderPlayerStats(); // Update cash in header
+                    }
+                });
+            }
+            containerElement.appendChild(itemDiv);
+        });
+
+        // Pagination
+        const paginationDiv = document.createElement('div');
+        paginationDiv.className = 'flex justify-between items-center mt-4';
+
+        const prevButton = document.createElement('button');
+        prevButton.textContent = 'Previous';
+        prevButton.className = 'btn btn-secondary text-xs py-1 px-3';
+        if (page === 0) prevButton.disabled = true;
+        prevButton.onclick = () => {
+            if (GameState.current.mobileMarketPage > 0) {
+                GameState.current.mobileMarketPage--;
+                this.renderMobileMarketView(containerElement);
+            }
+        };
+
+        const nextButton = document.createElement('button');
+        nextButton.textContent = 'Next';
+        nextButton.className = 'btn btn-secondary text-xs py-1 px-3';
+        if (endIndex >= tradableCardsInMarket.length) nextButton.disabled = true;
+        nextButton.onclick = () => {
+            if (endIndex < tradableCardsInMarket.length) {
+                GameState.current.mobileMarketPage++;
+                this.renderMobileMarketView(containerElement);
+            }
+        };
+
+        paginationDiv.appendChild(prevButton);
+        paginationDiv.appendChild(document.createTextNode(`Page ${page + 1} of ${Math.ceil(tradableCardsInMarket.length / itemsPerPage)}`));
+        paginationDiv.appendChild(nextButton);
+        containerElement.appendChild(paginationDiv);
+
+        // Re-attach special action buttons like booster packs if applicable
+        this.renderMobileSpecialActions(containerElement.querySelector('h2').parentElement); // Pass header div
+    },
+
+    renderMobileSpecialActions(headerDiv) {
+        // Simplified special actions for mobile market view
+        // This is a placeholder, actual actions might differ or be more integrated.
+        const location = GameState.getCurrentLocation();
+        const locationMarket = GameState.market[GameState.current.currentLocationId];
+
+        const specialActionsContainer = document.createElement('div');
+        specialActionsContainer.className = 'mt-2 flex flex-col items-center gap-2'; // Stack them below title
+
+        if (locationMarket && location.boosterPrice) {
+            const boosterPackBtn = document.createElement('button');
+            boosterPackBtn.className = 'btn btn-special w-full text-sm py-2';
+            boosterPackBtn.innerHTML = `Buy Booster <span class="font-bold ml-1">$${location.boosterPrice}</span>`;
+
+            if (!locationMarket.boosterAvailable) {
+                boosterPackBtn.disabled = true;
+                boosterPackBtn.textContent = 'Boosters Sold Out';
+            } else if (GameState.current.boosterPacksPurchasedToday >= GameConfig.boosterPack.dailyLimit) {
+                boosterPackBtn.disabled = true;
+                boosterPackBtn.textContent = `Daily Limit Reached`;
+            } else {
+                boosterPackBtn.onclick = () => {
+                    BoosterPacks.buyBoosterPack(location.boosterPrice);
+                    // Re-render views as buying a pack changes game state
+                    this.renderMobileMarketView(UIElements.mobileMainContent);
+                    UIRenderer.renderPlayerStats();
+                };
+            }
+            specialActionsContainer.appendChild(boosterPackBtn);
+        }
+        // Add other special actions like price guide or trade-in if desired for mobile
+        headerDiv.appendChild(specialActionsContainer);
+    },
+
+    renderMobileInventoryView(containerElement) {
+        containerElement.innerHTML = ''; // Clear container
+        const itemsPerPage = 5;
+        const page = GameState.current.mobileInventoryPage || 0;
+
+        // Header for inventory view
+        const header = document.createElement('div');
+        header.className = 'mb-3';
+        header.innerHTML = `<h2 class="text-xl font-semibold text-center text-amber-400">Your Portfolio</h2>`;
+        containerElement.appendChild(header);
+
+        const ownedItems = GameState.current.inventory.filter(item => item.quantity > 0);
+
+        if (ownedItems.length === 0) {
+            containerElement.innerHTML += '<p class="text-center text-gray-400">Your portfolio is empty. Buy some cards!</p>';
+            return;
+        }
+
+        const startIndex = page * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const itemsToShow = ownedItems.slice(startIndex, endIndex);
+
+        itemsToShow.forEach(item => {
+            const card = GameState.getCardDetails(item.cardId);
+            if (!card) return;
+
+            const currentMarketPrice = GameState.market[GameState.current.currentLocationId]?.[item.cardId]?.price || 0;
+            const averageBuyPrice = item.totalCost > 0 && item.quantity > 0 ? (item.totalCost / item.quantity) : 0;
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'bg-gray-800 p-3 rounded-md mb-2 shadow';
+
+            itemDiv.innerHTML = `
+                <div class="flex justify-between items-center mb-1">
+                    <h3 class="text-md font-semibold text-sky-400">${card.name}</h3>
+                    <span class="text-xs text-gray-400">Held: ${item.quantity}</span>
+                </div>
+                <p class="text-xs text-gray-500 mb-1">Avg. Buy: $${averageBuyPrice.toFixed(2)} | Current Sell: $${currentMarketPrice.toLocaleString()}</p>
+                <div class="flex justify-between items-center mt-1">
+                    <div></div> <!-- Spacer -->
+                    <div class="flex items-center space-x-2">
+                        <input type="number" id="mobile-sell-qty-${card.id}" min="1" max="${item.quantity}" value="1" class="w-14 text-center bg-gray-700 text-white rounded p-1 text-xs appearance-none focus:outline-none focus:ring-1 focus:ring-red-500">
+                        <button data-action="sell" data-card-id="${card.id}" class="btn-compact btn-danger text-xs py-1 px-2">Sell</button>
+                    </div>
+                </div>
+            `;
+
+            const sellButton = itemDiv.querySelector('button[data-action="sell"]');
+            if (sellButton) {
+                sellButton.addEventListener('click', () => {
+                    const quantityInput = document.getElementById(`mobile-sell-qty-${card.id}`);
+                    const quantity = parseInt(quantityInput.value, 10);
+                    if (quantity > 0) {
+                        Trading.sellItem(card.id, quantity, currentMarketPrice); // Assuming Trading.sellItem exists
+                        this.renderMobileInventoryView(containerElement);
+                        UIRenderer.renderPlayerStats(); // Update cash
+                    }
+                });
+            }
+            containerElement.appendChild(itemDiv);
+        });
+
+        // Pagination
+        if (ownedItems.length > itemsPerPage) {
+            const paginationDiv = document.createElement('div');
+            paginationDiv.className = 'flex justify-between items-center mt-4';
+
+            const prevButton = document.createElement('button');
+            prevButton.textContent = 'Previous';
+            prevButton.className = 'btn btn-secondary text-xs py-1 px-3';
+            if (page === 0) prevButton.disabled = true;
+            prevButton.onclick = () => {
+                if (GameState.current.mobileInventoryPage > 0) {
+                    GameState.current.mobileInventoryPage--;
+                    this.renderMobileInventoryView(containerElement);
+                }
+            };
+
+            const nextButton = document.createElement('button');
+            nextButton.textContent = 'Next';
+            nextButton.className = 'btn btn-secondary text-xs py-1 px-3';
+            if (endIndex >= ownedItems.length) nextButton.disabled = true;
+            nextButton.onclick = () => {
+                if (endIndex < ownedItems.length) {
+                    GameState.current.mobileInventoryPage++;
+                    this.renderMobileInventoryView(containerElement);
+                }
+            };
+
+            paginationDiv.appendChild(prevButton);
+            paginationDiv.appendChild(document.createTextNode(`Page ${page + 1} of ${Math.ceil(ownedItems.length / itemsPerPage)}`));
+            paginationDiv.appendChild(nextButton);
+            containerElement.appendChild(paginationDiv);
+        }
+    },
+
+    renderMobileTravelModal() {
+        if (!UIElements.mobileTravelModal || !UIElements.mobileTravelOptions) {
+            console.error("Mobile travel modal elements not found.");
+            return;
+        }
+
+        UIElements.mobileTravelOptions.innerHTML = ''; // Clear previous options
+        const daysLeft = GameState.current.daysRemaining;
+        const currentLocationId = GameState.current.currentLocationId;
+
+        const createTravelButton = (location, travelCost) => {
+            const button = document.createElement('button');
+            button.className = 'btn btn-primary w-full text-left py-2 px-3 text-sm'; // Mobile specific styling
+            button.textContent = `${location.name} (${travelCost} day${travelCost > 1 ? 's' : ''})`;
+            button.title = location.description;
+            button.onclick = async () => {
+                await Travel.travelTo(location.id);
+                UIElements.mobileTravelModal.classList.add('hidden'); // Close modal after travel
+                // UIRenderer.renderAll(); // Already called by Travel.travelTo
+                // Consider explicitly re-rendering the current mobile view if needed, e.g., market after travel
+                const currentView = MobileNavigation.getCurrentView(); // Need to implement MobileNavigation.getCurrentView()
+                if(currentView) MobileNavigation.navigateToView(currentView, true); // true to indicate it's a refresh
+            };
+            return button;
+        };
+
+        // "End Journey" Button
+        if (daysLeft <= GameConfig.maxTravelCost +1 || GameData.locations.every(loc => GameState.current.daysRemaining < (GameData.travelDurations[currentLocationId]?.[loc.id] || 99))) {
+             // Show if days left are less than max travel cost or if no valid travel options left
+            const endGameBtn = document.createElement('button');
+            endGameBtn.className = 'btn btn-danger w-full text-left py-2 px-3 text-sm';
+            endGameBtn.textContent = 'End Your Journey';
+            endGameBtn.title = 'Finish the game with your current cash and see your final score.';
+            endGameBtn.onclick = async () => {
+                await GameEnd.forceEndGame();
+                UIElements.mobileTravelModal.classList.add('hidden');
+            };
+            UIElements.mobileTravelOptions.appendChild(endGameBtn);
+        }
+
+        GameData.locations.forEach(location => {
+            if (location.id === currentLocationId) return;
+            const travelCost = GameData.travelDurations[currentLocationId]?.[location.id] || 99;
+            if (daysLeft >= travelCost) {
+                UIElements.mobileTravelOptions.appendChild(createTravelButton(location, travelCost));
+            }
+        });
+
+        if (UIElements.mobileTravelOptions.children.length === 0) {
+             UIElements.mobileTravelOptions.innerHTML = '<p class="text-gray-400 text-center">No travel options available with current days remaining.</p>';
+        }
+
+        UIElements.mobileTravelModal.classList.remove('hidden');
+
+        // Add event listener for the close button if not already present
+        if (UIElements.closeMobileTravelModalBtn && !UIElements.closeMobileTravelModalBtn.dataset.listenerAttached) {
+            UIElements.closeMobileTravelModalBtn.addEventListener('click', () => {
+                UIElements.mobileTravelModal.classList.add('hidden');
+            });
+            UIElements.closeMobileTravelModalBtn.dataset.listenerAttached = 'true';
+        }
+    },
+
+    renderMobileLogModal() {
+        if (!UIElements.mobileLogModal || !UIElements.mobileLogMessages) {
+            console.error("Mobile log modal elements not found.");
+            return;
+        }
+
+        UIElements.mobileLogMessages.innerHTML = GameState.current.log
+            .map(msg => `<div class="py-1 px-1.5 border-b border-gray-700 last:border-b-0">${msg}</div>`)
+            .join('');
+
+        UIElements.mobileLogModal.classList.remove('hidden');
+
+        if (UIElements.closeMobileLogModalBtn && !UIElements.closeMobileLogModalBtn.dataset.listenerAttached) {
+            UIElements.closeMobileLogModalBtn.addEventListener('click', () => {
+                UIElements.mobileLogModal.classList.add('hidden');
+            });
+            UIElements.closeMobileLogModalBtn.dataset.listenerAttached = 'true';
+        }
+    },
+
+    renderMobileCabinetModal() {
+        if (!UIElements.mobileCabinetModal || !UIElements.mobileCabinetList || !UIElements.mobileCabinetPlaceholder || !UIElements.mobileManageCabinetBtn) {
+            console.error("Mobile cabinet modal elements not found.");
+            return;
+        }
+
+        UIElements.mobileCabinetList.innerHTML = '';
+        const cabinetItems = GameState.current.displayCabinet;
+
+        if (cabinetItems.length === 0) {
+            UIElements.mobileCabinetPlaceholder.classList.remove('hidden');
+            UIElements.mobileCabinetList.classList.add('hidden');
+            UIElements.mobileManageCabinetBtn.classList.add('hidden'); // Hide manage if empty
+        } else {
+            UIElements.mobileCabinetPlaceholder.classList.add('hidden');
+            UIElements.mobileCabinetList.classList.remove('hidden');
+            UIElements.mobileManageCabinetBtn.classList.remove('hidden'); // Show manage if not empty
+
+            cabinetItems.forEach(cabinetItem => {
+                const cardWrapper = document.createElement('div');
+                // Tailwind classes for a compact card display in the modal grid
+                cardWrapper.className = 'flex flex-col items-center bg-gray-700 p-2 rounded shadow';
+
+                const cardVisual = CardVisuals.createCardVisual(cabinetItem, true); // true for compact/small visual
+                cardWrapper.appendChild(cardVisual);
+
+                const valueDisplay = document.createElement('div');
+                valueDisplay.className = 'text-xs font-semibold text-green-300 mt-1';
+                valueDisplay.textContent = `$${(cabinetItem.capturedValue || 0).toLocaleString()}`;
+                cardWrapper.appendChild(valueDisplay);
+
+                UIElements.mobileCabinetList.appendChild(cardWrapper);
+            });
+        }
+
+        UIElements.mobileCabinetModal.classList.remove('hidden');
+
+        // Event listener for the main close button
+        if (UIElements.closeMobileCabinetModalBtn && !UIElements.closeMobileCabinetModalBtn.dataset.listenerAttached) {
+            UIElements.closeMobileCabinetModalBtn.addEventListener('click', () => {
+                UIElements.mobileCabinetModal.classList.add('hidden');
+            });
+            UIElements.closeMobileCabinetModalBtn.dataset.listenerAttached = 'true';
+        }
+
+        // Event listener for the manage button
+        // This currently calls the old UIElements.cabinetModal.
+        // This might need to be refactored to populate mobileCabinetList with management options.
+        // For now, it will open the existing manage/replace modal.
+        if (UIElements.mobileManageCabinetBtn && !UIElements.mobileManageCabinetBtn.dataset.listenerAttached) {
+            UIElements.mobileManageCabinetBtn.addEventListener('click', () => {
+                // Option 1: Close this modal and open the old one (simplest for now)
+                UIElements.mobileCabinetModal.classList.add('hidden');
+                Cabinet.showManageCabinetModal(); // This uses UIElements.cabinetModal
+
+                // Option 2: (More complex) Adapt showManageCabinetModal to take a target container
+                // and render its options into UIElements.mobileCabinetList.
+                // Cabinet.showManageCabinetModal(UIElements.mobileCabinetList); // Hypothetical
+            });
+            UIElements.mobileManageCabinetBtn.dataset.listenerAttached = 'true';
+        }
     }
 };

@@ -1,15 +1,34 @@
 export const UIElements = {
     // Initialize after DOM is loaded
     init() {
-        // Stats
-        this.cash = document.getElementById('cash');
-        this.days = document.getElementById('days');
-        this.currentLocationName = document.getElementById('current-location-name');
-        this.marketLocationName = document.getElementById('market-location-name');
-        this.specialActionsContainer = document.getElementById('special-actions-container');
+        // Mobile specific elements
+        this.mobileCash = document.getElementById('mobile-cash');
+        this.mobileMainContent = document.getElementById('mobile-main-content');
+
+        // Mobile Modals & Controls
+        this.mobileTravelModal = document.getElementById('mobile-travel-modal');
+        this.mobileTravelOptions = document.getElementById('mobile-travel-options');
+        this.closeMobileTravelModalBtn = document.getElementById('close-mobile-travel-modal-btn');
         
-        // Tables
-        this.marketItems = document.getElementById('market-items');
+        this.mobileLogModal = document.getElementById('mobile-log-modal');
+        this.mobileLogMessages = document.getElementById('mobile-log-messages');
+        this.closeMobileLogModalBtn = document.getElementById('close-mobile-log-modal-btn');
+
+        this.mobileCabinetModal = document.getElementById('mobile-cabinet-modal');
+        this.mobileCabinetList = document.getElementById('mobile-cabinet-list');
+        this.mobileCabinetPlaceholder = document.getElementById('mobile-cabinet-placeholder');
+        this.mobileManageCabinetBtn = document.getElementById('mobile-manage-cabinet-btn');
+        this.closeMobileCabinetModalBtn = document.getElementById('close-mobile-cabinet-modal-btn');
+
+        // Stats (Legacy - some might still be used by core logic or modals indirectly, review later)
+        this.cash = document.getElementById('cash'); // Legacy desktop cash
+        this.days = document.getElementById('days'); // Legacy desktop days
+        this.currentLocationName = document.getElementById('current-location-name'); // Legacy
+        this.marketLocationName = document.getElementById('market-location-name'); // Legacy
+        this.specialActionsContainer = document.getElementById('special-actions-container'); // Legacy
+
+        // Tables (Legacy)
+        this.marketItems = document.getElementById('market-items'); // Legacy
         this.inventoryItems = document.getElementById('inventory-items');
         this.travelOptions = document.getElementById('travel-options');
         
@@ -34,11 +53,9 @@ export const UIElements = {
         this.submitScoreBtn = document.getElementById('submit-score-btn');
         
         // Cabinet
-        this.viewDisplayCabinetBtn = document.getElementById('view-display-cabinet-btn'); // New button
-        this.cabinetCountBadge = document.getElementById('cabinet-count-badge');     // New badge
-        // this.displayCabinetList = document.getElementById('display-cabinet-list'); // Old list, might be removed or repurposed if modal uses a different ID
-        // this.displayCabinetPlaceholder = document.getElementById('display-cabinet-placeholder'); // Old placeholder
-        this.cabinetModal = document.getElementById('cabinet-modal'); // This is the "Cabinet Full" / "Manage" modal
+        this.displayCabinetList = document.getElementById('display-cabinet-list');         // <-- ADD THIS LINE
+        this.displayCabinetPlaceholder = document.getElementById('display-cabinet-placeholder'); // <-- ADD THIS LINE
+        this.cabinetModal = document.getElementById('cabinet-modal');
         this.cabinetModalTitle = document.getElementById('cabinet-modal-title');
         this.cabinetModalMessage = document.getElementById('cabinet-modal-message');
         this.cabinetModalOptions = document.getElementById('cabinet-modal-options');

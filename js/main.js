@@ -5,13 +5,13 @@ import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/f
 import { GameController } from './core/gameController.js';
 import { Leaderboard } from './features/leaderboard.js';
 import { UIElements } from './ui/uiElements.js'; // <-- Import UIElements
-import { UITabs } from './ui/uiTabs.js'; // <-- Import UITabs
+import { MobileNavigation } from './ui/mobileNavigation.js'; // <-- Import MobileNavigation
 
 // This function will run once the HTML document is fully loaded.
 document.addEventListener('DOMContentLoaded', () => {
     // This is the perfect place to initialize our UI Elements
-    UIElements.init();
-    UITabs.init(); // <-- Initialize UITabs
+    UIElements.init(); // Still useful for modals and perhaps legacy elements
+    MobileNavigation.init(); // Initialize mobile navigation
 
     // Now that the elements are loaded, we can start the app authentication
     startApp();

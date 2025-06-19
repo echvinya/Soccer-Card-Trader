@@ -2,139 +2,132 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soccer Card Trader</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Soccer Card Trader - Mobile</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Critical base styles for full height and scroll prevention */
+        html, body { height: 100%; overflow: hidden; margin: 0; padding: 0; }
+        /* Ensure modals are above fixed layout components if any z-index issues arise with Tailwind fixed elements */
+        .modal { z-index: 100; }
+        /* Custom class for nav button active state if needed beyond Tailwind's capabilities for dynamic JS toggling */
+        .nav-button.active-nav {
+            /* Example: color: #f87171; background-color: #374151; */
+            /* This will be handled by Tailwind classes directly on the button via JS */
+        }
+    </style>
 </head>
-<body class="min-h-screen p-4 md:p-8">
+<body class="bg-gray-900 text-gray-300">
 
-    <div id="game-container" class="container mx-auto max-w-6xl">
-        <header class="mb-6 text-center">
-            <h1 class="text-3xl sm:text-4xl font-bold text-red-400">Soccer Card Trader</h1>
-        </header>
-
-        <div id="player-stats-container" class="card mb-6 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-center">
-             <div><p class="text-xs sm:text-sm text-gray-400">Cash</p><p id="cash" class="text-xl sm:text-2xl font-semibold text-green-400">$0</p></div>
-             <div><p class="text-xs sm:text-sm text-gray-400">Days Left</p><p id="days" class="text-xl sm:text-2xl font-semibold text-amber-400">0</p></div>
-             <div class="col-span-2 sm:col-span-1"><p class="text-xs sm:text-sm text-gray-400">Location</p><p id="current-location-name" class="text-lg sm:text-xl font-semibold text-gray-300">-</p></div>
-             <div><button id="restart-game-btn" class="btn btn-danger w-full text-xs sm:text-sm mt-1 sm:mt-0 py-2">Restart</button></div>
-        </div>
-
-       <!-- Main layout: single column on small screens, multi-column on larger -->
-       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            <div id="main-trading-area" class="card md:col-span-2">
-                <!-- Tabs for Market/Inventory -->
-                <div class="mb-3 border-b border-gray-700">
-                    <nav class="flex space-x-2 sm:space-x-4" aria-label="Tabs">
-                        <button id="market-tab" type="button" class="tab-button active-tab px-2 sm:px-3 py-2 font-medium text-xs sm:text-sm rounded-t-md text-red-400 border-b-2 border-red-400 focus:outline-none">
-                            Market
-                        </button>
-                        <button id="inventory-tab" type="button" class="tab-button inactive-tab px-2 sm:px-3 py-2 font-medium text-xs sm:text-sm rounded-t-md text-gray-400 hover:text-gray-200 focus:outline-none">
-                            Portfolio
-                        </button>
-                    </nav>
-                </div>
-
-                <!-- Market Section -->
-                <div id="market-section" class="tab-content">
-                    <div class="flex flex-col sm:flex-row justify-between items-start mb-2 sm:mb-3">
-                        <h2 class="text-xl sm:text-2xl font-semibold" id="market-location-name">-</h2>
-                        <div id="special-actions-container" class="flex flex-col sm:flex-row gap-1 sm:gap-2 items-start sm:items-center mt-2 sm:mt-0"></div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <div class="w-full min-w-max md:table text-xs sm:text-sm"> <!-- Smaller text for tables on small screens -->
-                            <div class="bg-gray-700/50 hidden md:table-header-group">
-                                <div class="md:table-row">
-                                    <div class="md:table-cell table-cell p-1 sm:p-2">Card Type</div>
-                                    <div class="md:table-cell table-cell p-1 sm:p-2">Price</div>
-                                    <div class="md:table-cell table-cell p-1 sm:p-2">Supply</div>
-                                    <div class="md:table-cell table-cell p-1 sm:p-2">Quantity</div>
-                                    <div class="md:table-cell table-cell p-1 sm:p-2">Actions</div>
-                                </div>
-                            </div>
-                            <div id="market-items" class="md:table-row-group"></div> <!-- Rows will get p-1 sm:p-2 from uiRenderer -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Inventory Section (initially hidden) -->
-                <div id="inventory-section" class="tab-content hidden">
-                    <h2 class="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3">Your Portfolio & Selling</h2>
-                    <div class="overflow-x-auto">
-                        <div class="w-full min-w-max md:table text-xs sm:text-sm"> <!-- Smaller text for tables on small screens -->
-                            <div class="bg-gray-700/50 hidden md:table-header-group">
-                                <div class="md:table-row">
-                                    <div class="md:table-cell table-cell p-1 sm:p-2">Card Type</div>
-                                    <div class="md:table-cell table-cell p-1 sm:p-2">Held</div>
-                                    <div class="md:table-cell table-cell p-1 sm:p-2">Avg. Buy Price</div>
-                                    <div class="md:table-cell table-cell p-1 sm:p-2">Current Sell Price</div>
-                                    <div class="md:table-cell table-cell p-1 sm:p-2">Quantity</div>
-                                    <div class="md:table-cell table-cell p-1 sm:p-2">Actions</div>
-                                </div>
-                            </div>
-                            <div id="inventory-items" class="md:table-row-group"></div> <!-- Rows will get p-1 sm:p-2 from uiRenderer -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sidebar Content: Travel, Log -->
-            <div class="space-y-4 md:space-y-6">
-                <div id="travel-section" class="card">
-                    <h2 class="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3">Travel To:</h2>
-                    <div id="travel-options" class="space-y-1 sm:space-y-2"></div> <!-- Reduced spacing for travel buttons -->
-                </div>
-                <div id="log-section" class="card">
-                    <h2 class="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3">Game Log</h2>
-                    <div id="log-messages" class="h-32 sm:h-40 md:h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-md p-1 sm:p-2 text-xs sm:text-sm"></div> <!-- Reduced height and padding for log -->
-                </div>
+    <div id="mobile-game-container" class="flex flex-col h-screen max-w-md mx-auto border-x border-gray-700">
+        <!-- Top Header: Fixed -->
+        <div id="mobile-top-header" class="flex-shrink-0 bg-gray-800 p-2 px-4 border-b border-gray-700 flex justify-between items-center">
+            <h1 class="text-lg font-bold text-red-400">SCT</h1> <!-- Compact Title -->
+            <div class="text-right">
+                <p class="text-xs text-gray-400">Cash</p>
+                <p id="mobile-cash" class="text-lg font-semibold text-green-400">$0</p>
             </div>
         </div>
 
-        <!-- Bottom Row: Display Cabinet Button, Leaderboard -->
-        <div class="mt-4 md:mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            <div id="display-cabinet-button-container" class="card md:col-span-2 flex flex-col items-center justify-center p-3 sm:p-4">
-                <button id="view-display-cabinet-btn" class="btn btn-primary w-full md:w-auto text-base sm:text-lg py-2 sm:py-3 px-4 sm:px-6">
-                    Display Cabinet <span id="cabinet-count-badge" class="ml-1 sm:ml-2 bg-red-500 text-white text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">0/0</span>
-                </button>
-                <button id="manage-cabinet-btn" class="btn btn-secondary w-full md:w-auto mt-2 text-xs sm:text-sm py-1.5 sm:py-2">Manage Cabinet</button>
-            </div>
-
-            <div id="leaderboard-section" class="card p-3 sm:p-4">
-                <h2 id="in-game-leaderboard-title" class="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3 text-amber-400">Global Top 3</h2>
-                <div id="leaderboard-list" class="space-y-2">
-                    <p class="text-gray-500">Loading leaderboard...</p>
-                </div>
-            </div>
+        <!-- Main Content Area: Dynamically populated, internal scroll if necessary -->
+        <div id="mobile-main-content" class="flex-grow p-3 overflow-y-auto">
+            <p>Loading game view...</p>
+            <!-- Example: Market items will be rendered here by JS -->
+            <!-- <div class="bg-gray-700 p-2 mb-2 rounded-sm">Card Name | Price | Buy</div> -->
         </div>
 
-        <div class="mt-6 text-center"><label class="flex items-center justify-center space-x-2"><input type="checkbox" id="help-text-toggle" class="form-checkbox h-5 w-5 bg-gray-700 border-gray-600 text-red-500 focus:ring-red-500" checked><span class="text-gray-400">Show Help Text</span></label></div>
+        <!-- Bottom Navigation: Fixed -->
+        <nav id="mobile-bottom-nav" class="flex-shrink-0 bg-gray-800 border-t border-gray-700 flex justify-around">
+            <button id="nav-market" class="flex-grow py-3 px-1 text-xs text-center text-red-500 bg-gray-700" data-view="market">Market</button> <!-- Active by default -->
+            <button id="nav-inventory" class="flex-grow py-3 px-1 text-xs text-center text-gray-400 hover:text-red-400 border-l border-gray-700" data-view="inventory">Cards</button>
+            <button id="nav-travel" class="flex-grow py-3 px-1 text-xs text-center text-gray-400 hover:text-red-400 border-l border-gray-700" data-view="travel">Map</button>
+            <button id="nav-log" class="flex-grow py-3 px-1 text-xs text-center text-gray-400 hover:text-red-400 border-l border-gray-700" data-view="log">Log</button>
+            <button id="nav-cabinet" class="flex-grow py-3 px-1 text-xs text-center text-gray-400 hover:text-red-400 border-l border-gray-700" data-view="cabinet">Cabinet</button>
+        </nav>
     </div>
 
-    <div id="game-over-modal" class="modal hidden">
-        <div class="modal-content">
-            <h2 id="game-over-title" class="text-3xl font-bold mb-4">Game Over!</h2>
-            <p id="game-over-message" class="text-lg mb-2">You've completed your trading journey.</p>
-            <p class="text-xl mb-4">Your Final Score: <span id="final-score" class="text-2xl font-bold text-green-400">$0</span></p>
-            <div id="game-over-cabinet-section" class="mt-4">
-                <h3 class="text-xl font-semibold text-cyan-400">Your Final Cabinet</h3>
-                <div id="game-over-cabinet-list" class="grid grid-cols-3 gap-4 mt-2"></div>
-            </div>
-            <hr class="border-gray-600 my-4">
-            <h3 class="text-2xl font-semibold mb-3 text-amber-400">Global Top 10</h3>
-            <div id="game-over-leaderboard-list" class="space-y-2 text-left max-h-64 overflow-y-auto"></div>
-            <button id="play-again-btn" class="btn btn-primary text-lg px-8 py-3 mt-6">Try Again</button>
-        </div>
-    </div>
-    
+    <!-- Existing Modals (should be outside the #mobile-game-container if they are position:fixed to viewport) -->
+    <!-- For simplicity in this step, they are left here, but might need moving if z-index/positioning issues arise -->
+    <div id="game-over-modal" class="modal hidden"><div class="modal-content"><h2 id="game-over-title" class="text-3xl font-bold mb-4">Game Over!</h2><p id="game-over-message" class="text-lg mb-2">You've completed your trading journey.</p><p class="text-xl mb-4">Your Final Score: <span id="final-score" class="text-2xl font-bold text-green-400">$0</span></p><div id="game-over-cabinet-section" class="mt-4"><h3 class="text-xl font-semibold text-cyan-400">Your Final Cabinet</h3><div id="game-over-cabinet-list" class="grid grid-cols-3 gap-4 mt-2"></div></div><hr class="border-gray-600 my-4"><h3 class="text-2xl font-semibold mb-3 text-amber-400">Global Top 10</h3><div id="game-over-leaderboard-list" class="space-y-2 text-left max-h-64 overflow-y-auto"></div><button id="play-again-btn" class="btn btn-primary text-lg px-8 py-3 mt-6">Try Again</button></div></div>
     <div id="booster-pack-modal" class="modal hidden"><div class="modal-content"><h2 class="text-3xl font-bold mb-4">Your Haul!</h2><div id="pack-summary-area" class="flex flex-row flex-wrap justify-center items-center gap-4 my-6 min-h-[144px]"></div><div class="text-center"><button id="close-pack-modal-btn" class="btn btn-primary mt-4">Awesome!</button></div></div></div>
     <div id="event-modal" class="modal hidden"><div class="modal-content"><h2 id="event-title" class="text-3xl font-bold mb-4 text-red-400">Random Event!</h2><p id="event-message" class="text-lg mb-6">Something unexpected happened...</p><button id="close-event-modal-btn" class="btn btn-primary">Continue</button></div></div>
     <div id="high-score-modal" class="modal hidden"><div class="modal-content"><h2 class="text-3xl font-bold mb-2 text-amber-400">New High Score!</h2><p class="text-lg mb-4">You made the global leaderboard!</p><p class="text-xl mb-2">Final Score:</p><p id="high-score-final-score" class="text-4xl font-bold text-green-400 mb-6">$0</p><div class="mb-6"><label for="player-initials" class="block text-lg mb-2">Enter Your Initials (3 letters)</label><input type="text" id="player-initials" maxlength="3" class="mx-auto w-24 text-2xl font-bold uppercase p-2 tracking-widest" pattern="[A-Za-z]{3}"></div><button id="submit-score-btn" class="btn btn-success text-lg px-8 py-3">Submit Score</button></div></div>
     <div id="cabinet-modal" class="modal hidden"><div class="modal-content"><h2 id="cabinet-modal-title" class="text-3xl font-bold mb-2 text-cyan-400">Cabinet Full!</h2><p id="cabinet-modal-message" class="text-lg mb-4">Choose a card to replace with your new pull.</p><div id="cabinet-modal-options" class="grid grid-cols-3 gap-4 my-6"></div><button id="cancel-cabinet-modal-btn" class="btn btn-danger">Cancel</button></div></div>
     <div id="view-cabinet-modal" class="modal hidden"><div class="modal-content"><h2 id="view-cabinet-title" class="text-3xl font-bold mb-4 text-cyan-400">Player's Cabinet</h2><div id="view-cabinet-list" class="grid grid-cols-3 gap-4 my-6"></div><button id="close-view-cabinet-btn" class="btn btn-primary">Close</button></div></div>
     <div id="announcement-modal" class="modal hidden"><div class="modal-content"><h2 id="announcement-title" class="text-3xl font-bold mb-4 text-amber-400">Heads Up!</h2><p id="announcement-message" class="text-lg mb-6">A market event is happening elsewhere...</p><div id="announcement-choices" class="event-choices flex gap-4 justify-center mt-4"></div></div></div>
+
+    <!-- Mobile Travel Modal -->
+    <div id="mobile-travel-modal" class="modal hidden">
+        <div class="modal-content bg-gray-800 p-4 rounded-lg shadow-xl max-w-sm w-11/12">
+            <h2 class="text-2xl font-semibold text-center text-amber-400 mb-4">Travel To:</h2>
+            <div id="mobile-travel-options" class="space-y-2 max-h-64 overflow-y-auto">
+                <!-- Travel options will be rendered here by JS -->
+            </div>
+            <button id="close-mobile-travel-modal-btn" class="btn btn-secondary w-full mt-4 py-2">Close</button>
+        </div>
+    </div>
+
+    <!-- Mobile Log Modal -->
+    <div id="mobile-log-modal" class="modal hidden">
+        <div class="modal-content bg-gray-800 p-4 rounded-lg shadow-xl max-w-sm w-11/12">
+            <h2 class="text-2xl font-semibold text-center text-amber-400 mb-4">Game Log</h2>
+            <div id="mobile-log-messages" class="space-y-1 text-xs text-left bg-gray-900 p-2 rounded max-h-72 overflow-y-auto">
+                <!-- Log messages will be rendered here -->
+            </div>
+            <button id="close-mobile-log-modal-btn" class="btn btn-secondary w-full mt-4 py-2">Close</button>
+        </div>
+    </div>
+
+    <!-- Mobile Display Cabinet Modal -->
+    <div id="mobile-cabinet-modal" class="modal hidden">
+        <div class="modal-content bg-gray-800 p-4 rounded-lg shadow-xl max-w-sm w-11/12">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-semibold text-cyan-400">Display Cabinet</h2>
+                <button id="mobile-manage-cabinet-btn" class="btn btn-secondary btn-compact text-xs">Manage</button>
+            </div>
+            <div id="mobile-cabinet-list" class="grid grid-cols-2 gap-3 max-h-72 overflow-y-auto bg-gray-900 p-2 rounded">
+                <!-- Cabinet items will be rendered here -->
+            </div>
+            <div id="mobile-cabinet-placeholder" class="text-gray-500 text-center py-4 hidden">Your cabinet is empty.</div>
+            <button id="close-mobile-cabinet-modal-btn" class="btn btn-primary w-full mt-4 py-2">Close</button>
+        </div>
+    </div>
+    
+    <!-- Placeholder for other game elements that might be needed by JS, but not part of the main mobile UI chrome -->
+    <!-- These are hidden and only used for their JS bindings if necessary, or will be removed if not needed -->
+    <div id="legacy-elements" class="hidden">
+        <div id="player-stats-container">
+             <p id="days">0</p>
+             <p id="current-location-name">-</p>
+             <button id="restart-game-btn">Restart Game</button>
+        </div>
+        <div id="market-section">
+            <h2 id="market-location-name">-</h2>
+            <div id="special-actions-container"></div>
+            <div id="market-items"></div>
+        </div>
+        <div id="travel-section">
+            <div id="travel-options"></div>
+        </div>
+        <div id="log-section">
+            <div id="log-messages"></div>
+        </div>
+        <div id="inventory-section">
+            <div id="inventory-items"></div>
+        </div>
+        <div id="display-cabinet-section">
+            <button id="manage-cabinet-btn">Manage</button>
+            <div id="display-cabinet-list"></div>
+            <p id="display-cabinet-placeholder"></p>
+        </div>
+        <div id="leaderboard-section">
+            <h2 id="in-game-leaderboard-title"></h2>
+            <div id="leaderboard-list"></div>
+        </div>
+        <input type="checkbox" id="help-text-toggle">
+    </div>
 
     <script type="module" src="js/main.js"></script>
 

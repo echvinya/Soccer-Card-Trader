@@ -20,7 +20,10 @@ export const GameState = {
             activeEvents: [],
             pendingEvent: null,
             storeDiscount: 0,
-            tempFoundCard: null
+            tempFoundCard: null,
+            // --- Mobile UI State ---
+            mobileMarketPage: 0,
+            mobileInventoryPage: 0,
         };
         this.market = {};
     },
