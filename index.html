@@ -12,80 +12,98 @@
 
     <div id="game-container" class="container mx-auto max-w-6xl">
         <header class="mb-6 text-center">
-            <h1 class="text-4xl font-bold text-red-400">Soccer Card Trader</h1>
+            <h1 class="text-3xl sm:text-4xl font-bold text-red-400">Soccer Card Trader</h1>
         </header>
 
-        <div id="player-stats-container" class="card mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-             <div><p class="text-sm text-gray-400">Cash</p><p id="cash" class="text-2xl font-semibold text-green-400">$0</p></div>
-             <div><p class="text-sm text-gray-400">Days Remaining</p><p id="days" class="text-2xl font-semibold text-amber-400">0</p></div>
-             <div><p class="text-sm text-gray-400">Current Location</p><p id="current-location-name" class="text-xl font-semibold text-gray-300">-</p></div>
-             <div><button id="restart-game-btn" class="btn btn-danger w-full mt-2 md:mt-0">Restart Game</button></div>
+        <div id="player-stats-container" class="card mb-6 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-center">
+             <div><p class="text-xs sm:text-sm text-gray-400">Cash</p><p id="cash" class="text-xl sm:text-2xl font-semibold text-green-400">$0</p></div>
+             <div><p class="text-xs sm:text-sm text-gray-400">Days Left</p><p id="days" class="text-xl sm:text-2xl font-semibold text-amber-400">0</p></div>
+             <div class="col-span-2 sm:col-span-1"><p class="text-xs sm:text-sm text-gray-400">Location</p><p id="current-location-name" class="text-lg sm:text-xl font-semibold text-gray-300">-</p></div>
+             <div><button id="restart-game-btn" class="btn btn-danger w-full text-xs sm:text-sm mt-1 sm:mt-0 py-2">Restart</button></div>
         </div>
 
-       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div id="market-section" class="card lg:col-span-2">
-                <div class="flex justify-between items-start mb-3"><h2 class="text-2xl font-semibold" id="market-location-name">-</h2><div id="special-actions-container" class="flex flex-col sm:flex-row gap-2 items-center"></div></div>
-    <div class="overflow-x-auto">
-        <div class="w-full min-w-max md:table">
-            <div class="bg-gray-700/50 hidden md:table-header-group">
-                <div class="md:table-row">
-                    <div class="md:table-cell table-cell">Card Type</div>
-                    <div class="md:table-cell table-cell">Price</div>
-                    <div class="md:table-cell table-cell">Supply</div>
-                    <div class="md:table-cell table-cell">Quantity</div>
-                    <div class="md:table-cell table-cell">Actions</div>
+       <!-- Main layout: single column on small screens, multi-column on larger -->
+       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            <div id="main-trading-area" class="card md:col-span-2">
+                <!-- Tabs for Market/Inventory -->
+                <div class="mb-3 border-b border-gray-700">
+                    <nav class="flex space-x-2 sm:space-x-4" aria-label="Tabs">
+                        <button id="market-tab" type="button" class="tab-button active-tab px-2 sm:px-3 py-2 font-medium text-xs sm:text-sm rounded-t-md text-red-400 border-b-2 border-red-400 focus:outline-none">
+                            Market
+                        </button>
+                        <button id="inventory-tab" type="button" class="tab-button inactive-tab px-2 sm:px-3 py-2 font-medium text-xs sm:text-sm rounded-t-md text-gray-400 hover:text-gray-200 focus:outline-none">
+                            Portfolio
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Market Section -->
+                <div id="market-section" class="tab-content">
+                    <div class="flex flex-col sm:flex-row justify-between items-start mb-2 sm:mb-3">
+                        <h2 class="text-xl sm:text-2xl font-semibold" id="market-location-name">-</h2>
+                        <div id="special-actions-container" class="flex flex-col sm:flex-row gap-1 sm:gap-2 items-start sm:items-center mt-2 sm:mt-0"></div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <div class="w-full min-w-max md:table text-xs sm:text-sm"> <!-- Smaller text for tables on small screens -->
+                            <div class="bg-gray-700/50 hidden md:table-header-group">
+                                <div class="md:table-row">
+                                    <div class="md:table-cell table-cell p-1 sm:p-2">Card Type</div>
+                                    <div class="md:table-cell table-cell p-1 sm:p-2">Price</div>
+                                    <div class="md:table-cell table-cell p-1 sm:p-2">Supply</div>
+                                    <div class="md:table-cell table-cell p-1 sm:p-2">Quantity</div>
+                                    <div class="md:table-cell table-cell p-1 sm:p-2">Actions</div>
+                                </div>
+                            </div>
+                            <div id="market-items" class="md:table-row-group"></div> <!-- Rows will get p-1 sm:p-2 from uiRenderer -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory Section (initially hidden) -->
+                <div id="inventory-section" class="tab-content hidden">
+                    <h2 class="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3">Your Portfolio & Selling</h2>
+                    <div class="overflow-x-auto">
+                        <div class="w-full min-w-max md:table text-xs sm:text-sm"> <!-- Smaller text for tables on small screens -->
+                            <div class="bg-gray-700/50 hidden md:table-header-group">
+                                <div class="md:table-row">
+                                    <div class="md:table-cell table-cell p-1 sm:p-2">Card Type</div>
+                                    <div class="md:table-cell table-cell p-1 sm:p-2">Held</div>
+                                    <div class="md:table-cell table-cell p-1 sm:p-2">Avg. Buy Price</div>
+                                    <div class="md:table-cell table-cell p-1 sm:p-2">Current Sell Price</div>
+                                    <div class="md:table-cell table-cell p-1 sm:p-2">Quantity</div>
+                                    <div class="md:table-cell table-cell p-1 sm:p-2">Actions</div>
+                                </div>
+                            </div>
+                            <div id="inventory-items" class="md:table-row-group"></div> <!-- Rows will get p-1 sm:p-2 from uiRenderer -->
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div id="market-items" class="md:table-row-group"></div>
-        </div>
-    </div>
-</div>
 
-            <div class="space-y-6">
+            <!-- Sidebar Content: Travel, Log -->
+            <div class="space-y-4 md:space-y-6">
                 <div id="travel-section" class="card">
-                    <h2 class="text-2xl font-semibold mb-3">Travel To:</h2>
-                    <div id="travel-options" class="space-y-2"></div>
+                    <h2 class="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3">Travel To:</h2>
+                    <div id="travel-options" class="space-y-1 sm:space-y-2"></div> <!-- Reduced spacing for travel buttons -->
                 </div>
                 <div id="log-section" class="card">
-                    <h2 class="text-2xl font-semibold mb-3">Game Log</h2>
-                    <div id="log-messages" class="h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-md p-2 text-sm"></div>
+                    <h2 class="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3">Game Log</h2>
+                    <div id="log-messages" class="h-32 sm:h-40 md:h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-md p-1 sm:p-2 text-xs sm:text-sm"></div> <!-- Reduced height and padding for log -->
                 </div>
             </div>
         </div>
 
-        <div class="mt-6">
-            <div id="inventory-section" class="card">
-                <h2 class="text-2xl font-semibold mb-3">Your Portfolio & Selling</h2>
-    <div class="overflow-x-auto">
-        <div class="w-full min-w-max md:table">
-            <div class="bg-gray-700/50 hidden md:table-header-group">
-                <div class="md:table-row">
-                    <div class="md:table-cell table-cell">Card Type</div>
-                    <div class="md:table-cell table-cell">Held</div>
-                    <div class="md:table-cell table-cell">Avg. Buy Price</div>
-                    <div class="md:table-cell table-cell">Current Sell Price</div>
-                    <div class="md:table-cell table-cell">Quantity</div>
-                    <div class="md:table-cell table-cell">Actions</div>
-                </div>
-            </div>
-            <div id="inventory-items" class="md:table-row-group"></div>
-        </div>
-    </div>
-</div>
-        
-        <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div id="display-cabinet-section" class="card lg:col-span-2">
-                <div class="flex justify-between items-center mb-3">
-                    <h2 class="text-2xl font-semibold text-cyan-400">Display Cabinet</h2>
-                    <button id="manage-cabinet-btn" class="btn btn-secondary">Manage</button>
-                </div>
-                <div id="display-cabinet-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-4">
-                    <p id="display-cabinet-placeholder" class="text-gray-500 col-span-full">Your best pulls will be shown here. Open a booster pack to add cards!</p>
-                </div>
+        <!-- Bottom Row: Display Cabinet Button, Leaderboard -->
+        <div class="mt-4 md:mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            <div id="display-cabinet-button-container" class="card md:col-span-2 flex flex-col items-center justify-center p-3 sm:p-4">
+                <button id="view-display-cabinet-btn" class="btn btn-primary w-full md:w-auto text-base sm:text-lg py-2 sm:py-3 px-4 sm:px-6">
+                    Display Cabinet <span id="cabinet-count-badge" class="ml-1 sm:ml-2 bg-red-500 text-white text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">0/0</span>
+                </button>
+                <button id="manage-cabinet-btn" class="btn btn-secondary w-full md:w-auto mt-2 text-xs sm:text-sm py-1.5 sm:py-2">Manage Cabinet</button>
             </div>
 
-            <div id="leaderboard-section" class="card">
-                <h2 id="in-game-leaderboard-title" class="text-2xl font-semibold mb-3 text-amber-400">Global Top 3</h2>
+            <div id="leaderboard-section" class="card p-3 sm:p-4">
+                <h2 id="in-game-leaderboard-title" class="text-xl sm:text-2xl font-semibold mb-2 sm:mb-3 text-amber-400">Global Top 3</h2>
                 <div id="leaderboard-list" class="space-y-2">
                     <p class="text-gray-500">Loading leaderboard...</p>
                 </div>

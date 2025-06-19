@@ -34,9 +34,11 @@ export const UIElements = {
         this.submitScoreBtn = document.getElementById('submit-score-btn');
         
         // Cabinet
-        this.displayCabinetList = document.getElementById('display-cabinet-list');         // <-- ADD THIS LINE
-        this.displayCabinetPlaceholder = document.getElementById('display-cabinet-placeholder'); // <-- ADD THIS LINE
-        this.cabinetModal = document.getElementById('cabinet-modal');
+        this.viewDisplayCabinetBtn = document.getElementById('view-display-cabinet-btn'); // New button
+        this.cabinetCountBadge = document.getElementById('cabinet-count-badge');     // New badge
+        // this.displayCabinetList = document.getElementById('display-cabinet-list'); // Old list, might be removed or repurposed if modal uses a different ID
+        // this.displayCabinetPlaceholder = document.getElementById('display-cabinet-placeholder'); // Old placeholder
+        this.cabinetModal = document.getElementById('cabinet-modal'); // This is the "Cabinet Full" / "Manage" modal
         this.cabinetModalTitle = document.getElementById('cabinet-modal-title');
         this.cabinetModalMessage = document.getElementById('cabinet-modal-message');
         this.cabinetModalOptions = document.getElementById('cabinet-modal-options');

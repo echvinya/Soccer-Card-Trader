@@ -130,17 +130,19 @@ export const UIRenderer = {
             const priceIndicatorHtml = GameState.current.hasPriceGuide ? (marketInfo.price > card.basePrice ? `<span class="ml-2 text-green-400" title="Price is above base value">▲</span>` : `<span class="ml-2 text-red-400" title="Price is below base value">▼</span>`) : '';
 
             const cardWrapper = document.createElement('div');
-            cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-3 md:p-0';
+            cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-2 md:p-0'; // Adjusted padding for mobile view
             
+            // Adding sm:p-2 for slightly larger padding on small screens beyond the smallest
+            // Using p-1 for the smallest screens (mobile landscape)
             cardWrapper.innerHTML = `
-                <div class="block md:table-cell align-middle p-1 md:p-2">
+                <div class="block md:table-cell align-middle p-1 sm:p-2">
                     <div class="font-bold">${card.name}${eventIndicator}</div>
                     <div class="text-xs text-gray-400 font-normal block mt-1">${card.description}</div>
                 </div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Price: </span><span class="${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Supply: </span>${marketInfo.available}</div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Quantity: </span><input type="number" id="buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1" class="w-16 text-center"></div>
-                <div class="block md:table-cell align-middle p-1 md:p-2 mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-2"><button class="btn btn-success btn-compact" title="Buy Quantity" data-card-id="${card.id}" data-action="buy-qty" ${marketInfo.available === 0 ? 'disabled' : ''}>$</button><button class="btn btn-success btn-compact" title="Buy All" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>All</button></div></div>
+                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Price: </span><span class="${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div>
+                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Supply: </span>${marketInfo.available}</div>
+                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Quantity: </span><input type="number" id="buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1" class="w-14 sm:w-16 text-center text-xs sm:text-sm p-1"></div>
+                <div class="block md:table-cell align-middle p-1 sm:p-2 mt-1 sm:mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-1 sm:gap-2"><button class="btn btn-success btn-compact text-xs sm:text-sm" title="Buy Quantity" data-card-id="${card.id}" data-action="buy-qty" ${marketInfo.available === 0 ? 'disabled' : ''}>$</button><button class="btn btn-success btn-compact text-xs sm:text-sm" title="Buy All" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>All</button></div></div>
             `;
             UIElements.marketItems.appendChild(cardWrapper);
         });
@@ -160,15 +162,17 @@ export const UIRenderer = {
             const averageBuyPrice = item.totalCost / item.quantity;
 
             const cardWrapper = document.createElement('div');
-            cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-3 md:p-0';
+            cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-2 md:p-0'; // Adjusted padding for mobile view
 
+            // Adding sm:p-2 for slightly larger padding on small screens beyond the smallest
+            // Using p-1 for the smallest screens (mobile landscape)
             cardWrapper.innerHTML = `
-                <div class="block md:table-cell align-middle p-1 md:p-2"><div class="font-bold">${card.name}</div></div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Held: </span>${item.quantity}</div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Avg. Buy Price: </span>$${averageBuyPrice.toFixed(2)}</div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Current Sell Price: </span><span class="text-green-400">$${currentMarketPrice.toLocaleString()}</span></div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Quantity: </span><input type="number" id="sell-qty-${card.id}" min="1" max="${item.quantity}" value="1" class="w-16 text-center"></div>
-                <div class="block md:table-cell align-middle p-1 md:p-2 mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-2"><button class="btn btn-danger btn-compact" title="Sell Quantity" data-card-id="${card.id}" data-action="sell-qty">$</button><button class="btn btn-danger btn-compact" title="Sell All" data-card-id="${card.id}" data-action="sell-all">All</button></div></div>
+                <div class="block md:table-cell align-middle p-1 sm:p-2"><div class="font-bold">${card.name}</div></div>
+                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Held: </span>${item.quantity}</div>
+                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Avg. Buy Price: </span>$${averageBuyPrice.toFixed(2)}</div>
+                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Current Sell Price: </span><span class="text-green-400">$${currentMarketPrice.toLocaleString()}</span></div>
+                <div class="block md:table-cell align-middle p-1 sm:p-2"><span class="font-semibold text-gray-400 md:hidden">Quantity: </span><input type="number" id="sell-qty-${card.id}" min="1" max="${item.quantity}" value="1" class="w-14 sm:w-16 text-center text-xs sm:text-sm p-1"></div>
+                <div class="block md:table-cell align-middle p-1 sm:p-2 mt-1 sm:mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-1 sm:gap-2"><button class="btn btn-danger btn-compact text-xs sm:text-sm" title="Sell Quantity" data-card-id="${card.id}" data-action="sell-qty">$</button><button class="btn btn-danger btn-compact text-xs sm:text-sm" title="Sell All" data-card-id="${card.id}" data-action="sell-all">All</button></div></div>
             `;
             UIElements.inventoryItems.appendChild(cardWrapper);
         });
@@ -220,35 +224,22 @@ export const UIRenderer = {
     },
 
     renderDisplayCabinet() {
-        const cabinetListEl = UIElements.displayCabinetList;
-        const placeholderEl = UIElements.displayCabinetPlaceholder;
-        cabinetListEl.innerHTML = '';
-
-        if (GameState.current.displayCabinet.length === 0) {
-            if (placeholderEl && !cabinetListEl.contains(placeholderEl)) {
-                 cabinetListEl.appendChild(placeholderEl);
-            }
-            if(placeholderEl) placeholderEl.style.display = 'block';
-            UIElements.manageCabinetBtn.style.display = 'none';
-        } else {
-            if (placeholderEl && cabinetListEl.contains(placeholderEl)) {
-                 placeholderEl.style.display = 'none';
-            }
-            UIElements.manageCabinetBtn.style.display = 'inline-block';
-            GameState.current.displayCabinet.forEach(cabinetItem => {
-                const cardWrapper = document.createElement('div');
-                cardWrapper.className = 'flex flex-col items-center';
-                
-                const cardVisual = CardVisuals.createCardVisual(cabinetItem);
-                cardWrapper.appendChild(cardVisual);
-                
-                const valueDisplay = document.createElement('div');
-                valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
-                valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
-                cardWrapper.appendChild(valueDisplay);
-                
-                cabinetListEl.appendChild(cardWrapper);
-            });
+        // Update the count badge on the "View Display Cabinet" button
+        if (UIElements.cabinetCountBadge) {
+            UIElements.cabinetCountBadge.textContent = `${GameState.current.displayCabinet.length}/${GameConfig.displayCabinetLimit}`;
         }
+
+        // Show or hide the "Manage Cabinet" button based on whether the cabinet has items
+        if (UIElements.manageCabinetBtn) {
+            if (GameState.current.displayCabinet.length === 0) {
+                UIElements.manageCabinetBtn.style.display = 'none';
+            } else {
+                UIElements.manageCabinetBtn.style.display = 'inline-block';
+            }
+        }
+
+        // The actual rendering of cabinet items is now done when the modal is opened.
+        // See Cabinet.showPlayerCabinetModal() - though we might rename it or make a new one
+        // for the player's own cabinet vs. viewing others.
     }
 };

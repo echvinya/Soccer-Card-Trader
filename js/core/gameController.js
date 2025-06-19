@@ -54,7 +54,7 @@ export const GameController = {
                 const scoreId = button.dataset.scoreId;
                 const score = GameState.leaderboardScores.find(s => s.id === scoreId);
                 if (score && score.cabinet) {
-                    Cabinet.showPlayerCabinet(score.cabinet);
+                    Cabinet.showRemotePlayerCabinetModal(score.cabinet); // Updated function call
                 }
             }
         };
@@ -86,6 +86,12 @@ export const GameController = {
             UIElements.cabinetModal.classList.add('hidden');
         });
         UIElements.manageCabinetBtn.addEventListener('click', () => Cabinet.showManageCabinetModal());
+
+        // Event listener for the new "View Display Cabinet" button
+        if (UIElements.viewDisplayCabinetBtn) {
+            UIElements.viewDisplayCabinetBtn.addEventListener('click', () => Cabinet.showOwnCabinetModal());
+        }
+
         UIElements.closeViewCabinetBtn.addEventListener('click', () => {
             UIElements.viewCabinetModal.classList.add('hidden');
         });

@@ -119,11 +119,46 @@ export const Cabinet = {
         }
     },
 
-    showPlayerCabinet(cabinet) {
+    showOwnCabinetModal() {
+        const playerCabinet = GameState.current.displayCabinet;
+        const modalTitleEl = document.getElementById('view-cabinet-title'); // Corresponds to h2 in view-cabinet-modal
+
+        if (modalTitleEl) {
+            modalTitleEl.textContent = "Your Display Cabinet";
+        }
+        UIElements.viewCabinetList.innerHTML = ''; // Clear previous items
+
+        if (playerCabinet && playerCabinet.length > 0) {
+            playerCabinet.forEach(cabinetItem => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'flex flex-col items-center';
+
+                const cardVisual = CardVisuals.createCardVisual(cabinetItem);
+                cardWrapper.appendChild(cardVisual);
+
+                if (cabinetItem.capturedValue) {
+                    const valueDisplay = document.createElement('div');
+                    valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+                    valueDisplay.textContent = `$${cabinetItem.capturedValue.toLocaleString()}`; // Added toLocaleString
+                    cardWrapper.appendChild(valueDisplay);
+                }
+                UIElements.viewCabinetList.appendChild(cardWrapper);
+            });
+        } else {
+            UIElements.viewCabinetList.innerHTML = '<p class="text-gray-500 col-span-full text-center">Your cabinet is empty. Add valuable cards to show them off!</p>';
+        }
+        UIElements.viewCabinetModal.classList.remove('hidden');
+    },
+
+    showRemotePlayerCabinetModal(remoteCabinetData) { // Renamed and parameter changed for clarity
+        const modalTitleEl = document.getElementById('view-cabinet-title'); // Corresponds to h2 in view-cabinet-modal
+        if (modalTitleEl) {
+            modalTitleEl.textContent = "Player's Cabinet";
+        }
         UIElements.viewCabinetList.innerHTML = '';
-        if (cabinet && cabinet.length > 0) {
-            document.getElementById('view-cabinet-title').textContent = "Player's Cabinet";
-            cabinet.forEach(cabinetItem => {
+
+        if (remoteCabinetData && remoteCabinetData.length > 0) {
+            remoteCabinetData.forEach(cabinetItem => {
                 const cardWrapper = document.createElement('div');
                 cardWrapper.className = 'flex flex-col items-center';
                 
@@ -133,14 +168,14 @@ export const Cabinet = {
                 if (cabinetItem.capturedValue) {
                     const valueDisplay = document.createElement('div');
                     valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
-                    valueDisplay.textContent = `$${cabinetItem.capturedValue}`;
+                    valueDisplay.textContent = `$${cabinetItem.capturedValue.toLocaleString()}`; // Added toLocaleString
                     cardWrapper.appendChild(valueDisplay);
                 }
                 
                 UIElements.viewCabinetList.appendChild(cardWrapper);
             });
         } else {
-            UIElements.viewCabinetList.innerHTML = '<p class="text-gray-500 col-span-full">This player had an empty cabinet.</p>';
+            UIElements.viewCabinetList.innerHTML = '<p class="text-gray-500 col-span-full text-center">This player had an empty cabinet.</p>';
         }
         UIElements.viewCabinetModal.classList.remove('hidden');
     }
