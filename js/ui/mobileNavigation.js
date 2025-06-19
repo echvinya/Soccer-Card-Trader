@@ -71,35 +71,35 @@ export const MobileNavigation = {
     navigateToView(viewName, isRefresh = false) {
         if (!this.mainContentContainer) return;
 
-        // Only clear and update currentView if it's not a refresh of the same view
-        // or if the view actually changes (for modal type views)
-        if (!isRefresh || this.currentView !== viewName) {
-            this.mainContentContainer.innerHTML = ''; // Clear previous content only if view changes or not a modal
-        }
+        // Clear previous content for all view changes.
+        // For modal views, we'll then set a placeholder.
+        // For actual content views, they will fill the container.
+        this.mainContentContainer.innerHTML = '';
 
-        if (viewName !== 'travel' && viewName !== 'log' && viewName !== 'cabinet') { // Non-modal views
+        // Update currentView for non-modal tabs. For modal tabs, currentView effectively remains the last non-modal tab.
+        // This means closing a modal will "return" to the view that was active before opening the modal.
+        if (viewName !== 'travel' && viewName !== 'log' && viewName !== 'cabinet') {
             this.currentView = viewName;
         }
 
-
         // Call the appropriate rendering function based on viewName
-        // These will be replaced with actual calls to UIRenderer methods later
         switch (viewName) {
             case 'market':
-                UIRenderer.renderMobileMarketView(this.mainContentContainer); // Use actual renderer
+                UIRenderer.renderMobileMarketView(this.mainContentContainer);
                 break;
             case 'inventory':
-                UIRenderer.renderMobileInventoryView(this.mainContentContainer); // Use actual renderer
+                UIRenderer.renderMobileInventoryView(this.mainContentContainer);
                 break;
             case 'travel':
+                this.mainContentContainer.innerHTML = '<p class="text-center text-gray-500 p-4">Opening travel map...</p>';
                 UIRenderer.renderMobileTravelModal(); // Show the travel modal
-                // The main content area remains as is (or could show a travel placeholder)
-                // For now, we keep the previous view in main content.
                 break;
             case 'log':
+                this.mainContentContainer.innerHTML = '<p class="text-center text-gray-500 p-4">Loading game log...</p>';
                 UIRenderer.renderMobileLogModal(); // Show the log modal
                 break;
             case 'cabinet':
+                this.mainContentContainer.innerHTML = '<p class="text-center text-gray-500 p-4">Accessing display cabinet...</p>';
                 UIRenderer.renderMobileCabinetModal(); // Show the cabinet modal
                 break;
             default:

@@ -70,10 +70,59 @@ export const Trading = {
             return;
         }
         document.getElementById(`buy-qty-${cardId}`).value = marketInfo.available;
-        this.buyItemQty(cardId);
+        this.buyItemQty(cardId); // This is for desktop view
     },
 
-    sellItemQty(cardId) {
+    // New function for mobile and direct calls
+    buyItem(cardId, quantity, price) {
+        if (isNaN(quantity) || quantity <= 0) {
+            GameLogger.addLogMessage(`Invalid quantity.`);
+            return;
+        }
+
+        const card = GameState.getCardDetails(cardId);
+        const marketInfo = GameState.market[GameState.current.currentLocationId]?.[cardId];
+
+        // Use provided price for cost calculation, but marketInfo for availability
+        if (!marketInfo || quantity > marketInfo.available) {
+            GameLogger.addLogMessage(`Not enough available to buy.`);
+            return;
+        }
+
+        let totalCost = price * quantity; // Use the price passed to the function
+
+        const location = GameState.getCurrentLocation();
+        if (location.specialization === 'volume' && quantity >= 5) {
+            const volumeDiscount = Math.round(totalCost * 0.1);
+            totalCost -= volumeDiscount;
+            GameLogger.addLogMessage(`Volume discount applied: -$${volumeDiscount} (10% off for 5+ cards)`);
+        }
+
+        if (GameState.current.storeDiscount > 0) {
+            const discountAmount = Math.round(totalCost * (GameState.current.storeDiscount / 100));
+            totalCost -= discountAmount;
+            GameLogger.addLogMessage(`Store discount applied: -$${discountAmount}`);
+        }
+
+        if (totalCost > GameState.current.cash) {
+            GameLogger.addLogMessage(`Not enough cash. Need $${totalCost.toLocaleString()}.`);
+            return;
+        }
+
+        GameState.current.cash -= totalCost;
+        marketInfo.available -= quantity; // Deduct from actual market stock
+        let inventoryItem = GameState.current.inventory.find(item => item.cardId === cardId);
+        if (inventoryItem) {
+            inventoryItem.quantity += quantity;
+            inventoryItem.totalCost += totalCost;
+        } else {
+            GameState.current.inventory.push({ cardId, quantity, totalCost });
+        }
+        GameLogger.addLogMessage(`Bought ${quantity} ${card.name} for $${totalCost.toLocaleString()}.`);
+        // UIRenderer.renderAll(); // Specific mobile view update is handled by the caller in UIRenderer
+    },
+
+    sellItemQty(cardId) { // Desktop version
         const quantity = parseInt(document.getElementById(`sell-qty-${cardId}`).value);
         const inventoryItem = GameState.current.inventory.find(item => item.cardId === cardId);
 
@@ -114,7 +163,50 @@ export const Trading = {
             return;
         }
         document.getElementById(`sell-qty-${cardId}`).value = inventoryItem.quantity;
-        this.sellItemQty(cardId);
+        this.sellItemQty(cardId); // This is for desktop view
+    },
+
+    // New function for mobile and direct calls
+    sellItem(cardId, quantity, price) {
+        const inventoryItem = GameState.current.inventory.find(item => item.cardId === cardId);
+
+        if (isNaN(quantity) || quantity <= 0) {
+            GameLogger.addLogMessage(`Invalid quantity.`);
+            return;
+        }
+        if (!inventoryItem || quantity > inventoryItem.quantity) {
+            GameLogger.addLogMessage(`You don't have that many to sell.`);
+            return;
+        }
+
+        const card = GameState.getCardDetails(cardId);
+        // Use the price passed to the function for sale value calculation
+        // const currentMarketPrice = GameState.market[GameState.current.currentLocationId]?.[cardId]?.price;
+        // if (currentMarketPrice === undefined) { // This check might be redundant if price is passed
+        //     GameLogger.addLogMessage(`Cannot determine sell price.`);
+        //     return;
+        // }
+
+        const totalSaleValue = price * quantity;
+        const costOfSoldItems = (inventoryItem.totalCost / inventoryItem.quantity) * quantity;
+
+        GameState.current.cash += totalSaleValue;
+        inventoryItem.quantity -= quantity;
+        inventoryItem.totalCost -= isNaN(costOfSoldItems) ? 0 : costOfSoldItems;
+
+        // Also update market availability if this location buys back cards (not currently a feature, but for consistency)
+        // For now, assume items sold are removed from player inventory and don't go back to market stock.
+        // const marketInfo = GameState.market[GameState.current.currentLocationId]?.[cardId];
+        // if (marketInfo) {
+        //     marketInfo.available += quantity; // This would be if market buys back
+        // }
+
+
+        if (inventoryItem.quantity <= 0) {
+            GameState.current.inventory = GameState.current.inventory.filter(item => item.cardId !== cardId);
+        }
+        GameLogger.addLogMessage(`Sold ${quantity} ${card.name} for $${totalSaleValue.toLocaleString()}.`);
+        // UIRenderer.renderAll(); // Specific mobile view update is handled by the caller in UIRenderer
     },
 
     executeTradeIn() {

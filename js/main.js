@@ -11,7 +11,7 @@ import { MobileNavigation } from './ui/mobileNavigation.js'; // <-- Import Mobil
 document.addEventListener('DOMContentLoaded', () => {
     // This is the perfect place to initialize our UI Elements
     UIElements.init(); // Still useful for modals and perhaps legacy elements
-    MobileNavigation.init(); // Initialize mobile navigation
+    // MobileNavigation.init(); // Initialize mobile navigation // MOVED
 
     // Now that the elements are loaded, we can start the app authentication
     startApp();
@@ -26,10 +26,13 @@ function startApp() {
             console.log("User is signed in:", user.uid);
             
             // Initialize the game state and render the UI
-            GameController.initializeGame();
+            GameController.initializeGame(); // This generates market data and calls UIRenderer.renderAll() for desktop
 
             // Setup all the button and input event handlers
             GameController.setupEventHandlers();
+
+            // Initialize mobile navigation AFTER game data is ready
+            MobileNavigation.init(); // This will call navigateToView for the initial mobile view
             
             // Start listening for real-time leaderboard updates
             Leaderboard.listenForLeaderboardUpdates();

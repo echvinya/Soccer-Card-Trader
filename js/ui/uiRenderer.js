@@ -319,22 +319,35 @@ export const UIRenderer = {
                     <p class="text-sm ${priceColorClass}">Price: $${marketInfo.price.toLocaleString()}${priceIndicatorHtml}</p>
                     <div class="flex items-center space-x-2">
                         <input type="number" id="mobile-buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1" class="w-14 text-center bg-gray-700 text-white rounded p-1 text-xs appearance-none focus:outline-none focus:ring-1 focus:ring-red-500">
-                        <button data-action="buy" data-card-id="${card.id}" class="btn-compact btn-success text-xs py-1 px-2" ${marketInfo.available === 0 ? 'disabled' : ''}>Buy</button>
+                        <button data-action="buy-mobile" data-card-id="${card.id}" class="btn-compact btn-success text-xs py-1 px-2" ${marketInfo.available === 0 ? 'disabled' : ''}>Buy</button>
+                        <button data-action="buy-all-mobile" data-card-id="${card.id}" data-available="${marketInfo.available}" class="btn-compact btn-success text-xs py-1 px-2" ${marketInfo.available === 0 ? 'disabled' : ''}>All</button>
                     </div>
                 </div>
             `;
-            // Add event listener for the buy button
-            const buyButton = itemDiv.querySelector('button[data-action="buy"]');
+            // Add event listeners
+            const buyButton = itemDiv.querySelector('button[data-action="buy-mobile"]');
             if (buyButton) {
                 buyButton.addEventListener('click', () => {
                     const quantityInput = document.getElementById(`mobile-buy-qty-${card.id}`);
                     const quantity = parseInt(quantityInput.value, 10);
                     if (quantity > 0) {
-                        Trading.buyItem(card.id, quantity, marketInfo.price); // Assuming Trading.buyItem exists and is suitable
-                        // After buying, re-render this view to update supply, cash etc.
-                        // GameState.current.mobileMarketPage must be preserved or re-evaluated
+                        // Trading.buyItem will be created in step 6
+                        Trading.buyItem(card.id, quantity, marketInfo.price);
                         this.renderMobileMarketView(containerElement);
-                        UIRenderer.renderPlayerStats(); // Update cash in header
+                        UIRenderer.renderPlayerStats();
+                    }
+                });
+            }
+
+            const buyAllButton = itemDiv.querySelector('button[data-action="buy-all-mobile"]');
+            if (buyAllButton) {
+                buyAllButton.addEventListener('click', () => {
+                    const quantity = parseInt(buyAllButton.dataset.available, 10);
+                    if (quantity > 0) {
+                        // Trading.buyItem will be created in step 6
+                        Trading.buyItem(card.id, quantity, marketInfo.price);
+                        this.renderMobileMarketView(containerElement);
+                        UIRenderer.renderPlayerStats();
                     }
                 });
             }
@@ -382,9 +395,49 @@ export const UIRenderer = {
         const location = GameState.getCurrentLocation();
         const locationMarket = GameState.market[GameState.current.currentLocationId];
 
-        const specialActionsContainer = document.createElement('div');
-        specialActionsContainer.className = 'mt-2 flex flex-col items-center gap-2'; // Stack them below title
+        // Clear any existing special actions first to prevent duplication on re-render
+        let specialActionsContainer = headerDiv.querySelector('.mobile-special-actions');
+        if (specialActionsContainer) {
+            specialActionsContainer.innerHTML = ''; // Clear existing buttons
+        } else {
+            specialActionsContainer = document.createElement('div');
+            specialActionsContainer.className = 'mobile-special-actions mt-3 flex flex-col items-stretch gap-2'; // Full width buttons
+            headerDiv.appendChild(specialActionsContainer); // Append once
+        }
 
+        // 1. Price Guide Button
+        if (!GameState.current.hasPriceGuide) {
+            const priceGuideBtn = document.createElement('button');
+            priceGuideBtn.className = 'btn btn-secondary w-full text-sm py-2';
+            priceGuideBtn.innerHTML = `Buy Price Guide <span class="font-bold ml-2">$${GameConfig.priceGuideCost}</span>`;
+            priceGuideBtn.title = `Reveals if a card's current price is above or below its base value.`;
+            priceGuideBtn.onclick = () => {
+                Trading.buyPriceGuide();
+                // Re-render market view to hide button and update prices if guide was bought
+                this.renderMobileMarketView(UIElements.mobileMainContent);
+                UIRenderer.renderPlayerStats();
+            };
+            specialActionsContainer.appendChild(priceGuideBtn);
+        }
+
+        // 2. Trade In Common Cards Button
+        if (location.specialization === 'trade_in') {
+            const commonCount = GameState.current.inventory.find(item => item.cardId === 'common_single')?.quantity || 0;
+            const tradeInBtn = document.createElement('button');
+            tradeInBtn.className = 'btn btn-secondary w-full text-sm py-2';
+            tradeInBtn.innerHTML = `Trade 25 Commons <span class="font-bold ml-2">(Have: ${commonCount})</span>`;
+            tradeInBtn.title = 'Trade 25 Common Singles for 1 random better card';
+            tradeInBtn.disabled = commonCount < 25;
+            tradeInBtn.onclick = () => {
+                Trading.executeTradeIn();
+                // Re-render market view to update common count
+                this.renderMobileMarketView(UIElements.mobileMainContent);
+                UIRenderer.renderPlayerStats(); // Cash might not change but inventory does
+            };
+            specialActionsContainer.appendChild(tradeInBtn);
+        }
+
+        // 3. Booster Pack Button (existing logic)
         if (locationMarket && location.boosterPrice) {
             const boosterPackBtn = document.createElement('button');
             boosterPackBtn.className = 'btn btn-special w-full text-sm py-2';
@@ -399,15 +452,19 @@ export const UIRenderer = {
             } else {
                 boosterPackBtn.onclick = () => {
                     BoosterPacks.buyBoosterPack(location.boosterPrice);
-                    // Re-render views as buying a pack changes game state
                     this.renderMobileMarketView(UIElements.mobileMainContent);
                     UIRenderer.renderPlayerStats();
                 };
             }
             specialActionsContainer.appendChild(boosterPackBtn);
         }
-        // Add other special actions like price guide or trade-in if desired for mobile
-        headerDiv.appendChild(specialActionsContainer);
+
+        // Only append if it wasn't there before and has children now
+        // This check is now redundant as we ensure it's appended if new, or cleared if existing.
+        // if (!headerDiv.contains(specialActionsContainer) && specialActionsContainer.hasChildNodes()) {
+        //    headerDiv.appendChild(specialActionsContainer);
+        //}
+
     },
 
     renderMobileInventoryView(containerElement) {
@@ -452,20 +509,35 @@ export const UIRenderer = {
                     <div></div> <!-- Spacer -->
                     <div class="flex items-center space-x-2">
                         <input type="number" id="mobile-sell-qty-${card.id}" min="1" max="${item.quantity}" value="1" class="w-14 text-center bg-gray-700 text-white rounded p-1 text-xs appearance-none focus:outline-none focus:ring-1 focus:ring-red-500">
-                        <button data-action="sell" data-card-id="${card.id}" class="btn-compact btn-danger text-xs py-1 px-2">Sell</button>
+                        <button data-action="sell-mobile" data-card-id="${card.id}" class="btn-compact btn-danger text-xs py-1 px-2">Sell</button>
+                        <button data-action="sell-all-mobile" data-card-id="${card.id}" data-quantity="${item.quantity}" class="btn-compact btn-danger text-xs py-1 px-2">All</button>
                     </div>
                 </div>
             `;
 
-            const sellButton = itemDiv.querySelector('button[data-action="sell"]');
+            const sellButton = itemDiv.querySelector('button[data-action="sell-mobile"]');
             if (sellButton) {
                 sellButton.addEventListener('click', () => {
                     const quantityInput = document.getElementById(`mobile-sell-qty-${card.id}`);
                     const quantity = parseInt(quantityInput.value, 10);
                     if (quantity > 0) {
-                        Trading.sellItem(card.id, quantity, currentMarketPrice); // Assuming Trading.sellItem exists
+                        // Trading.sellItem will be created in step 6
+                        Trading.sellItem(card.id, quantity, currentMarketPrice);
                         this.renderMobileInventoryView(containerElement);
-                        UIRenderer.renderPlayerStats(); // Update cash
+                        UIRenderer.renderPlayerStats();
+                    }
+                });
+            }
+
+            const sellAllButton = itemDiv.querySelector('button[data-action="sell-all-mobile"]');
+            if (sellAllButton) {
+                sellAllButton.addEventListener('click', () => {
+                    const quantity = parseInt(sellAllButton.dataset.quantity, 10);
+                    if (quantity > 0) {
+                         // Trading.sellItem will be created in step 6
+                        Trading.sellItem(card.id, quantity, currentMarketPrice);
+                        this.renderMobileInventoryView(containerElement);
+                        UIRenderer.renderPlayerStats();
                     }
                 });
             }

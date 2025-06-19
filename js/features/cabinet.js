@@ -23,10 +23,48 @@ export const Cabinet = {
             valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
             cardWrapper.appendChild(valueDisplay);
             
-            cardWrapper.onclick = () => this.returnCabinetCardToInventory(index);
+            cardWrapper.appendChild(cardVisual);
+
+            const valueDisplay = document.createElement('div');
+            valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
+            valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
+            cardWrapper.appendChild(valueDisplay);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'mt-2 space-x-2';
+
+            const returnButton = document.createElement('button');
+            returnButton.className = 'btn btn-secondary btn-compact text-xs';
+            returnButton.textContent = 'To Inventory';
+            returnButton.onclick = (e) => {
+                e.stopPropagation(); // Prevent cardWrapper click if any
+                this.returnCabinetCardToInventory(index);
+            };
+            actionsDiv.appendChild(returnButton);
+
+            const gradeButton = document.createElement('button');
+            gradeButton.className = 'btn btn-primary btn-compact text-xs'; // Or a different color
+            gradeButton.textContent = 'Grade Card';
+            gradeButton.onclick = (e) => {
+                e.stopPropagation();
+                this.sendCardForGrading(index, cabinetItem); // Placeholder, will integrate with grading.js
+            };
+            actionsDiv.appendChild(gradeButton);
+
+            cardWrapper.appendChild(actionsDiv);
+            // cardWrapper.onclick = () => this.returnCabinetCardToInventory(index); // Replaced by buttons
             UIElements.cabinetModalOptions.appendChild(cardWrapper);
         });
         UIElements.cabinetModal.classList.remove('hidden');
+    },
+
+    sendCardForGrading(indexInCabinet, cabinetItem) {
+        // This will be replaced by integration with Grading.js once available
+        console.log(`Attempting to send card ${cabinetItem.card.name} (index ${indexInCabinet}) for grading.`);
+        GameLogger.addLogMessage(`Grading for ${cabinetItem.card.name} initiated (placeholder).`);
+        // Example: Grading.startGradingProcess(cabinetItem, indexInCabinet);
+        UIElements.cabinetModal.classList.add('hidden'); // Close manage modal for now
+        UIRenderer.renderAll(); // To reflect any immediate changes if necessary
     },
 
     returnCabinetCardToInventory(indexToRemove) {

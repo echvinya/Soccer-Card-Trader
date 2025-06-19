@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="css/style.css">
     <style>
         /* Critical base styles for full height and scroll prevention */
-        html, body { height: 100%; overflow: hidden; margin: 0; padding: 0; }
+        html, body { height: 100%; overflow: hidden; margin: 0; padding: 0; } /* Restored overflow: hidden */
         /* Ensure modals are above fixed layout components if any z-index issues arise with Tailwind fixed elements */
         .modal { z-index: 100; }
         /* Custom class for nav button active state if needed beyond Tailwind's capabilities for dynamic JS toggling */
@@ -21,7 +21,7 @@
 </head>
 <body class="bg-gray-900 text-gray-300">
 
-    <div id="mobile-game-container" class="flex flex-col h-screen max-w-md mx-auto border-x border-gray-700">
+    <div id="mobile-game-container" class="flex flex-col h-full max-w-md mx-auto border-x border-gray-700"> <!-- Changed h-screen to h-full -->
         <!-- Top Header: Fixed -->
         <div id="mobile-top-header" class="flex-shrink-0 bg-gray-800 p-2 px-4 border-b border-gray-700 flex justify-between items-center">
             <h1 class="text-lg font-bold text-red-400">SCT</h1> <!-- Compact Title -->
