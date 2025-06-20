@@ -468,53 +468,143 @@ export const UIRenderer = {
     },
 
     renderMobileTravelTabView(containerElement) {
-        containerElement.innerHTML = `
-            <div class="p-4 flex flex-col items-center">
-                <h2 class="text-xl font-semibold text-center text-amber-400 mb-4">Travel</h2>
-                <p class="text-center text-gray-400 mb-6">Ready to explore new markets? Choose your next destination.</p>
-                <button id="mobile-open-travel-modal-btn" class="btn btn-primary py-3 px-6 text-lg">Choose Destination</button>
-            </div>
-        `;
-        const openTravelModalBtn = document.getElementById('mobile-open-travel-modal-btn');
-        if (openTravelModalBtn) {
-            openTravelModalBtn.addEventListener('click', () => {
-                this.renderMobileTravelModal();
-            });
+        containerElement.innerHTML = ''; // Clear container
+
+        const header = document.createElement('div');
+        header.className = 'p-4 text-center'; // Combined header and content area
+        header.innerHTML = `<h2 class="text-2xl font-semibold text-amber-400 mb-4">Travel To:</h2>`;
+
+        const travelOptionsContainer = document.createElement('div');
+        travelOptionsContainer.id = 'mobile-travel-options-direct'; // New ID for direct rendering
+        travelOptionsContainer.className = 'space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto px-4 pb-4'; // Adjusted max-height, assuming header/nav height
+
+        const daysLeft = GameState.current.daysRemaining;
+        const currentLocationId = GameState.current.currentLocationId;
+
+        // Helper function to create travel buttons, adapted from renderMobileTravelModal
+        const createTravelButtonDirect = (location, travelCost) => {
+            const button = document.createElement('button');
+            button.className = 'btn btn-primary w-full text-left py-2 px-3 text-sm';
+            button.textContent = `${location.name} (${travelCost} day${travelCost > 1 ? 's' : ''})`;
+            button.title = location.description;
+            button.onclick = async () => {
+                await Travel.travelTo(location.id);
+                // Post-travel navigation to market is handled within Travel.travelTo
+            };
+            return button;
+        };
+
+        // "End Journey" Button logic from renderMobileTravelModal
+        if (daysLeft <= GameConfig.maxTravelCost + 1 || GameData.locations.every(loc => GameState.current.daysRemaining < (GameData.travelDurations[currentLocationId]?.[loc.id] || 99))) {
+            const endGameBtn = document.createElement('button');
+            endGameBtn.className = 'btn btn-danger w-full text-left py-2 px-3 text-sm';
+            endGameBtn.textContent = 'End Your Journey';
+            endGameBtn.title = 'Finish the game with your current cash and see your final score.';
+            endGameBtn.onclick = async () => {
+                await GameEnd.forceEndGame();
+                // Game over modal will be shown by GameEnd logic
+            };
+            travelOptionsContainer.appendChild(endGameBtn);
         }
+
+        // Location buttons logic from renderMobileTravelModal
+        let validDestinations = 0;
+        GameData.locations.forEach(location => {
+            if (location.id === currentLocationId) return;
+            const travelCost = GameData.travelDurations[currentLocationId]?.[location.id] || 99;
+            if (daysLeft >= travelCost) {
+                travelOptionsContainer.appendChild(createTravelButtonDirect(location, travelCost));
+                validDestinations++;
+            }
+        });
+
+        if (travelOptionsContainer.children.length === 0) {
+             travelOptionsContainer.innerHTML = '<p class="text-gray-400 text-center">No travel options available with current days remaining or it is time to end your journey.</p>';
+        }
+
+        header.appendChild(travelOptionsContainer);
+        containerElement.appendChild(header);
     },
 
     renderMobileLogTabView(containerElement) {
-        containerElement.innerHTML = `
-            <div class="p-4 flex flex-col items-center">
-                <h2 class="text-xl font-semibold text-center text-amber-400 mb-4">Game Log</h2>
-                <p class="text-center text-gray-400 mb-6">Review your recent activities and game events.</p>
-                <button id="mobile-open-log-modal-btn" class="btn btn-primary py-3 px-6 text-lg">View Game Log</button>
-            </div>
-        `;
-        const openLogModalBtn = document.getElementById('mobile-open-log-modal-btn');
-        if (openLogModalBtn) {
-            openLogModalBtn.addEventListener('click', () => {
-                this.renderMobileLogModal();
-            });
+        containerElement.innerHTML = ''; // Clear container
+
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'p-4 h-full flex flex-col'; // Allow flex column for scrolling content
+
+        const header = document.createElement('h2');
+        header.className = 'text-2xl font-semibold text-center text-amber-400 mb-4 flex-shrink-0';
+        header.textContent = 'Game Log';
+        contentWrapper.appendChild(header);
+
+        const logMessagesContainer = document.createElement('div');
+        logMessagesContainer.id = 'mobile-log-messages-direct'; // New ID
+        // Tailwind classes for styling log messages, similar to what was in UIElements.mobileLogMessages modal part
+        logMessagesContainer.className = 'space-y-1 text-xs text-left bg-gray-900 p-2 rounded flex-grow overflow-y-auto max-h-[calc(100vh-180px)]'; // Adjusted max-height
+
+        if (GameState.current.log.length === 0) {
+            logMessagesContainer.innerHTML = '<p class="text-gray-500 text-center">No log entries yet.</p>';
+        } else {
+            logMessagesContainer.innerHTML = GameState.current.log
+                .map(msg => `<div class="py-1 px-1.5 border-b border-gray-700 last:border-b-0">${msg}</div>`)
+                .join('');
         }
+
+        contentWrapper.appendChild(logMessagesContainer);
+        containerElement.appendChild(contentWrapper);
     },
 
     renderMobileCabinetTabView(containerElement) {
-        containerElement.innerHTML = `
-            <div class="p-4 flex flex-col items-center">
-                <h2 class="text-xl font-semibold text-center text-cyan-400 mb-4">Display Cabinet</h2>
-                <p class="text-center text-gray-400 mb-6">View and manage your prized collection of graded cards.</p>
-                <button id="mobile-open-cabinet-modal-btn" class="btn btn-primary py-3 px-6 text-lg">View Display Cabinet</button>
-            </div>
-        `;
-        // Note: The existing mobile cabinet modal also has a "Manage" button.
-        // This button will open that modal, which in turn allows management.
-        const openCabinetModalBtn = document.getElementById('mobile-open-cabinet-modal-btn');
-        if (openCabinetModalBtn) {
-            openCabinetModalBtn.addEventListener('click', () => {
-                this.renderMobileCabinetModal();
+        containerElement.innerHTML = ''; // Clear container
+
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'p-4 h-full flex flex-col';
+
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'flex justify-between items-center mb-4 flex-shrink-0';
+
+        const title = document.createElement('h2');
+        title.className = 'text-2xl font-semibold text-cyan-400';
+        title.textContent = 'Display Cabinet';
+        headerDiv.appendChild(title);
+
+        const manageCabinetBtnDirect = document.createElement('button');
+        manageCabinetBtnDirect.id = 'mobile-manage-cabinet-direct-btn';
+        manageCabinetBtnDirect.className = 'btn btn-secondary btn-compact text-xs';
+        manageCabinetBtnDirect.textContent = 'Manage';
+        manageCabinetBtnDirect.onclick = () => {
+            Cabinet.showManageCabinetModal(); // This opens UIElements.cabinetModal for management
+        };
+        headerDiv.appendChild(manageCabinetBtnDirect);
+        contentWrapper.appendChild(headerDiv);
+
+        const cabinetListContainer = document.createElement('div');
+        cabinetListContainer.id = 'mobile-cabinet-list-direct'; // New ID
+        // Similar styling to UIElements.mobileCabinetList from the modal
+        cabinetListContainer.className = 'grid grid-cols-2 gap-3 flex-grow overflow-y-auto bg-gray-900 p-2 rounded max-h-[calc(100vh-220px)]';
+
+        const cabinetItems = GameState.current.displayCabinet;
+
+        if (cabinetItems.length === 0) {
+            cabinetListContainer.innerHTML = '<p class="text-gray-500 text-center col-span-2 py-4">Your cabinet is empty.</p>';
+            manageCabinetBtnDirect.classList.add('hidden'); // Hide manage if empty
+        } else {
+            manageCabinetBtnDirect.classList.remove('hidden'); // Show manage if not empty
+            cabinetItems.forEach(cabinetItem => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'flex flex-col items-center bg-gray-700 p-2 rounded shadow';
+                const cardVisual = CardVisuals.createCardVisual(cabinetItem, true); // true for compact
+                cardWrapper.appendChild(cardVisual);
+                const valueDisplay = document.createElement('div');
+                valueDisplay.className = 'text-xs font-semibold text-green-300 mt-1';
+                valueDisplay.textContent = `$${(cabinetItem.capturedValue || 0).toLocaleString()}`;
+                cardWrapper.appendChild(valueDisplay);
+                cabinetListContainer.appendChild(cardWrapper);
             });
         }
+
+        contentWrapper.appendChild(cabinetListContainer);
+        containerElement.appendChild(contentWrapper);
     },
 
     renderMobileInventoryView(containerElement) {
@@ -628,149 +718,7 @@ export const UIRenderer = {
         }
     },
 
-    renderMobileTravelModal() {
-        if (!UIElements.mobileTravelModal || !UIElements.mobileTravelOptions) {
-            console.error("Mobile travel modal elements not found.");
-            return;
-        }
-
-        UIElements.mobileTravelOptions.innerHTML = ''; // Clear previous options
-        const daysLeft = GameState.current.daysRemaining;
-        const currentLocationId = GameState.current.currentLocationId;
-
-        const createTravelButton = (location, travelCost) => {
-            const button = document.createElement('button');
-            button.className = 'btn btn-primary w-full text-left py-2 px-3 text-sm'; // Mobile specific styling
-            button.textContent = `${location.name} (${travelCost} day${travelCost > 1 ? 's' : ''})`;
-            button.title = location.description;
-            button.onclick = async () => {
-                await Travel.travelTo(location.id);
-                UIElements.mobileTravelModal.classList.add('hidden'); // Close modal after travel
-                // UIRenderer.renderAll(); // Already called by Travel.travelTo
-                // Consider explicitly re-rendering the current mobile view if needed, e.g., market after travel
-                const currentView = MobileNavigation.getCurrentView(); // Need to implement MobileNavigation.getCurrentView()
-                if(currentView) MobileNavigation.navigateToView(currentView, true); // true to indicate it's a refresh
-            };
-            return button;
-        };
-
-        // "End Journey" Button
-        if (daysLeft <= GameConfig.maxTravelCost +1 || GameData.locations.every(loc => GameState.current.daysRemaining < (GameData.travelDurations[currentLocationId]?.[loc.id] || 99))) {
-             // Show if days left are less than max travel cost or if no valid travel options left
-            const endGameBtn = document.createElement('button');
-            endGameBtn.className = 'btn btn-danger w-full text-left py-2 px-3 text-sm';
-            endGameBtn.textContent = 'End Your Journey';
-            endGameBtn.title = 'Finish the game with your current cash and see your final score.';
-            endGameBtn.onclick = async () => {
-                await GameEnd.forceEndGame();
-                UIElements.mobileTravelModal.classList.add('hidden');
-            };
-            UIElements.mobileTravelOptions.appendChild(endGameBtn);
-        }
-
-        GameData.locations.forEach(location => {
-            if (location.id === currentLocationId) return;
-            const travelCost = GameData.travelDurations[currentLocationId]?.[location.id] || 99;
-            if (daysLeft >= travelCost) {
-                UIElements.mobileTravelOptions.appendChild(createTravelButton(location, travelCost));
-            }
-        });
-
-        if (UIElements.mobileTravelOptions.children.length === 0) {
-             UIElements.mobileTravelOptions.innerHTML = '<p class="text-gray-400 text-center">No travel options available with current days remaining.</p>';
-        }
-
-        UIElements.mobileTravelModal.classList.remove('hidden');
-
-        // Add event listener for the close button if not already present
-        if (UIElements.closeMobileTravelModalBtn && !UIElements.closeMobileTravelModalBtn.dataset.listenerAttached) {
-            UIElements.closeMobileTravelModalBtn.addEventListener('click', () => {
-                UIElements.mobileTravelModal.classList.add('hidden');
-            });
-            UIElements.closeMobileTravelModalBtn.dataset.listenerAttached = 'true';
-        }
-    },
-
-    renderMobileLogModal() {
-        if (!UIElements.mobileLogModal || !UIElements.mobileLogMessages) {
-            console.error("Mobile log modal elements not found.");
-            return;
-        }
-
-        UIElements.mobileLogMessages.innerHTML = GameState.current.log
-            .map(msg => `<div class="py-1 px-1.5 border-b border-gray-700 last:border-b-0">${msg}</div>`)
-            .join('');
-
-        UIElements.mobileLogModal.classList.remove('hidden');
-
-        if (UIElements.closeMobileLogModalBtn && !UIElements.closeMobileLogModalBtn.dataset.listenerAttached) {
-            UIElements.closeMobileLogModalBtn.addEventListener('click', () => {
-                UIElements.mobileLogModal.classList.add('hidden');
-            });
-            UIElements.closeMobileLogModalBtn.dataset.listenerAttached = 'true';
-        }
-    },
-
-    renderMobileCabinetModal() {
-        if (!UIElements.mobileCabinetModal || !UIElements.mobileCabinetList || !UIElements.mobileCabinetPlaceholder || !UIElements.mobileManageCabinetBtn) {
-            console.error("Mobile cabinet modal elements not found.");
-            return;
-        }
-
-        UIElements.mobileCabinetList.innerHTML = '';
-        const cabinetItems = GameState.current.displayCabinet;
-
-        if (cabinetItems.length === 0) {
-            UIElements.mobileCabinetPlaceholder.classList.remove('hidden');
-            UIElements.mobileCabinetList.classList.add('hidden');
-            UIElements.mobileManageCabinetBtn.classList.add('hidden'); // Hide manage if empty
-        } else {
-            UIElements.mobileCabinetPlaceholder.classList.add('hidden');
-            UIElements.mobileCabinetList.classList.remove('hidden');
-            UIElements.mobileManageCabinetBtn.classList.remove('hidden'); // Show manage if not empty
-
-            cabinetItems.forEach(cabinetItem => {
-                const cardWrapper = document.createElement('div');
-                // Tailwind classes for a compact card display in the modal grid
-                cardWrapper.className = 'flex flex-col items-center bg-gray-700 p-2 rounded shadow';
-
-                const cardVisual = CardVisuals.createCardVisual(cabinetItem, true); // true for compact/small visual
-                cardWrapper.appendChild(cardVisual);
-
-                const valueDisplay = document.createElement('div');
-                valueDisplay.className = 'text-xs font-semibold text-green-300 mt-1';
-                valueDisplay.textContent = `$${(cabinetItem.capturedValue || 0).toLocaleString()}`;
-                cardWrapper.appendChild(valueDisplay);
-
-                UIElements.mobileCabinetList.appendChild(cardWrapper);
-            });
-        }
-
-        UIElements.mobileCabinetModal.classList.remove('hidden');
-
-        // Event listener for the main close button
-        if (UIElements.closeMobileCabinetModalBtn && !UIElements.closeMobileCabinetModalBtn.dataset.listenerAttached) {
-            UIElements.closeMobileCabinetModalBtn.addEventListener('click', () => {
-                UIElements.mobileCabinetModal.classList.add('hidden');
-            });
-            UIElements.closeMobileCabinetModalBtn.dataset.listenerAttached = 'true';
-        }
-
-        // Event listener for the manage button
-        // This currently calls the old UIElements.cabinetModal.
-        // This might need to be refactored to populate mobileCabinetList with management options.
-        // For now, it will open the existing manage/replace modal.
-        if (UIElements.mobileManageCabinetBtn && !UIElements.mobileManageCabinetBtn.dataset.listenerAttached) {
-            UIElements.mobileManageCabinetBtn.addEventListener('click', () => {
-                // Option 1: Close this modal and open the old one (simplest for now)
-                UIElements.mobileCabinetModal.classList.add('hidden');
-                Cabinet.showManageCabinetModal(); // This uses UIElements.cabinetModal
-
-                // Option 2: (More complex) Adapt showManageCabinetModal to take a target container
-                // and render its options into UIElements.mobileCabinetList.
-                // Cabinet.showManageCabinetModal(UIElements.mobileCabinetList); // Hypothetical
-            });
-            UIElements.mobileManageCabinetBtn.dataset.listenerAttached = 'true';
-        }
-    }
+    // renderMobileTravelModal() function removed
+    // renderMobileLogModal() function removed
+    // renderMobileCabinetModal() function removed
 };

@@ -58,42 +58,9 @@
     <div id="view-cabinet-modal" class="modal hidden"><div class="modal-content"><h2 id="view-cabinet-title" class="text-3xl font-bold mb-4 text-cyan-400">Player's Cabinet</h2><div id="view-cabinet-list" class="grid grid-cols-3 gap-4 my-6"></div><button id="close-view-cabinet-btn" class="btn btn-primary">Close</button></div></div>
     <div id="announcement-modal" class="modal hidden"><div class="modal-content"><h2 id="announcement-title" class="text-3xl font-bold mb-4 text-amber-400">Heads Up!</h2><p id="announcement-message" class="text-lg mb-6">A market event is happening elsewhere...</p><div id="announcement-choices" class="event-choices flex gap-4 justify-center mt-4"></div></div></div>
 
-    <!-- Mobile Travel Modal -->
-    <div id="mobile-travel-modal" class="modal hidden">
-        <div class="modal-content bg-gray-800 p-4 rounded-lg shadow-xl max-w-sm w-11/12">
-            <h2 class="text-2xl font-semibold text-center text-amber-400 mb-4">Travel To:</h2>
-            <div id="mobile-travel-options" class="space-y-2 max-h-64 overflow-y-auto">
-                <!-- Travel options will be rendered here by JS -->
-            </div>
-            <button id="close-mobile-travel-modal-btn" class="btn btn-secondary w-full mt-4 py-2">Close</button>
-        </div>
-    </div>
-
-    <!-- Mobile Log Modal -->
-    <div id="mobile-log-modal" class="modal hidden">
-        <div class="modal-content bg-gray-800 p-4 rounded-lg shadow-xl max-w-sm w-11/12">
-            <h2 class="text-2xl font-semibold text-center text-amber-400 mb-4">Game Log</h2>
-            <div id="mobile-log-messages" class="space-y-1 text-xs text-left bg-gray-900 p-2 rounded max-h-72 overflow-y-auto">
-                <!-- Log messages will be rendered here -->
-            </div>
-            <button id="close-mobile-log-modal-btn" class="btn btn-secondary w-full mt-4 py-2">Close</button>
-        </div>
-    </div>
-
-    <!-- Mobile Display Cabinet Modal -->
-    <div id="mobile-cabinet-modal" class="modal hidden">
-        <div class="modal-content bg-gray-800 p-4 rounded-lg shadow-xl max-w-sm w-11/12">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-semibold text-cyan-400">Display Cabinet</h2>
-                <button id="mobile-manage-cabinet-btn" class="btn btn-secondary btn-compact text-xs">Manage</button>
-            </div>
-            <div id="mobile-cabinet-list" class="grid grid-cols-2 gap-3 max-h-72 overflow-y-auto bg-gray-900 p-2 rounded">
-                <!-- Cabinet items will be rendered here -->
-            </div>
-            <div id="mobile-cabinet-placeholder" class="text-gray-500 text-center py-4 hidden">Your cabinet is empty.</div>
-            <button id="close-mobile-cabinet-modal-btn" class="btn btn-primary w-full mt-4 py-2">Close</button>
-        </div>
-    </div>
+    <!-- Mobile Travel Modal REMOVED -->
+    <!-- Mobile Log Modal REMOVED -->
+    <!-- Mobile Display Cabinet Modal REMOVED (for viewing) -->
     
     <!-- Placeholder for other game elements that might be needed by JS, but not part of the main mobile UI chrome -->
     <!-- These are hidden and only used for their JS bindings if necessary, or will be removed if not needed -->

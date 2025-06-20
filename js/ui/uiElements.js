@@ -5,20 +5,20 @@ export const UIElements = {
         this.mobileCash = document.getElementById('mobile-cash');
         this.mobileMainContent = document.getElementById('mobile-main-content');
 
-        // Mobile Modals & Controls
-        this.mobileTravelModal = document.getElementById('mobile-travel-modal');
-        this.mobileTravelOptions = document.getElementById('mobile-travel-options');
-        this.closeMobileTravelModalBtn = document.getElementById('close-mobile-travel-modal-btn');
+        // Mobile Modals & Controls - REMOVED as their display logic is now part of tabs
+        // this.mobileTravelModal = document.getElementById('mobile-travel-modal');
+        // this.mobileTravelOptions = document.getElementById('mobile-travel-options');
+        // this.closeMobileTravelModalBtn = document.getElementById('close-mobile-travel-modal-btn');
         
-        this.mobileLogModal = document.getElementById('mobile-log-modal');
-        this.mobileLogMessages = document.getElementById('mobile-log-messages');
-        this.closeMobileLogModalBtn = document.getElementById('close-mobile-log-modal-btn');
+        // this.mobileLogModal = document.getElementById('mobile-log-modal');
+        // this.mobileLogMessages = document.getElementById('mobile-log-messages');
+        // this.closeMobileLogModalBtn = document.getElementById('close-mobile-log-modal-btn');
 
-        this.mobileCabinetModal = document.getElementById('mobile-cabinet-modal');
-        this.mobileCabinetList = document.getElementById('mobile-cabinet-list');
-        this.mobileCabinetPlaceholder = document.getElementById('mobile-cabinet-placeholder');
-        this.mobileManageCabinetBtn = document.getElementById('mobile-manage-cabinet-btn');
-        this.closeMobileCabinetModalBtn = document.getElementById('close-mobile-cabinet-modal-btn');
+        // this.mobileCabinetModal = document.getElementById('mobile-cabinet-modal'); // This was for viewing
+        // this.mobileCabinetList = document.getElementById('mobile-cabinet-list');
+        // this.mobileCabinetPlaceholder = document.getElementById('mobile-cabinet-placeholder');
+        // this.mobileManageCabinetBtn = document.getElementById('mobile-manage-cabinet-btn'); // Button inside the old mobile cabinet viewing modal
+        // this.closeMobileCabinetModalBtn = document.getElementById('close-mobile-cabinet-modal-btn');
 
         // Stats (Legacy - some might still be used by core logic or modals indirectly, review later)
         this.cash = document.getElementById('cash'); // Legacy desktop cash
@@ -53,15 +53,15 @@ export const UIElements = {
         this.submitScoreBtn = document.getElementById('submit-score-btn');
         
         // Cabinet
-        this.displayCabinetList = document.getElementById('display-cabinet-list');         // <-- ADD THIS LINE
-        this.displayCabinetPlaceholder = document.getElementById('display-cabinet-placeholder'); // <-- ADD THIS LINE
-        this.cabinetModal = document.getElementById('cabinet-modal');
+        this.displayCabinetList = document.getElementById('display-cabinet-list');         // <-- ADD THIS LINE (This was from a previous unrelated instruction, should be fine)
+        this.displayCabinetPlaceholder = document.getElementById('display-cabinet-placeholder'); // <-- ADD THIS LINE (This was from a previous unrelated instruction, should be fine)
+        this.cabinetModal = document.getElementById('cabinet-modal'); // This is the generic one for management - KEEP
         this.cabinetModalTitle = document.getElementById('cabinet-modal-title');
         this.cabinetModalMessage = document.getElementById('cabinet-modal-message');
         this.cabinetModalOptions = document.getElementById('cabinet-modal-options');
         this.cancelCabinetModalBtn = document.getElementById('cancel-cabinet-modal-btn');
-        this.manageCabinetBtn = document.getElementById('manage-cabinet-btn');
-        this.viewCabinetModal = document.getElementById('view-cabinet-modal');
+        this.manageCabinetBtn = document.getElementById('manage-cabinet-btn'); // This is the legacy desktop manage button - KEEP for now
+        this.viewCabinetModal = document.getElementById('view-cabinet-modal'); // For viewing other players' cabinets - KEEP
         this.viewCabinetList = document.getElementById('view-cabinet-list');
         this.closeViewCabinetBtn = document.getElementById('close-view-cabinet-btn');
         this.announcementModal = document.getElementById('announcement-modal');
