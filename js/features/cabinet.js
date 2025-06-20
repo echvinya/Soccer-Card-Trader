@@ -4,6 +4,8 @@ import { GameLogger } from '../core/gameLogger.js';
 import { UIElements } from '../ui/uiElements.js';
 import { UIRenderer } from '../ui/uiRenderer.js';
 import { CardVisuals } from '../ui/cardVisuals.js';
+import { Grading, GRADING_COST } from './grading.js'; // Import Grading
+import { MobileNavigation } from '../ui/mobileNavigation.js'; // Import MobileNavigation
 
 export const Cabinet = {
     showManageCabinetModal() {
@@ -54,12 +56,42 @@ export const Cabinet = {
     },
 
     sendCardForGrading(indexInCabinet, cabinetItem) {
-        // This will be replaced by integration with Grading.js once available
-        console.log(`Attempting to send card ${cabinetItem.card.name} (index ${indexInCabinet}) for grading.`);
-        GameLogger.addLogMessage(`Grading for ${cabinetItem.card.name} initiated (placeholder).`);
-        // Example: Grading.startGradingProcess(cabinetItem, indexInCabinet);
-        UIElements.cabinetModal.classList.add('hidden'); // Close manage modal for now
-        UIRenderer.renderAll(); // To reflect any immediate changes if necessary
+        const cardName = cabinetItem.card.name; // Get name before potential modification/removal
+
+        if (GameState.current.cash < GRADING_COST) {
+            GameLogger.addLogMessage(`Not enough cash to grade ${cardName}. Cost: $${GRADING_COST}. You have: $${GameState.current.cash}.`);
+            // Optionally show a more prominent UI message here if desired
+            UIElements.cabinetModal.classList.add('hidden'); // Still close manage modal
+            return; // Exit early
+        }
+
+        const success = Grading.initiateGrading(indexInCabinet);
+
+        if (success) {
+            GameLogger.addLogMessage(`Sent ${cardName} for grading. Cost: $${GRADING_COST}.`);
+            // The card object in GameState.current.displayCabinet is now updated by initiateGrading
+            // (isGrading = true, daysUntilGraded = X)
+        } else {
+            // initiateGrading logs specific reasons to console (already graded, etc.)
+            // We can add a generic GameLogger message if needed, or rely on console for debug.
+            GameLogger.addLogMessage(`Could not send ${cardName} for grading. See console for details.`);
+        }
+
+        UIElements.cabinetModal.classList.add('hidden'); // Close manage modal
+
+        // Re-render relevant UI parts
+        UIRenderer.renderPlayerStats(); // Update cash display
+
+        // Re-render the cabinet tab view to show the card as "grading" or reflect other changes
+        // Assuming 'cabinet' is the currentView in MobileNavigation when this modal was opened.
+        // A more robust way might be to check MobileNavigation.getCurrentView()
+        if (MobileNavigation.getCurrentView() === 'cabinet') {
+            UIRenderer.renderMobileCabinetTabView(UIElements.mobileMainContent);
+        } else {
+            // Fallback or if desktop view is also managed by this modal
+            UIRenderer.renderDisplayCabinet(); // For desktop view if applicable
+        }
+        // UIRenderer.renderAll(); // This might be too broad if only specific parts need update
     },
 
     returnCabinetCardToInventory(indexToRemove) {

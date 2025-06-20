@@ -595,10 +595,26 @@ export const UIRenderer = {
                 cardWrapper.className = 'flex flex-col items-center bg-gray-700 p-2 rounded shadow';
                 const cardVisual = CardVisuals.createCardVisual(cabinetItem, true); // true for compact
                 cardWrapper.appendChild(cardVisual);
+
+                // Display Grade if available
+                if (cabinetItem.isGraded && cabinetItem.gradeName) {
+                    const gradeDisplay = document.createElement('div');
+                    gradeDisplay.className = 'text-xs text-amber-400 mt-1';
+                    gradeDisplay.textContent = `Grade: ${cabinetItem.gradeName}`;
+                    cardWrapper.appendChild(gradeDisplay);
+                } else if (cabinetItem.isGrading) {
+                    const gradingStatusDisplay = document.createElement('div');
+                    gradingStatusDisplay.className = 'text-xs text-sky-400 mt-1';
+                    gradingStatusDisplay.textContent = `Grading: ${cabinetItem.daysUntilGraded}d left`;
+                    cardWrapper.appendChild(gradingStatusDisplay);
+                }
+
                 const valueDisplay = document.createElement('div');
                 valueDisplay.className = 'text-xs font-semibold text-green-300 mt-1';
-                valueDisplay.textContent = `$${(cabinetItem.capturedValue || 0).toLocaleString()}`;
+                const displayValue = cabinetItem.isGraded ? (cabinetItem.valueAfterGrading || 0) : (cabinetItem.capturedValue || 0);
+                valueDisplay.textContent = `$${displayValue.toLocaleString()}`;
                 cardWrapper.appendChild(valueDisplay);
+
                 cabinetListContainer.appendChild(cardWrapper);
             });
         }

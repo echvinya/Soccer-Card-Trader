@@ -6,6 +6,7 @@ import { Market } from './market.js';
 import { Events } from './events.js';
 import { GameEnd } from './gameEnd.js';
 import { MobileNavigation } from '../ui/mobileNavigation.js'; // Import MobileNavigation
+import { Grading } from './grading.js'; // Import Grading
 
 export const Travel = {
     async travelTo(destinationLocationId) {
@@ -25,10 +26,34 @@ export const Travel = {
         Events.clearOldEvents(previousLocationId);
         GameState.current.storeDiscount = 0;
         
+        // Process grading for each day of travel
+        let allNewlyGradedCardsDuringTravel = [];
+        if (travelCostDays > 0) {
+            for (let i = 0; i < travelCostDays; i++) {
+                const newlyGradedToday = Grading.processSingleDayGradingUpdate();
+                if (newlyGradedToday.length > 0) {
+                    allNewlyGradedCardsDuringTravel.push(...newlyGradedToday);
+                }
+                // If game ends mid-travel due to days running out via grading process (if grading itself cost days - not current model)
+                // This check might be more complex if grading could end game. For now, assume grading itself doesn't directly consume days.
+            }
+        }
+
         GameState.current.daysRemaining -= travelCostDays;
         GameState.current.currentLocationId = destinationLocationId;
         GameLogger.addLogMessage(`Traveled to ${GameState.getCurrentLocation().name}. Lost ${travelCostDays} day${travelCostDays > 1 ? 's' : ''}.`);
         GameState.current.boosterPacksPurchasedToday = 0;
+
+        // Notify about cards graded during travel
+        if (allNewlyGradedCardsDuringTravel.length > 0) {
+            allNewlyGradedCardsDuringTravel.forEach(gradedCard => {
+                GameLogger.addLogMessage(`Grading complete for ${gradedCard.card.name}! Grade: ${gradedCard.gradeName}. New Value: $${gradedCard.valueAfterGrading}.`);
+                // TODO: Potentially trigger a more prominent notification/modal here
+            });
+            // After logging, if the current view is the cabinet, it should be refreshed.
+            // This will be handled when the market tab is shown, or if user navigates to cabinet.
+            // Or, we could force a cabinet data refresh if it's the current view, though travelTo forces market view.
+        }
         
         if (GameState.current.pendingEvent && GameState.current.pendingEvent.location === destinationLocationId) {
             GameState.current.activeEvents.push(GameState.current.pendingEvent);

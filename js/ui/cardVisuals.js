@@ -152,6 +152,56 @@ export const CardVisuals = {
                 visualContainer.style.backgroundColor = '#374151';
             }
         }
+
+        // Add grading status or grade display
+        if (cabinetItem.isGrading) {
+            const gradingOverlay = document.createElement('div');
+            gradingOverlay.style.position = 'absolute';
+            gradingOverlay.style.top = '0';
+            gradingOverlay.style.left = '0';
+            gradingOverlay.style.width = '100%';
+            gradingOverlay.style.height = '100%';
+            gradingOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            gradingOverlay.style.color = 'white';
+            gradingOverlay.style.display = 'flex';
+            gradingOverlay.style.flexDirection = 'column';
+            gradingOverlay.style.justifyContent = 'center';
+            gradingOverlay.style.alignItems = 'center';
+            gradingOverlay.style.textAlign = 'center';
+            gradingOverlay.style.zIndex = '20'; // Above numbering, below other potential overlays if any
+            gradingOverlay.style.borderRadius = visualContainer.classList.contains('rounded-lg') ? '0.5rem' : '0'; // Match container rounding
+
+            const gradingText = document.createElement('p');
+            gradingText.textContent = 'GRADING';
+            gradingText.style.fontWeight = 'bold';
+            gradingText.style.fontSize = '1rem'; // Adjust size as needed
+            gradingText.style.letterSpacing = '0.1em';
+            gradingOverlay.appendChild(gradingText);
+
+            if (cabinetItem.daysUntilGraded !== undefined) {
+                const daysText = document.createElement('p');
+                daysText.textContent = `${cabinetItem.daysUntilGraded}d left`;
+                daysText.style.fontSize = '0.75rem';
+                daysText.style.marginTop = '0.25rem';
+                gradingOverlay.appendChild(daysText);
+            }
+            visualContainer.appendChild(gradingOverlay);
+
+        } else if (cabinetItem.isGraded && cabinetItem.gradeName) {
+            const gradeBanner = document.createElement('div');
+            gradeBanner.style.position = 'absolute';
+            gradeBanner.style.top = '5px'; // Adjust position as needed
+            gradeBanner.style.left = '5px';
+            gradeBanner.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';
+            gradeBanner.style.color = '#FFD700'; // Gold color for grade
+            gradeBanner.style.padding = '2px 6px';
+            gradeBanner.style.borderRadius = '4px';
+            gradeBanner.style.fontSize = '10px';
+            gradeBanner.style.fontWeight = 'bold';
+            gradeBanner.style.zIndex = '15'; // Above layers, potentially below numbering if numbering is more prominent
+            gradeBanner.textContent = `GRADE: ${cabinetItem.gradeName} (${cabinetItem.gradeValue})`;
+            visualContainer.appendChild(gradeBanner);
+        }
         return visualContainer;
     }
 };
