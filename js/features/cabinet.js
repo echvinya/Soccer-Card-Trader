@@ -22,13 +22,8 @@ export const Cabinet = {
             valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
             valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
             cardWrapper.appendChild(valueDisplay);
-            
-            cardWrapper.appendChild(cardVisual);
-
-            const valueDisplay = document.createElement('div');
-            valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
-            valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
-            cardWrapper.appendChild(valueDisplay);
+            // The cardVisual and valueDisplay are correctly defined and appended once above.
+            // The actionsDiv should come directly after them.
 
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'mt-2 space-x-2';
