@@ -5,6 +5,7 @@ import { UIRenderer } from '../ui/uiRenderer.js';
 import { Market } from './market.js';
 import { Events } from './events.js';
 import { GameEnd } from './gameEnd.js';
+import { MobileNavigation } from '../ui/mobileNavigation.js'; // Import MobileNavigation
 
 export const Travel = {
     async travelTo(destinationLocationId) {
@@ -40,6 +41,15 @@ export const Travel = {
         Events.checkForTravelEvent();
 
         if (await GameEnd.checkGameOver()) return;
-        UIRenderer.renderAll();
+        UIRenderer.renderAll(); // Renders desktop, player stats etc.
+
+        // Navigate to the market tab for the new location in mobile view
+        const marketNavButton = document.getElementById('nav-market');
+        if (marketNavButton && typeof MobileNavigation.handleNavClick === 'function') {
+            MobileNavigation.handleNavClick(marketNavButton);
+        } else if (typeof MobileNavigation.navigateToView === 'function') {
+            // Fallback if handleNavClick isn't ideal or button not found, though less clean
+            MobileNavigation.navigateToView('market', true);
+        }
     }
 };

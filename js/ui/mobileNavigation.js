@@ -72,15 +72,10 @@ export const MobileNavigation = {
         if (!this.mainContentContainer) return;
 
         // Clear previous content for all view changes.
-        // For modal views, we'll then set a placeholder.
-        // For actual content views, they will fill the container.
         this.mainContentContainer.innerHTML = '';
 
-        // Update currentView for non-modal tabs. For modal tabs, currentView effectively remains the last non-modal tab.
-        // This means closing a modal will "return" to the view that was active before opening the modal.
-        if (viewName !== 'travel' && viewName !== 'log' && viewName !== 'cabinet') {
-            this.currentView = viewName;
-        }
+        // Update currentView for ALL tabs now.
+        this.currentView = viewName;
 
         // Call the appropriate rendering function based on viewName
         switch (viewName) {
@@ -91,16 +86,16 @@ export const MobileNavigation = {
                 UIRenderer.renderMobileInventoryView(this.mainContentContainer);
                 break;
             case 'travel':
-                this.mainContentContainer.innerHTML = '<p class="text-center text-gray-500 p-4">Opening travel map...</p>';
-                UIRenderer.renderMobileTravelModal(); // Show the travel modal
+                // Now calls the new tab view renderer
+                UIRenderer.renderMobileTravelTabView(this.mainContentContainer);
                 break;
             case 'log':
-                this.mainContentContainer.innerHTML = '<p class="text-center text-gray-500 p-4">Loading game log...</p>';
-                UIRenderer.renderMobileLogModal(); // Show the log modal
+                // Now calls the new tab view renderer
+                UIRenderer.renderMobileLogTabView(this.mainContentContainer);
                 break;
             case 'cabinet':
-                this.mainContentContainer.innerHTML = '<p class="text-center text-gray-500 p-4">Accessing display cabinet...</p>';
-                UIRenderer.renderMobileCabinetModal(); // Show the cabinet modal
+                // Now calls the new tab view renderer
+                UIRenderer.renderMobileCabinetTabView(this.mainContentContainer);
                 break;
             default:
                 this.mainContentContainer.innerHTML = `<p>Unknown view: ${viewName}</p>`;

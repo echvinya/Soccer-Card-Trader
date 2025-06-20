@@ -467,6 +467,56 @@ export const UIRenderer = {
 
     },
 
+    renderMobileTravelTabView(containerElement) {
+        containerElement.innerHTML = `
+            <div class="p-4 flex flex-col items-center">
+                <h2 class="text-xl font-semibold text-center text-amber-400 mb-4">Travel</h2>
+                <p class="text-center text-gray-400 mb-6">Ready to explore new markets? Choose your next destination.</p>
+                <button id="mobile-open-travel-modal-btn" class="btn btn-primary py-3 px-6 text-lg">Choose Destination</button>
+            </div>
+        `;
+        const openTravelModalBtn = document.getElementById('mobile-open-travel-modal-btn');
+        if (openTravelModalBtn) {
+            openTravelModalBtn.addEventListener('click', () => {
+                this.renderMobileTravelModal();
+            });
+        }
+    },
+
+    renderMobileLogTabView(containerElement) {
+        containerElement.innerHTML = `
+            <div class="p-4 flex flex-col items-center">
+                <h2 class="text-xl font-semibold text-center text-amber-400 mb-4">Game Log</h2>
+                <p class="text-center text-gray-400 mb-6">Review your recent activities and game events.</p>
+                <button id="mobile-open-log-modal-btn" class="btn btn-primary py-3 px-6 text-lg">View Game Log</button>
+            </div>
+        `;
+        const openLogModalBtn = document.getElementById('mobile-open-log-modal-btn');
+        if (openLogModalBtn) {
+            openLogModalBtn.addEventListener('click', () => {
+                this.renderMobileLogModal();
+            });
+        }
+    },
+
+    renderMobileCabinetTabView(containerElement) {
+        containerElement.innerHTML = `
+            <div class="p-4 flex flex-col items-center">
+                <h2 class="text-xl font-semibold text-center text-cyan-400 mb-4">Display Cabinet</h2>
+                <p class="text-center text-gray-400 mb-6">View and manage your prized collection of graded cards.</p>
+                <button id="mobile-open-cabinet-modal-btn" class="btn btn-primary py-3 px-6 text-lg">View Display Cabinet</button>
+            </div>
+        `;
+        // Note: The existing mobile cabinet modal also has a "Manage" button.
+        // This button will open that modal, which in turn allows management.
+        const openCabinetModalBtn = document.getElementById('mobile-open-cabinet-modal-btn');
+        if (openCabinetModalBtn) {
+            openCabinetModalBtn.addEventListener('click', () => {
+                this.renderMobileCabinetModal();
+            });
+        }
+    },
+
     renderMobileInventoryView(containerElement) {
         containerElement.innerHTML = ''; // Clear container
         const itemsPerPage = 5;
