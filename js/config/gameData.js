@@ -68,14 +68,14 @@ export const GameData = {
     },
 
     cards: [
-        { id: 'autographed_jersey', name: 'Autographed Jersey Card', basePrice: 650, description: 'Features a piece of player-worn jersey and a signature.' },
-        { id: 'numbered_rookie_auto', name: 'Numbered Rookie Auto', basePrice: 500, description: 'A rookie card with a signature, serial numbered to 99.' },
+        { id: 'autographed_jersey', name: 'Autographed Jersey Card', basePrice: 650, description: 'Numbered and features a piece of player-worn jersey and a signature.' },
+        { id: 'numbered_rookie_auto', name: 'Numbered Rookie Auto', basePrice: 500, description: 'A numbered and autographed Rookie card.' },
         { id: 'holo_legend', name: 'Holo Legend Card', basePrice: 220, description: 'A holographic card of an iconic player from the past.' },
-        { id: 'numbered_legend', name: 'Numbered Legend', basePrice: 420, description: 'A card of a legendary player numbered to 25.' },
+        { id: 'numbered_legend', name: 'Numbered Legend', basePrice: 420, description: 'A numbered card of a legendary player.' },
         { id: 'game_worn_relic', name: 'Game-Worn Relic', basePrice: 180, description: 'Contains a piece of a game-used, jesery, ball, net or cleat.' },
         { id: 'prized_rookie_card', name: 'Prized Rookie Card', basePrice: 120, description: 'A highly sought-after rookie card of a top prospect.' },
         { id: 'favorite_player', name: 'Favorite Player Card', basePrice: 75, description: 'A standard card of a fan-favorite player.' },
-        { id: 'autographed_common', name: 'Autographed Common Card', basePrice: 95, description: 'A common card, now with a valuable signature.' },
+        { id: 'autographed_common', name: 'Autographed Card', basePrice: 95, description: 'A common card, now with a valuable signature.' },
         { id: 'common_single', name: 'Common Single', basePrice: 5, description: 'A single common card.' },
         { id: 'booster_pack', name: 'Booster Pack', basePrice: GameConfig.boosterPack.basePrice, special: true },
     ],
