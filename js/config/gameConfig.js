@@ -24,7 +24,7 @@ export const GameConfig = {
             { folder: 'Head', count: 17 },
             { folder: 'Shirt', count: 13 },
             { folder: 'hair', count: 21 },
-            { folder: 'Frame', count: 5 }
+            { folder: 'Frame', count: 7 }
         ]
     }
 };
