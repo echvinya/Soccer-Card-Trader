@@ -15,7 +15,11 @@ export const GameEnd = {
         if (GameState.current.daysRemaining <= 0) {
             let cabinetValue = 0;
             GameState.current.displayCabinet.forEach(item => {
-                cabinetValue += (item.capturedValue || 0);
+                if (item.isGraded && typeof item.valueAfterGrading === 'number') {
+                    cabinetValue += item.valueAfterGrading;
+                } else {
+                    cabinetValue += (item.capturedValue || 0);
+                }
             });
             const totalScore = GameState.current.cash + cabinetValue;
             
@@ -25,7 +29,7 @@ export const GameEnd = {
                 GameState.leaderboardScores[Math.min(GameState.leaderboardScores.length - 1, GameConfig.leaderboard.size - 1)].score : 0;
             if (totalScore > lowestHighScore || GameState.leaderboardScores.length < GameConfig.leaderboard.size) {
                 document.getElementById('high-score-final-score').innerHTML = 
-                    `${GameState.current.cash.toLocaleString()} + ${cabinetValue} cabinet = <span class="text-green-400">${totalScore.toLocaleString()}</span>`;
+                    `${GameState.current.cash.toLocaleString()} + ${cabinetValue.toLocaleString()} cabinet = <span class="text-green-400">${totalScore.toLocaleString()}</span>`;
                 UIElements.highScoreModal.classList.remove('hidden');
             } else {
                 await this.showGameOverScreen();
@@ -51,11 +55,17 @@ export const GameEnd = {
                 
                 const valueDisplay = document.createElement('div');
                 valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
-                valueDisplay.textContent = `${cabinetItem.capturedValue || 0}`;
+                let displayValue = 0;
+                if (cabinetItem.isGraded && typeof cabinetItem.valueAfterGrading === 'number') {
+                    displayValue = cabinetItem.valueAfterGrading;
+                } else {
+                    displayValue = cabinetItem.capturedValue || 0;
+                }
+                valueDisplay.textContent = `$${displayValue.toLocaleString()}`;
                 cardWrapper.appendChild(valueDisplay);
                 
                 gameOverCabinetList.appendChild(cardWrapper);
-                cabinetValue += (cabinetItem.capturedValue || 0);
+                cabinetValue += displayValue; // Use the already determined displayValue
             });
             document.getElementById('game-over-cabinet-section').style.display = 'block';
         } else {
@@ -66,7 +76,7 @@ export const GameEnd = {
         
         const topScores = GameState.leaderboardScores.slice(0, GameConfig.leaderboard.size);
         document.getElementById('final-score').innerHTML = 
-            `${GameState.current.cash.toLocaleString()} <span class="text-lg">(+ ${cabinetValue} cabinet)</span> = <span class="text-green-400">${totalScore.toLocaleString()}</span>`;
+            `${GameState.current.cash.toLocaleString()} <span class="text-lg">(+ ${cabinetValue.toLocaleString()} cabinet)</span> = <span class="text-green-400">${totalScore.toLocaleString()}</span>`;
         UIRenderer.renderLeaderboard(topScores, document.getElementById('game-over-leaderboard-list'));
         UIElements.gameOverModal.classList.remove('hidden');
     }
