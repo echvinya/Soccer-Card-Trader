@@ -24,7 +24,8 @@ export const GameConfig = {
             { folder: 'Head', count: 17 },
             { folder: 'Shirt', count: 13 },
             { folder: 'hair', count: 21 },
-            { folder: 'Frame', count: 7 }
+            { folder: 'Frame', count: 7 },
+            { folder: 'autos', count: 40 } // Added autos layer
         ]
     }
 };

@@ -10,71 +10,89 @@ import { Grading } from './grading.js';
 export const Cabinet = {
     showManageCabinetModal() {
         UIElements.cabinetModalTitle.textContent = 'Manage Cabinet';
-        UIElements.cabinetModalMessage.textContent = 'Select a card to return to your inventory.';
+        UIElements.cabinetModalMessage.textContent = 'Select a card to return to your inventory, or manage grading.';
         UIElements.cabinetModalOptions.innerHTML = '';
         
         GameState.current.displayCabinet.forEach((cabinetItem, index) => {
             const cardWrapper = document.createElement('div');
-            cardWrapper.className = 'flex flex-col items-center cursor-pointer hover:opacity-80';
-            
-            const cardVisual = CardVisuals.createCardVisual(cabinetItem);
-            cardWrapper.appendChild(cardVisual);
+            cardWrapper.className = 'flex flex-col items-center p-2'; // Added padding for spacing
             
             const valueDisplay = document.createElement('div');
-            valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
-            valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
-            cardWrapper.appendChild(valueDisplay);
+            valueDisplay.className = 'text-sm font-semibold mt-1';
 
-            // Add "Send to Grade" button if applicable
-            if (!cabinetItem.isGrading && !cabinetItem.isGraded) {
-                const gradeButton = document.createElement('button');
-                gradeButton.className = 'btn btn-primary btn-sm mt-2 text-xs px-2 py-1'; // Adjusted for better fit
-                gradeButton.textContent = 'Send to Grade';
-                gradeButton.title = `Cost: $${Grading.GRADING_COST}`; // Show cost on hover
+            if (cabinetItem.isGrading) {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'relative aspect-[3/4] w-full bg-gray-700 rounded-lg flex flex-col items-center justify-center text-white border-2 border-gray-500';
 
-                gradeButton.onclick = (event) => {
-                    event.stopPropagation(); // Prevent cardWrapper's onclick from firing
+                const lockIcon = document.createElement('span');
+                lockIcon.className = 'text-4xl mb-2';
+                lockIcon.textContent = '🔒'; // Simple lock icon
+                placeholder.appendChild(lockIcon);
 
-                    const success = Grading.initiateGrading(index);
-                    if (success) {
-                        GameLogger.addLogMessage(`Sent ${cabinetItem.card.name} for grading.`); // Log success
-                        UIElements.cabinetModal.classList.add('hidden');
-                        UIRenderer.renderAll(); // Re-render to show changes (e.g., cash, cabinet slot status)
-                    } else {
-                        // Optional: Show a message if grading couldn't be initiated (e.g., not enough cash)
-                        // This might already be handled by a modal/log in Grading.initiateGrading
-                        // For now, just log to console if initiateGrading handles user feedback
-                        console.warn(`Could not initiate grading for ${cabinetItem.card.name}.`);
-                        // If initiateGrading doesn't show a modal for "not enough cash", we might need one here.
-                        // However, initiateGrading has a console warning and could be expanded for UI feedback.
-                    }
-                };
-                cardWrapper.appendChild(gradeButton);
-            } else if (cabinetItem.isGrading) {
-                const gradingStatusDisplay = document.createElement('div');
-                gradingStatusDisplay.className = 'text-xs text-amber-400 mt-1';
-                gradingStatusDisplay.textContent = `Grading: ${cabinetItem.daysUntilGraded} days left`;
-                cardWrapper.appendChild(gradingStatusDisplay);
-                // Prevent returning to inventory if it's out for grading.
+                const gradingText = document.createElement('p');
+                gradingText.className = 'text-xs text-center';
+                gradingText.textContent = 'Out for Grading';
+                placeholder.appendChild(gradingText);
+
+                cardWrapper.appendChild(placeholder);
+
+                valueDisplay.textContent = `Grading: ${cabinetItem.daysUntilGraded} days left`;
+                valueDisplay.classList.add('text-amber-400');
+                cardWrapper.appendChild(valueDisplay);
+
                 cardWrapper.onclick = (event) => {
                     event.stopPropagation();
-                    // Maybe show a small message: "This card is currently out for grading."
-                    GameLogger.addLogMessage(`${cabinetItem.card.name} is currently being graded.`);
+                    GameLogger.addLogMessage(`${cabinetItem.card.name} is currently being graded and cannot be returned.`);
                 };
-            } else if (cabinetItem.isGraded) {
-                const gradedDisplay = document.createElement('div');
-                gradedDisplay.className = 'text-xs text-green-400 mt-1';
-                gradedDisplay.textContent = `Graded: ${cabinetItem.gradeName} (${cabinetItem.gradeValue})`;
-                cardWrapper.appendChild(gradedDisplay);
-                // Keep original onclick to allow returning graded card to inventory.
-            }
 
-            // The original onclick to return to inventory should be the default.
-            // If a grade button was added, its stopPropagation handles it.
-            // If it's currently grading, we override cardWrapper.onclick to do nothing/log.
-            // If it's already graded, the default click to return to inventory is fine.
-            if (!cabinetItem.isGrading) { // Only allow return to inventory if not actively grading
-                cardWrapper.onclick = () => this.returnCabinetCardToInventory(index);
+            } else {
+                // Display card visual for non-grading cards
+                const cardVisual = CardVisuals.createCardVisual(cabinetItem);
+                cardWrapper.appendChild(cardVisual);
+
+                if (cabinetItem.isGraded) {
+                    valueDisplay.textContent = `$${cabinetItem.valueAfterGrading || cabinetItem.capturedValue || 0}`; // Show graded value
+                    valueDisplay.classList.add('text-yellow-400'); // Different color for graded value
+                    cardWrapper.appendChild(valueDisplay);
+
+                    const gradedDisplay = document.createElement('div');
+                    gradedDisplay.className = 'text-xs text-green-400 mt-1';
+                    gradedDisplay.textContent = `Graded: ${cabinetItem.gradeName} (Grade ${cabinetItem.gradeValue})`;
+                    cardWrapper.appendChild(gradedDisplay);
+
+                    // Allow returning graded card to inventory
+                    cardWrapper.classList.add('cursor-pointer', 'hover:opacity-80');
+                    cardWrapper.onclick = () => this.returnCabinetCardToInventory(index);
+
+                } else {
+                    // Not graded, not grading: Show captured value and "Send to Grade" button
+                    valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;
+                    valueDisplay.classList.add('text-green-400');
+                    cardWrapper.appendChild(valueDisplay);
+
+                    const gradeButton = document.createElement('button');
+                    gradeButton.className = 'btn btn-primary btn-sm mt-2 text-xs px-2 py-1';
+                    gradeButton.textContent = 'Send to Grade';
+                    gradeButton.title = `Cost: $${Grading.GRADING_COST}`;
+
+                    gradeButton.onclick = (event) => {
+                        event.stopPropagation();
+                        const success = Grading.initiateGrading(index);
+                        if (success) {
+                            GameLogger.addLogMessage(`Sent ${cabinetItem.card.name} for grading.`);
+                            UIElements.cabinetModal.classList.add('hidden');
+                            UIRenderer.renderAll();
+                        } else {
+                            console.warn(`Could not initiate grading for ${cabinetItem.card.name}.`);
+                            // initiateGrading should handle user feedback for insufficient funds.
+                        }
+                    };
+                    cardWrapper.appendChild(gradeButton);
+
+                    // Allow returning non-graded card to inventory
+                    cardWrapper.classList.add('cursor-pointer', 'hover:opacity-80');
+                    cardWrapper.onclick = () => this.returnCabinetCardToInventory(index);
+                }
             }
             
             UIElements.cabinetModalOptions.appendChild(cardWrapper);
