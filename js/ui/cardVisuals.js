@@ -6,10 +6,11 @@ export const CardVisuals = {
         const isCommonSingle = cardId === 'common_single';
         const isGameWornRelic = cardId === 'game_worn_relic';
         const isAutographedJersey = cardId === 'autographed_jersey';
-        const isJerseyCard = isGameWornRelic || isAutographedJersey;
+        // Behavior specific to GameWornRelic or AutographedJersey
+        const isSpecialRelicCard = isGameWornRelic || isAutographedJersey;
 
         const usesRestrictedFrames = [
-            'autographed_common', // Renamed from "Autographed cards" for consistency if it's an ID
+            'autographed_common',
             'favorite_player',
             'prized_rookie_card',
             'game_worn_relic',
@@ -20,48 +21,56 @@ export const CardVisuals = {
         ].includes(cardId);
 
         const needsAutosLayer = [
-            'autographed_common', // Assuming "Autographed cards" maps to this ID
+            'autographed_common',
             'numbered_rookie_auto',
             'autographed_jersey'
         ].includes(cardId);
 
         GameConfig.commonCardAssets.layers.forEach(layer => {
-            let selectedIndex = null; // Default to null, especially for conditional layers like 'autos'
+            let selectedIndex = null;
+            const layerName = layer.folder.toLowerCase();
 
-            // Skip head and hair layers for specific jersey cards
-            if (isJerseyCard && (layer.folder.toLowerCase() === 'head' || layer.folder.toLowerCase() === 'hair')) {
-                indices.push(null); // Explicitly push null for these layers
-                return;
+            if (isSpecialRelicCard) {
+                if (layerName === 'head' || layerName === 'hair' || layerName === 'background') {
+                    indices.push(null); // Skip these layers
+                    return;
+                }
+                if (layerName === 'shirt') {
+                    indices.push(null); // Skip original shirt layer for these cards
+                    return;
+                }
+                if (layerName === 'relics') {
+                    // Select from Relics layer instead of Shirt
+                    selectedIndex = Math.floor(Math.random() * layer.count) + 1;
+                    indices.push(selectedIndex);
+                    return;
+                }
             }
             
-            if (layer.folder.toLowerCase() === 'autos') {
+            if (layerName === 'autos') {
                 if (needsAutosLayer) {
                     selectedIndex = Math.floor(Math.random() * layer.count) + 1;
                 }
-                // If not needsAutosLayer, selectedIndex remains null, so this layer won't be added
-            } else if (layer.folder.toLowerCase() === 'frame') {
+            } else if (layerName === 'frame') {
                 if (isCommonSingle) {
                     selectedIndex = Math.floor(Math.random() * 2) + 1; // Frames 1-2
                 } else if (usesRestrictedFrames) {
-                    // Frames 3 and above (total count - 2 options, starting from index 3)
                     if (layer.count > 2) {
                         selectedIndex = Math.floor(Math.random() * (layer.count - 2)) + 3;
-                    } else { // Fallback if less than 3 frames exist, use any available
+                    } else {
                         selectedIndex = Math.floor(Math.random() * layer.count) + 1;
                     }
                 } else {
-                    // All frames available for other cards not explicitly restricted
                     selectedIndex = Math.floor(Math.random() * layer.count) + 1;
                 }
-            } else if (layer.folder.toLowerCase() === 'background') {
+            } else if (layerName === 'background') {
                 if (isCommonSingle) {
                     selectedIndex = Math.floor(Math.random() * 8) + 1; // Backgrounds 1-8
                 } else {
-                    // All backgrounds available for other cards
                     selectedIndex = Math.floor(Math.random() * layer.count) + 1;
                 }
-            } else {
-                // Default random selection for other layers like Shirt, Head, Hair (if not skipped)
+            } else if (layerName !== 'relics') { // Ensure we don't double-process relics
+                // Default random selection for other layers like Shirt, Head, Hair (if not special relic card)
                 selectedIndex = Math.floor(Math.random() * layer.count) + 1;
             }
             
@@ -71,41 +80,45 @@ export const CardVisuals = {
         return indices;
     },
 
-    createCardImageLayers(targetDiv, layerIndices, cardId) {
+    createCardImageLayers(targetDiv, layerIndices, cardId, isGraded = false) { // Added isGraded parameter
         if (!layerIndices || layerIndices.length === 0) return;
         
-        const isGameWornRelic = cardId === 'game_worn_relic';
-        const isAutographedJersey = cardId === 'autographed_jersey';
-        const isSpecialShirtScaling = isGameWornRelic || isAutographedJersey;
-
+        // Render actual card layers first
         GameConfig.commonCardAssets.layers.forEach((layerConfig, i) => {
             const layerIndexValue = layerIndices[i];
-            // Skip null indices (for skipped layers or unneeded conditional layers like autos)
-            if (layerIndexValue === null) return;
-            
+            if (layerIndexValue === null) return; // Skip null indices
+
             const img = document.createElement('img');
             img.src = `${GameConfig.commonCardAssets.base_url}${layerConfig.folder}/${layerIndexValue}.png`;
             img.style.position = 'absolute';
             img.style.left = '0';
-            img.style.top = '0'; // Default top
+            img.style.top = '0';
             img.style.width = '100%';
-            img.style.height = '100%'; // Default height
+            img.style.height = '100%';
 
-            // Layer-specific styling
-            if (layerConfig.folder.toLowerCase() === 'shirt' && isSpecialShirtScaling) {
-                img.style.top = '50%';
-                img.style.left = '50%';
-                img.style.width = 'auto'; // Adjust width to maintain aspect ratio with new height
-                img.style.height = 'auto'; // Adjust height to maintain aspect ratio
-                img.style.maxHeight = '70%'; // Example: Scale to 70% of card height
-                img.style.maxWidth = '70%';  // Example: Scale to 70% of card width
-                img.style.transform = 'translate(-50%, -50%) scale(1.2)'; // Center and scale
-            } else if (layerConfig.folder.toLowerCase() === 'autos') {
-                img.style.zIndex = '5'; // Ensure autos layer is on top of other layers but below numbering
+            // Layer-specific styling (e.g., autos z-index)
+            // Relics layer doesn't need special scaling here as it's a pre-composed image.
+            // Old special shirt scaling is removed.
+            if (layerConfig.folder.toLowerCase() === 'autos') {
+                img.style.zIndex = '5';
             }
+            // The 'Relics' layer will be rendered like any other normal layer here.
             
             targetDiv.appendChild(img);
         });
+
+        // Add slab image if the card is graded
+        if (isGraded) {
+            const slabImg = document.createElement('img');
+            slabImg.src = `${GameConfig.commonCardAssets.base_url}Slab/slab.png`; // Path to slab image
+            slabImg.style.position = 'absolute';
+            slabImg.style.left = '0';
+            slabImg.style.top = '0';
+            slabImg.style.width = '100%';
+            slabImg.style.height = '100%';
+            slabImg.style.zIndex = '6'; // Slab is above card art/autos, below numbering
+            targetDiv.appendChild(slabImg);
+        }
     },
 
     generateCardNumbering(card) { // card.id is used here
@@ -216,24 +229,41 @@ export const CardVisuals = {
             'common_single', 'autographed_jersey', 'game_worn_relic'
         ];
 
+        // Handle cards currently out for grading first
+        if (cabinetItem.isGrading) {
+            visualContainer.className += ' bg-gray-700 rounded-lg flex flex-col items-center justify-center text-white border-2 border-gray-500';
+
+            const lockIcon = document.createElement('span');
+            lockIcon.className = 'text-4xl mb-2'; // Tailwind classes for size and margin
+            lockIcon.textContent = '🔒';
+            visualContainer.appendChild(lockIcon);
+
+            const gradingText = document.createElement('p');
+            gradingText.className = 'text-xs text-center px-1'; // Tailwind classes for size and padding
+            gradingText.textContent = `Grading: ${cabinetItem.daysUntilGraded} days left`;
+            visualContainer.appendChild(gradingText);
+
+            return visualContainer; // Return the placeholder
+        }
+
         if (graphicCardTypes.includes(card.id)) {
-            this.createCardImageLayers(visualContainer, cabinetItem.layers, card.id);
+            // Pass isGraded status to createCardImageLayers for slab application
+            this.createCardImageLayers(visualContainer, cabinetItem.layers, card.id, cabinetItem.isGraded);
 
             if (card.id === 'holo_legend') {
-                visualContainer.classList.add('holo-effect'); // Add class for holographic effect
+                visualContainer.classList.add('holo-effect');
             }
 
+            // Apply sparkle effect if applicable (and not holo, to avoid visual clutter)
             if (card.basePrice > GameConfig.rareCardThreshold && card.id !== 'common_single' && card.id !== 'holo_legend') {
-                // Sparkle effect for rare cards, but not for holo if it has its own distinct effect
                 visualContainer.classList.add('sparkle');
             }
             
             if (cabinetItem.numbering) {
-                // Pass card.id to addNumberingOverlay for position adjustment
                 this.addNumberingOverlay(visualContainer, cabinetItem.numbering, card.id);
             }
         } else {
-            // Fallback for cards not using dynamic graphics
+            // Fallback for cards not using dynamic graphics (e.g., older card types if any)
             visualContainer.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center text-center';
             visualContainer.textContent = card.name;
             if (card.basePrice > GameConfig.rareCardThreshold) {
