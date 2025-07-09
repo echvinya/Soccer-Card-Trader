@@ -64,6 +64,7 @@ export const CardVisuals = {
                 } else {
                     selectedIndex = Math.floor(Math.random() * layer.count) + 1;
                 }
+                console.log(`CardVisuals: CardID: ${cardId}, Layer: ${layerName}, Frame Index Selected: ${selectedIndex}`); // Log for Frame
             } else if (layerName === 'background') {
                 if (isCommonSingle) {
                     selectedIndex = Math.floor(Math.random() * 8) + 1; // Backgrounds 1-8
@@ -98,8 +99,17 @@ export const CardVisuals = {
             img.style.width = '100%';
             img.style.height = '100%';
 
-            if (layerConfig.folder.toLowerCase() === 'autos') {
-                img.style.zIndex = '5';
+            const layerFolder = layerConfig.folder.toLowerCase();
+            if (layerFolder === 'background') {
+                img.style.zIndex = '1';
+            } else if (['head', 'hair', 'shirt', 'relics'].includes(layerFolder)) {
+                img.style.zIndex = '2';
+            } else if (layerFolder === 'frame') {
+                img.style.zIndex = '3';
+            } else if (layerFolder === 'autos') {
+                img.style.zIndex = '4';
+            } else {
+                img.style.zIndex = '0'; // Default for any unspecified layers
             }
             
             targetDiv.appendChild(img);
@@ -136,7 +146,7 @@ export const CardVisuals = {
         return null; // Should not be reached if weights are correct
     },
 
-    addNumberingOverlay(container, numbering, cardId) { // Added cardId parameter
+    addNumberingOverlay(container, numbering, cardId, isScaled = false) { // Added isScaled parameter
         if (!numbering) return;
         
         const serialContainer = document.createElement('div');
@@ -149,6 +159,17 @@ export const CardVisuals = {
 
         serialContainer.className = positionClasses;
         serialContainer.style.zIndex = '10'; // Ensure numbering is on top of all card layers
+
+        if (isScaled) {
+            serialContainer.style.transform = 'scale(0.85)'; // Scale down if needed
+            // Adjust transform origin if it's not centered by default on the corners
+            if (positionClasses.includes('top-2 right-2')) {
+                serialContainer.style.transformOrigin = 'top right';
+            } else if (positionClasses.includes('bottom-2 right-2')) {
+                serialContainer.style.transformOrigin = 'bottom right';
+            }
+            // May need to adjust margins or padding if scaling affects layout too much
+        }
         
         const plate = document.createElement('div');
         plate.className = 'relative px-3 py-1 rounded';
@@ -216,6 +237,7 @@ export const CardVisuals = {
 
         // Handle cards currently out for grading first
         if (cabinetItem.isGrading) {
+            console.log('CardVisuals: Creating placeholder for grading card:', cabinetItem.card.name); // Log for placeholder
             visualContainer.className += ' bg-gray-700 rounded-lg flex flex-col items-center justify-center text-white border-2 border-gray-500';
 
             const lockIcon = document.createElement('span');
@@ -241,15 +263,18 @@ export const CardVisuals = {
             slabImg.style.width = '100%';
             slabImg.style.height = '100%';
             slabImg.style.zIndex = '6';
+            // slabImg.style.border = '2px solid blue'; // Removed temporary diagnostic style
             visualContainer.appendChild(slabImg);
+            console.log('CardVisuals: Applying graded slab and scaled art for:', cabinetItem.card.name); // Log for slab/scaled art path
 
             const cardArtContainer = document.createElement('div');
+            // cardArtContainer.style.backgroundColor = 'rgba(255,0,0,0.3)'; // Removed temporary diagnostic style
             cardArtContainer.style.position = 'absolute';
             // Adjust percentages for desired border around the card art on the slab
-            cardArtContainer.style.width = '80%';
-            cardArtContainer.style.height = '80%';
-            cardArtContainer.style.top = '10%';    // (100 - 80) / 2
-            cardArtContainer.style.left = '10%';   // (100 - 80) / 2
+            cardArtContainer.style.width = '75%';
+            cardArtContainer.style.height = '75%';
+            cardArtContainer.style.top = '12.5%';    // (100 - 75) / 2
+            cardArtContainer.style.left = '12.5%';   // (100 - 75) / 2
             // Alternatively, for centering with translate:
             // cardArtContainer.style.width = '90%'; cardArtContainer.style.height = '90%';
             // cardArtContainer.style.top = '50%'; cardArtContainer.style.left = '50%';
@@ -261,15 +286,34 @@ export const CardVisuals = {
 
             if (card.id === 'holo_legend') {
                 cardArtContainer.classList.add('holo-effect'); // Apply effect to art container
+                console.log('CardVisuals: Applied holo-effect class to graded:', card.id, 'target:', cardArtContainer.tagName);
             }
             if (card.basePrice > GameConfig.rareCardThreshold && card.id !== 'common_single' && card.id !== 'holo_legend') {
                 cardArtContainer.classList.add('sparkle'); // Apply effect to art container
             }
             visualContainer.appendChild(cardArtContainer);
 
+            // Add Grade Text on the slab, above the cardArtContainer
+            if (cabinetItem.gradeName) {
+                const gradeTextElement = document.createElement('div');
+                gradeTextElement.textContent = `${cabinetItem.gradeName.toUpperCase()}` + (cabinetItem.gradeValue ? ` ${cabinetItem.gradeValue}` : '');
+                gradeTextElement.style.position = 'absolute';
+                gradeTextElement.style.textAlign = 'center';
+                gradeTextElement.style.width = '70%'; // Adjust width to fit nicely in slab border
+                gradeTextElement.style.left = '15%'; // Center the text element (100 - 70) / 2
+                gradeTextElement.style.top = '4%';   // Position it in the top border area of the slab
+                gradeTextElement.style.zIndex = '8'; // Above slab (6), potentially above cardArt (7) or same level
+                gradeTextElement.style.fontWeight = 'bold';
+                gradeTextElement.style.color = 'white'; // Adjust color for visibility on slab
+                gradeTextElement.style.fontSize = '10px'; // Adjust size as needed
+                gradeTextElement.style.textShadow = '1px 1px 2px black'; // Add shadow for readability
+                gradeTextElement.style.fontFamily = 'Arial, sans-serif'; // Clear font
+                visualContainer.appendChild(gradeTextElement);
+            }
+
             if (cabinetItem.numbering) {
-                // Numbering goes on the main visualContainer, so it's on top of slab and art
-                this.addNumberingOverlay(visualContainer, cabinetItem.numbering, card.id);
+                // For graded cards, numbering goes on the cardArtContainer and is scaled
+                this.addNumberingOverlay(cardArtContainer, cabinetItem.numbering, card.id, true);
             }
 
         } else if (graphicCardTypes.includes(card.id)) {
@@ -278,12 +322,14 @@ export const CardVisuals = {
 
             if (card.id === 'holo_legend') {
                 visualContainer.classList.add('holo-effect');
+                console.log('CardVisuals: Applied holo-effect class to non-graded:', card.id, 'target:', visualContainer.tagName);
             }
             if (card.basePrice > GameConfig.rareCardThreshold && card.id !== 'common_single' && card.id !== 'holo_legend') {
                 visualContainer.classList.add('sparkle');
             }
             if (cabinetItem.numbering) {
-                this.addNumberingOverlay(visualContainer, cabinetItem.numbering, card.id);
+                // For non-graded cards, numbering goes on the main visualContainer and is not scaled
+                this.addNumberingOverlay(visualContainer, cabinetItem.numbering, card.id, false);
             }
         } else {
             // Fallback for non-graphic cards (e.g., text-based)

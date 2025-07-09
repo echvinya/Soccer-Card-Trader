@@ -243,6 +243,7 @@ export const UIRenderer = {
                 // - Placeholder for isGrading
                 // - Slab for isGraded
                 // - Normal display otherwise
+                console.log('UIRenderer: Rendering cabinet item:', cabinetItem.card.name, 'isGrading:', cabinetItem.isGrading, 'isGraded:', cabinetItem.isGraded); // Log for item state
                 const cardElement = CardVisuals.createCardVisual(cabinetItem);
                 cardWrapper.appendChild(cardElement);
 
