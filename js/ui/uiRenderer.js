@@ -239,37 +239,22 @@ export const UIRenderer = {
                 const cardWrapper = document.createElement('div');
                 cardWrapper.className = 'flex flex-col items-center';
                 
-                let cardElement; // To hold the visual element for the card slot
+                // Always use CardVisuals.createCardVisual as it now handles all states:
+                // - Placeholder for isGrading
+                // - Slab for isGraded
+                // - Normal display otherwise
+                const cardElement = CardVisuals.createCardVisual(cabinetItem);
+                cardWrapper.appendChild(cardElement);
 
-                if (cabinetItem.isGrading) {
-                    cardElement = CardVisuals.createGradingStatusVisual(cabinetItem);
-                    // No separate value display needed here as it's part of the status visual or irrelevant.
-                } else if (cabinetItem.isGraded) {
-                    // This part will be more fully developed in Step 9.
-                    // For now, just show the normal card visual and later we'll add grade info.
-                    cardElement = CardVisuals.createCardVisual(cabinetItem);
-
-                    // Placeholder for where graded info will go
-                    // const gradedInfoDisplay = document.createElement('div');
-                    // gradedInfoDisplay.className = 'text-sm font-semibold text-purple-400 mt-1';
-                    // gradedInfoDisplay.textContent = `Graded: ${cabinetItem.gradeName} ($${cabinetItem.valueAfterGrading})`; // Example
-                    // cardWrapper.appendChild(gradedInfoDisplay); // This will be added below cardElement
-                } else {
-                    cardElement = CardVisuals.createCardVisual(cabinetItem);
-                }
-                
-                cardWrapper.appendChild(cardElement); // Append the determined card element
-
-                // Handle value display separately to ensure it's always below the cardElement
-                // and shows the correct value based on state.
+                // Value display logic (remains the same, applied below the card visual)
                 if (cabinetItem.isGraded) {
                     const valueDisplay = document.createElement('div');
-                    valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
-                    // Use valueAfterGrading if it exists, otherwise capturedValue
+                    valueDisplay.className = 'text-sm font-semibold text-yellow-400 mt-1'; // Changed to yellow for graded
                     valueDisplay.textContent = `$${cabinetItem.valueAfterGrading !== null && cabinetItem.valueAfterGrading !== undefined ? cabinetItem.valueAfterGrading : (cabinetItem.capturedValue || 0)}`;
-                    cardWrapper.appendChild(valueDisplay); // Only append the value display
-
-                } else if (!cabinetItem.isGrading) { // Only show normal value if not grading and not yet graded
+                    cardWrapper.appendChild(valueDisplay);
+                } else if (!cabinetItem.isGrading) {
+                    // Only show captured value if not grading and not graded.
+                    // The placeholder for 'isGrading' from createCardVisual already includes days left.
                     const valueDisplay = document.createElement('div');
                     valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
                     valueDisplay.textContent = `$${cabinetItem.capturedValue || 0}`;

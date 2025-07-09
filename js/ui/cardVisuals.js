@@ -31,22 +31,23 @@ export const CardVisuals = {
             const layerName = layer.folder.toLowerCase();
 
             if (isSpecialRelicCard) {
-                if (layerName === 'head' || layerName === 'hair' || layerName === 'background') {
-                    indices.push(null); // Skip these layers
-                    return;
+                if (layerName === 'head' || layerName === 'hair' || layerName === 'background' || layerName === 'shirt') {
+                    indices.push(null); // Skip these specific layers
+                    // For 'shirt', it's skipped in favor of 'relics'.
+                    // For 'background', 'head', 'hair', they are explicitly removed.
+                    // Frame is NOT skipped here.
+                    if (layerName !== 'relics') return; // Only proceed if it's the relics layer itself or other layers to process after this block
                 }
-                if (layerName === 'shirt') {
-                    indices.push(null); // Skip original shirt layer for these cards
-                    return;
-                }
+                // If it IS the relics layer for a specialRelicCard:
                 if (layerName === 'relics') {
-                    // Select from Relics layer instead of Shirt
                     selectedIndex = Math.floor(Math.random() * layer.count) + 1;
                     indices.push(selectedIndex);
-                    return;
+                    return; // Relics layer handled for special relic card
                 }
+                // If it's a different layer (like Frame or Autos) for a specialRelicCard, it will be processed below.
             }
             
+            // General layer processing
             if (layerName === 'autos') {
                 if (needsAutosLayer) {
                     selectedIndex = Math.floor(Math.random() * layer.count) + 1;
@@ -80,13 +81,14 @@ export const CardVisuals = {
         return indices;
     },
 
-    createCardImageLayers(targetDiv, layerIndices, cardId, isGraded = false) { // Added isGraded parameter
-        if (!layerIndices || layerIndices.length === 0) return;
+    // isGraded parameter removed, this function now only populates layers into targetDiv
+    createCardImageLayers(targetDiv, layerIndices, cardId) {
+        if (!layerIndices || !targetDiv) return;
+        targetDiv.innerHTML = ''; // Clear previous layers, important if targetDiv is reused
         
-        // Render actual card layers first
         GameConfig.commonCardAssets.layers.forEach((layerConfig, i) => {
             const layerIndexValue = layerIndices[i];
-            if (layerIndexValue === null) return; // Skip null indices
+            if (layerIndexValue === null) return;
 
             const img = document.createElement('img');
             img.src = `${GameConfig.commonCardAssets.base_url}${layerConfig.folder}/${layerIndexValue}.png`;
@@ -96,29 +98,12 @@ export const CardVisuals = {
             img.style.width = '100%';
             img.style.height = '100%';
 
-            // Layer-specific styling (e.g., autos z-index)
-            // Relics layer doesn't need special scaling here as it's a pre-composed image.
-            // Old special shirt scaling is removed.
             if (layerConfig.folder.toLowerCase() === 'autos') {
                 img.style.zIndex = '5';
             }
-            // The 'Relics' layer will be rendered like any other normal layer here.
             
             targetDiv.appendChild(img);
         });
-
-        // Add slab image if the card is graded
-        if (isGraded) {
-            const slabImg = document.createElement('img');
-            slabImg.src = `${GameConfig.commonCardAssets.base_url}Slab/slab.png`; // Path to slab image
-            slabImg.style.position = 'absolute';
-            slabImg.style.left = '0';
-            slabImg.style.top = '0';
-            slabImg.style.width = '100%';
-            slabImg.style.height = '100%';
-            slabImg.style.zIndex = '6'; // Slab is above card art/autos, below numbering
-            targetDiv.appendChild(slabImg);
-        }
     },
 
     generateCardNumbering(card) { // card.id is used here
@@ -246,24 +231,62 @@ export const CardVisuals = {
             return visualContainer; // Return the placeholder
         }
 
-        if (graphicCardTypes.includes(card.id)) {
-            // Pass isGraded status to createCardImageLayers for slab application
-            this.createCardImageLayers(visualContainer, cabinetItem.layers, card.id, cabinetItem.isGraded);
+        if (cabinetItem.isGraded) {
+            // Graded: Slab background, scaled card art on top
+            const slabImg = document.createElement('img');
+            slabImg.src = `${GameConfig.commonCardAssets.base_url}Slab/slab.png`;
+            slabImg.style.position = 'absolute';
+            slabImg.style.left = '0';
+            slabImg.style.top = '0';
+            slabImg.style.width = '100%';
+            slabImg.style.height = '100%';
+            slabImg.style.zIndex = '6';
+            visualContainer.appendChild(slabImg);
+
+            const cardArtContainer = document.createElement('div');
+            cardArtContainer.style.position = 'absolute';
+            // Adjust percentages for desired border around the card art on the slab
+            cardArtContainer.style.width = '80%';
+            cardArtContainer.style.height = '80%';
+            cardArtContainer.style.top = '10%';    // (100 - 80) / 2
+            cardArtContainer.style.left = '10%';   // (100 - 80) / 2
+            // Alternatively, for centering with translate:
+            // cardArtContainer.style.width = '90%'; cardArtContainer.style.height = '90%';
+            // cardArtContainer.style.top = '50%'; cardArtContainer.style.left = '50%';
+            // cardArtContainer.style.transform = 'translate(-50%, -50%)';
+            cardArtContainer.style.zIndex = '7'; // Above slab, below numbering
+            cardArtContainer.style.overflow = 'hidden'; // Important for effects if applied here
+
+            this.createCardImageLayers(cardArtContainer, cabinetItem.layers, card.id); // Populate with layers
+
+            if (card.id === 'holo_legend') {
+                cardArtContainer.classList.add('holo-effect'); // Apply effect to art container
+            }
+            if (card.basePrice > GameConfig.rareCardThreshold && card.id !== 'common_single' && card.id !== 'holo_legend') {
+                cardArtContainer.classList.add('sparkle'); // Apply effect to art container
+            }
+            visualContainer.appendChild(cardArtContainer);
+
+            if (cabinetItem.numbering) {
+                // Numbering goes on the main visualContainer, so it's on top of slab and art
+                this.addNumberingOverlay(visualContainer, cabinetItem.numbering, card.id);
+            }
+
+        } else if (graphicCardTypes.includes(card.id)) {
+            // Not graded, but is a graphic card: Render normally
+            this.createCardImageLayers(visualContainer, cabinetItem.layers, card.id);
 
             if (card.id === 'holo_legend') {
                 visualContainer.classList.add('holo-effect');
             }
-
-            // Apply sparkle effect if applicable (and not holo, to avoid visual clutter)
             if (card.basePrice > GameConfig.rareCardThreshold && card.id !== 'common_single' && card.id !== 'holo_legend') {
                 visualContainer.classList.add('sparkle');
             }
-            
             if (cabinetItem.numbering) {
                 this.addNumberingOverlay(visualContainer, cabinetItem.numbering, card.id);
             }
         } else {
-            // Fallback for cards not using dynamic graphics (e.g., older card types if any)
+            // Fallback for non-graphic cards (e.g., text-based)
             visualContainer.className += ' border-2 border-gray-400 rounded-lg p-2 flex items-center justify-center text-center';
             visualContainer.textContent = card.name;
             if (card.basePrice > GameConfig.rareCardThreshold) {
