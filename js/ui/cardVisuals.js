@@ -273,7 +273,7 @@ export const CardVisuals = {
             // Adjust percentages for desired border around the card art on the slab
             cardArtContainer.style.width = '75%';
             cardArtContainer.style.height = '75%';
-            cardArtContainer.style.top = '12.5%';    // (100 - 75) / 2
+            cardArtContainer.style.top = 'calc(12.5% + 20px)'; // Lowered by 20px
             cardArtContainer.style.left = '12.5%';   // (100 - 75) / 2
             // Alternatively, for centering with translate:
             // cardArtContainer.style.width = '90%'; cardArtContainer.style.height = '90%';
@@ -301,12 +301,12 @@ export const CardVisuals = {
                 gradeTextElement.style.textAlign = 'center';
                 gradeTextElement.style.width = '70%'; // Adjust width to fit nicely in slab border
                 gradeTextElement.style.left = '15%'; // Center the text element (100 - 70) / 2
-                gradeTextElement.style.top = '4%';   // Position it in the top border area of the slab
+                gradeTextElement.style.top = 'calc(4% + 10px)';   // Lowered by 10px
                 gradeTextElement.style.zIndex = '8'; // Above slab (6), potentially above cardArt (7) or same level
                 gradeTextElement.style.fontWeight = 'bold';
-                gradeTextElement.style.color = 'white'; // Adjust color for visibility on slab
+                gradeTextElement.style.color = '#3D3D3D'; // Darker text color
                 gradeTextElement.style.fontSize = '10px'; // Adjust size as needed
-                gradeTextElement.style.textShadow = '1px 1px 2px black'; // Add shadow for readability
+                gradeTextElement.style.textShadow = '1px 1px 1px #FFFFFF70'; // Lighter shadow for dark text
                 gradeTextElement.style.fontFamily = 'Arial, sans-serif'; // Clear font
                 visualContainer.appendChild(gradeTextElement);
             }
