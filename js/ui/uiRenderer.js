@@ -148,46 +148,45 @@ export const UIRenderer = {
     },
 
     renderTravelOptions() {
-        const travelOptions = [UIElements.travelOptions, UIElements.desktopTravelOptions];
-        travelOptions.forEach(el => el.innerHTML = '');
+        const travelOptionsContainers = [UIElements.travelOptions, UIElements.desktopTravelOptions];
+        travelOptionsContainers.forEach(container => container.innerHTML = '');
 
         const daysLeft = GameState.current.daysRemaining;
         const currentLocationId = GameState.current.currentLocationId;
 
-        const endGameBtn = document.createElement('button');
-        endGameBtn.className = 'btn btn-danger w-full text-left';
-        endGameBtn.textContent = 'End Your Journey';
-        endGameBtn.title = 'Finish the game with your current cash and see your final score.';
-        endGameBtn.onclick = () => GameEnd.forceEndGame();
-
-        if (daysLeft <= 1) {
-            travelOptions.forEach(el => el.appendChild(endGameBtn.cloneNode(true)));
-        } else if (daysLeft === 2) {
-            travelOptions.forEach(el => el.appendChild(endGameBtn.cloneNode(true)));
-            GameData.locations.forEach(location => {
-                if (location.id === currentLocationId) return;
-                const travelCost = GameData.travelDurations[currentLocationId]?.[location.id] || 99;
-                if (travelCost === 1) {
-                    const button = document.createElement('button');
-                    button.className = 'btn btn-primary w-full text-left';
-                    button.textContent = `${location.name} (${travelCost} day)`;
-                    button.title = location.description;
-                    button.onclick = () => Travel.travelTo(location.id);
-                    travelOptions.forEach(el => el.appendChild(button.cloneNode(true)));
-                }
-            });
-        } else {
-            GameData.locations.forEach(location => {
-                if (location.id === currentLocationId) return;
-                const travelCost = GameData.travelDurations[currentLocationId]?.[location.id] || 99;
+        const addTravelButton = (container, location) => {
+            const travelCost = GameData.travelDurations[currentLocationId]?.[location.id] || 99;
+            if (daysLeft > travelCost) {
                 const button = document.createElement('button');
                 button.className = 'btn btn-primary w-full text-left';
                 button.textContent = `${location.name} (${travelCost} day${travelCost > 1 ? 's' : ''})`;
                 button.title = location.description;
                 button.onclick = () => Travel.travelTo(location.id);
-                travelOptions.forEach(el => el.appendChild(button.cloneNode(true)));
-            });
-        }
+                container.appendChild(button);
+            }
+        };
+
+        const addEndGameButton = (container) => {
+            const endGameBtn = document.createElement('button');
+            endGameBtn.className = 'btn btn-danger w-full text-left';
+            endGameBtn.textContent = 'End Your Journey';
+            endGameBtn.title = 'Finish the game with your current cash and see your final score.';
+            endGameBtn.onclick = () => GameEnd.forceEndGame();
+            container.appendChild(endGameBtn);
+        };
+
+        travelOptionsContainers.forEach(container => {
+            if (daysLeft <= 1) {
+                addEndGameButton(container);
+            } else {
+                GameData.locations.forEach(location => {
+                    if (location.id !== currentLocationId) {
+                        addTravelButton(container, location);
+                    }
+                });
+                addEndGameButton(container);
+            }
+        });
     },
 
     renderGlobalLeaderboard() {
