@@ -84,6 +84,13 @@ export const GameController = {
         UIElements.travelCancelBtn.addEventListener('click', () => {
             UIElements.travelModal.classList.add('hidden');
         });
+        UIElements.viewLeaderboardBtn.addEventListener('click', () => {
+            UIRenderer.renderGlobalLeaderboard();
+            UIElements.leaderboardModal.classList.remove('hidden');
+        });
+        UIElements.closeLeaderboardModalBtn.addEventListener('click', () => {
+            UIElements.leaderboardModal.classList.add('hidden');
+        });
     },
 
     /**

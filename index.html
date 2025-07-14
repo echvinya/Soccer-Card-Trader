@@ -19,7 +19,7 @@
              <div><p class="text-sm text-gray-400">Cash</p><p id="cash" class="text-2xl font-semibold text-green-400">$0</p></div>
              <div><p class="text-sm text-gray-400">Days Remaining</p><p id="days" class="text-2xl font-semibold text-amber-400">0</p></div>
              <div><button id="display-cabinet-btn" class="btn btn-primary w-full mt-2 md:mt-0">Display Cabinet</button></div>
-             <div><button id="travel-btn" class="btn btn-primary w-full mt-2 md:mt-0">Travel</button></div>
+             <div><button id="travel-btn" class="btn btn-primary w-full mt-2 md:mt-0 travel-btn-mobile">Travel</button></div>
         </div>
 
        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -41,9 +41,15 @@
     </div>
 </div>
 
-            <div id="log-section" class="card">
-                <h2 class="text-2xl font-semibold mb-3">Game Log</h2>
-                <div id="log-messages" class="h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-md p-2 text-sm"></div>
+            <div class="space-y-6">
+                <div id="travel-section" class="card travel-section-desktop">
+                    <h2 class="text-2xl font-semibold mb-3">Travel To:</h2>
+                    <div id="desktop-travel-options" class="space-y-2"></div>
+                </div>
+                <div id="log-section" class="card">
+                    <h2 class="text-2xl font-semibold mb-3">Game Log</h2>
+                    <div id="log-messages" class="h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-md p-2 text-sm"></div>
+                </div>
             </div>
         </div>
 
@@ -59,7 +65,10 @@
             </div>
 
             <div id="leaderboard-section" class="card">
-                <h2 id="in-game-leaderboard-title" class="text-2xl font-semibold mb-3 text-amber-400">Global Top 3</h2>
+                <div class="flex justify-between items-center mb-3">
+                    <h2 id="in-game-leaderboard-title" class="text-2xl font-semibold text-amber-400">Global Top 3</h2>
+                    <button id="view-leaderboard-btn" class="btn btn-secondary">View All</button>
+                </div>
                 <div id="leaderboard-list" class="space-y-2">
                     <p class="text-gray-500">Loading leaderboard...</p>
                 </div>
@@ -115,6 +124,14 @@
             <h2 class="text-2xl font-semibold mb-3">Travel To:</h2>
             <div id="travel-options" class="space-y-2"></div>
             <button id="travel-cancel-btn" class="btn btn-danger mt-4">Cancel</button>
+        </div>
+    </div>
+
+    <div id="leaderboard-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="text-3xl font-bold mb-4 text-amber-400">Global Leaderboard</h2>
+            <div id="global-leaderboard-list" class="space-y-2 text-left max-h-96 overflow-y-auto"></div>
+            <button id="close-leaderboard-modal-btn" class="btn btn-primary mt-6">Close</button>
         </div>
     </div>
 

@@ -10,6 +10,7 @@ export const UIElements = {
         // Tables
         this.marketItems = document.getElementById('market-items');
         this.travelOptions = document.getElementById('travel-options');
+        this.desktopTravelOptions = document.getElementById('desktop-travel-options');
         
         // Other UI
         this.logMessages = document.getElementById('log-messages');
@@ -20,6 +21,7 @@ export const UIElements = {
         // Buttons
         this.travelBtn = document.getElementById('travel-btn');
         this.displayCabinetBtn = document.getElementById('display-cabinet-btn');
+        this.viewLeaderboardBtn = document.getElementById('view-leaderboard-btn');
 
         // Modals
         this.buyModal = document.getElementById('buy-modal');
@@ -51,6 +53,10 @@ export const UIElements = {
 
         this.travelModal = document.getElementById('travel-modal');
         this.travelCancelBtn = document.getElementById('travel-cancel-btn');
+
+        this.leaderboardModal = document.getElementById('leaderboard-modal');
+        this.globalLeaderboardList = document.getElementById('global-leaderboard-list');
+        this.closeLeaderboardModalBtn = document.getElementById('close-leaderboard-modal-btn');
 
         this.gameOverModal = document.getElementById('game-over-modal');
         this.finalScore = document.getElementById('final-score');
