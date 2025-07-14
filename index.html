@@ -72,13 +72,16 @@
     <div id="buy-modal" class="modal hidden">
         <div class="modal-content">
             <h2 id="buy-modal-title" class="text-3xl font-bold mb-4">Buy Card</h2>
+            <p id="buy-modal-cash" class="text-lg mb-2"></p>
             <p id="buy-modal-card-name" class="text-lg mb-2"></p>
             <p id="buy-modal-card-price" class="text-lg mb-2"></p>
             <div class="flex items-center space-x-2">
-                <label for="buy-quantity" class="text-lg">Quantity:</label>
+                <button id="buy-minus-btn" class="btn btn-primary">-</button>
                 <input type="number" id="buy-quantity" min="1" value="1" class="w-24 text-center">
+                <button id="buy-plus-btn" class="btn btn-primary">+</button>
                 <button id="buy-all-btn" class="btn btn-primary">All</button>
             </div>
+            <p id="buy-modal-total-price" class="text-lg mt-2"></p>
             <div class="flex justify-end space-x-2 mt-4">
                 <button id="buy-confirm-btn" class="btn btn-success">Buy</button>
                 <button id="buy-cancel-btn" class="btn btn-danger">Cancel</button>
@@ -89,14 +92,17 @@
     <div id="sell-modal" class="modal hidden">
         <div class="modal-content">
             <h2 id="sell-modal-title" class="text-3xl font-bold mb-4">Sell Card</h2>
+            <p id="sell-modal-cash" class="text-lg mb-2"></p>
             <p id="sell-modal-card-name" class="text-lg mb-2"></p>
             <p id="sell-modal-avg-buy-price" class="text-lg mb-2"></p>
             <p id="sell-modal-current-sell-price" class="text-lg mb-2"></p>
             <div class="flex items-center space-x-2">
-                <label for="sell-quantity" class="text-lg">Quantity:</label>
+                <button id="sell-minus-btn" class="btn btn-primary">-</button>
                 <input type="number" id="sell-quantity" min="1" value="1" class="w-24 text-center">
+                <button id="sell-plus-btn" class="btn btn-primary">+</button>
                 <button id="sell-all-btn" class="btn btn-primary">All</button>
             </div>
+            <p id="sell-modal-total-price" class="text-lg mt-2"></p>
             <div class="flex justify-end space-x-2 mt-4">
                 <button id="sell-confirm-btn" class="btn btn-success">Sell</button>
                 <button id="sell-cancel-btn" class="btn btn-danger">Cancel</button>

@@ -17,9 +17,31 @@ export const Trading = {
         UIElements.buyQuantity.max = marketInfo.available;
         UIElements.buyQuantity.value = 1;
 
+        const updateTotal = () => {
+            const quantity = parseInt(UIElements.buyQuantity.value);
+            const totalCost = marketInfo.price * quantity;
+            UIElements.buyModalTotalPrice.textContent = `Total: $${totalCost.toLocaleString()}`;
+        };
+
+        UIElements.buyModalCash.textContent = `Cash: $${GameState.current.cash.toLocaleString()}`;
+        updateTotal();
+
+        UIElements.buyQuantity.oninput = updateTotal;
+        UIElements.buyPlusBtn.onclick = () => {
+            UIElements.buyQuantity.value = parseInt(UIElements.buyQuantity.value) + 1;
+            updateTotal();
+        };
+        UIElements.buyMinusBtn.onclick = () => {
+            UIElements.buyQuantity.value = Math.max(1, parseInt(UIElements.buyQuantity.value) - 1);
+            updateTotal();
+        };
+
         UIElements.buyConfirmBtn.onclick = () => this.buyItem(cardId);
         UIElements.buyCancelBtn.onclick = () => UIElements.buyModal.classList.add('hidden');
-        UIElements.buyAllBtn.onclick = () => UIElements.buyQuantity.value = marketInfo.available;
+        UIElements.buyAllBtn.onclick = () => {
+            UIElements.buyQuantity.value = marketInfo.available;
+            updateTotal();
+        };
 
         UIElements.buyModal.classList.remove('hidden');
     },
@@ -40,9 +62,31 @@ export const Trading = {
         UIElements.sellQuantity.max = inventoryItem.quantity;
         UIElements.sellQuantity.value = 1;
 
+        const updateTotal = () => {
+            const quantity = parseInt(UIElements.sellQuantity.value);
+            const totalSale = currentSellPrice * quantity;
+            UIElements.sellModalTotalPrice.textContent = `Total: $${totalSale.toLocaleString()}`;
+        };
+
+        UIElements.sellModalCash.textContent = `Cash: $${GameState.current.cash.toLocaleString()}`;
+        updateTotal();
+
+        UIElements.sellQuantity.oninput = updateTotal;
+        UIElements.sellPlusBtn.onclick = () => {
+            UIElements.sellQuantity.value = parseInt(UIElements.sellQuantity.value) + 1;
+            updateTotal();
+        };
+        UIElements.sellMinusBtn.onclick = () => {
+            UIElements.sellQuantity.value = Math.max(1, parseInt(UIElements.sellQuantity.value) - 1);
+            updateTotal();
+        };
+
         UIElements.sellConfirmBtn.onclick = () => this.sellItem(cardId);
         UIElements.sellCancelBtn.onclick = () => UIElements.sellModal.classList.add('hidden');
-        UIElements.sellAllBtn.onclick = () => UIElements.sellQuantity.value = inventoryItem.quantity;
+        UIElements.sellAllBtn.onclick = () => {
+            UIElements.sellQuantity.value = inventoryItem.quantity;
+            updateTotal();
+        };
 
         UIElements.sellModal.classList.remove('hidden');
     },

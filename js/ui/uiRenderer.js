@@ -138,9 +138,9 @@ export const UIRenderer = {
                     <div class="font-bold">${card.name}${eventIndicator}</div>
                     <div class="text-xs text-gray-400 font-normal block mt-1">${card.description}</div>
                 </div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Price: </span><span class="${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Supply: </span>${marketInfo.available}</div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Held: </span>${heldQuantity}</div>
+                <div class="block md:table-cell align-middle p-1 md:p-2 mobile-inline"><span class="font-semibold text-gray-400 md:hidden">Price: </span><span class="${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div>
+                <div class="block md:table-cell align-middle p-1 md:p-2 mobile-inline"><span class="font-semibold text-gray-400 md:hidden">Supply: </span>${marketInfo.available}</div>
+                <div class="block md:table-cell align-middle p-1 md:p-2 mobile-inline"><span class="font-semibold text-gray-400 md:hidden">Held: </span>${heldQuantity}</div>
                 <div class="block md:table-cell align-middle p-1 md:p-2 mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-2"><button class="btn btn-success btn-compact" title="Buy" data-card-id="${card.id}" data-action="buy" ${marketInfo.available === 0 ? 'disabled' : ''}>Buy</button><button class="btn btn-danger btn-compact" title="Sell" data-card-id="${card.id}" data-action="sell" ${heldQuantity === 0 ? 'disabled' : ''}>Sell</button></div></div>
             `;
             UIElements.marketItems.appendChild(cardWrapper);
