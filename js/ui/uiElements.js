@@ -24,20 +24,28 @@ export const UIElements = {
         // Modals
         this.buyModal = document.getElementById('buy-modal');
         this.buyModalTitle = document.getElementById('buy-modal-title');
+        this.buyModalCash = document.getElementById('buy-modal-cash');
         this.buyModalCardName = document.getElementById('buy-modal-card-name');
         this.buyModalCardPrice = document.getElementById('buy-modal-card-price');
         this.buyQuantity = document.getElementById('buy-quantity');
+        this.buyPlusBtn = document.getElementById('buy-plus-btn');
+        this.buyMinusBtn = document.getElementById('buy-minus-btn');
         this.buyAllBtn = document.getElementById('buy-all-btn');
+        this.buyModalTotalPrice = document.getElementById('buy-modal-total-price');
         this.buyConfirmBtn = document.getElementById('buy-confirm-btn');
         this.buyCancelBtn = document.getElementById('buy-cancel-btn');
 
         this.sellModal = document.getElementById('sell-modal');
         this.sellModalTitle = document.getElementById('sell-modal-title');
+        this.sellModalCash = document.getElementById('sell-modal-cash');
         this.sellModalCardName = document.getElementById('sell-modal-card-name');
         this.sellModalAvgBuyPrice = document.getElementById('sell-modal-avg-buy-price');
         this.sellModalCurrentSellPrice = document.getElementById('sell-modal-current-sell-price');
         this.sellQuantity = document.getElementById('sell-quantity');
+        this.sellPlusBtn = document.getElementById('sell-plus-btn');
+        this.sellMinusBtn = document.getElementById('sell-minus-btn');
         this.sellAllBtn = document.getElementById('sell-all-btn');
+        this.sellModalTotalPrice = document.getElementById('sell-modal-total-price');
         this.sellConfirmBtn = document.getElementById('sell-confirm-btn');
         this.sellCancelBtn = document.getElementById('sell-cancel-btn');
 
