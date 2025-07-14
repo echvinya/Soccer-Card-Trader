@@ -139,3 +139,9 @@ input[type="text"], input[type="number"] {
     0% { transform: rotate(45deg) translateX(-100%); }
     100% { transform: rotate(45deg) translateX(100%); }
 }
+
+.sticky-header {
+    position: sticky;
+    top: 1rem;
+    z-index: 10;
+}

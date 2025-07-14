@@ -13,7 +13,6 @@ export const UIRenderer = {
     renderAll() {
         this.renderPlayerStats();
         this.renderMarket();
-        this.renderInventory();
         this.renderTravelOptions();
         this.renderLog();
         this.renderDisplayCabinet();
@@ -23,7 +22,6 @@ export const UIRenderer = {
         UIElements.cash.textContent = `$${GameState.current.cash.toLocaleString()}`;
         UIElements.days.textContent = GameState.current.daysRemaining;
         const location = GameState.getCurrentLocation();
-        UIElements.currentLocationName.textContent = location.name;
         UIElements.marketLocationName.textContent = location.name;
     },
 
@@ -120,6 +118,9 @@ export const UIRenderer = {
             const marketInfo = locationMarket[card.id];
             if (!marketInfo) return;
 
+            const inventoryItem = GameState.current.inventory.find(item => item.cardId === card.id);
+            const heldQuantity = inventoryItem ? inventoryItem.quantity : 0;
+
             let eventIndicator = '';
             const activeCardShow = GameState.current.activeEvents.find(e => e.type === 'card_show' && e.affectedCards.some(ac => ac.cardId === card.id));
             const activeFlood = GameState.current.activeEvents.find(e => e.type === 'market_flood' && e.affectedCard === card.id);
@@ -139,38 +140,10 @@ export const UIRenderer = {
                 </div>
                 <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Price: </span><span class="${priceColorClass}">$${marketInfo.price.toLocaleString()}</span>${priceIndicatorHtml}</div>
                 <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Supply: </span>${marketInfo.available}</div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Quantity: </span><input type="number" id="buy-qty-${card.id}" min="1" max="${marketInfo.available}" value="1" class="w-16 text-center"></div>
-                <div class="block md:table-cell align-middle p-1 md:p-2 mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-2"><button class="btn btn-success btn-compact" title="Buy Quantity" data-card-id="${card.id}" data-action="buy-qty" ${marketInfo.available === 0 ? 'disabled' : ''}>$</button><button class="btn btn-success btn-compact" title="Buy All" data-card-id="${card.id}" data-action="buy-all" ${marketInfo.available === 0 ? 'disabled' : ''}>All</button></div></div>
+                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Held: </span>${heldQuantity}</div>
+                <div class="block md:table-cell align-middle p-1 md:p-2 mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-2"><button class="btn btn-success btn-compact" title="Buy" data-card-id="${card.id}" data-action="buy" ${marketInfo.available === 0 ? 'disabled' : ''}>Buy</button><button class="btn btn-danger btn-compact" title="Sell" data-card-id="${card.id}" data-action="sell" ${heldQuantity === 0 ? 'disabled' : ''}>Sell</button></div></div>
             `;
             UIElements.marketItems.appendChild(cardWrapper);
-        });
-    },
-
-    renderInventory() {
-        UIElements.inventoryItems.innerHTML = '';
-        if (GameState.current.inventory.length === 0) {
-            UIElements.inventoryItems.innerHTML = '<div class="p-4 text-center">Your portfolio is empty.</div>';
-            return;
-        }
-
-        GameState.current.inventory.forEach(item => {
-            if (item.quantity <= 0) return;
-            const card = GameState.getCardDetails(item.cardId);
-            const currentMarketPrice = GameState.market[GameState.current.currentLocationId]?.[item.cardId]?.price || 0;
-            const averageBuyPrice = item.totalCost / item.quantity;
-
-            const cardWrapper = document.createElement('div');
-            cardWrapper.className = 'block md:table-row border-b border-gray-700 last:border-b-0 p-3 md:p-0';
-
-            cardWrapper.innerHTML = `
-                <div class="block md:table-cell align-middle p-1 md:p-2"><div class="font-bold">${card.name}</div></div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Held: </span>${item.quantity}</div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Avg. Buy Price: </span>$${averageBuyPrice.toFixed(2)}</div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Current Sell Price: </span><span class="text-green-400">$${currentMarketPrice.toLocaleString()}</span></div>
-                <div class="block md:table-cell align-middle p-1 md:p-2"><span class="font-semibold text-gray-400 md:hidden">Quantity: </span><input type="number" id="sell-qty-${card.id}" min="1" max="${item.quantity}" value="1" class="w-16 text-center"></div>
-                <div class="block md:table-cell align-middle p-1 md:p-2 mt-2 md:mt-0"><span class="font-semibold text-gray-400 md:hidden">Actions: </span><div class="inline-flex items-center gap-2"><button class="btn btn-danger btn-compact" title="Sell Quantity" data-card-id="${card.id}" data-action="sell-qty">$</button><button class="btn btn-danger btn-compact" title="Sell All" data-card-id="${card.id}" data-action="sell-all">All</button></div></div>
-            `;
-            UIElements.inventoryItems.appendChild(cardWrapper);
         });
     },
 

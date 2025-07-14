@@ -7,6 +7,7 @@ import { Events } from './events.js';
 import { GameEnd } from './gameEnd.js';
 // Add GameController to the imports
 import { GameController } from '../core/gameController.js';
+import { UIElements } from '../ui/uiElements.js';
 
 export const Travel = {
     async travelTo(destinationLocationId) {
@@ -52,5 +53,6 @@ export const Travel = {
         if (await GameEnd.checkGameOver()) return; // checkGameOver might also end game based on daysRemaining
 
         UIRenderer.renderAll(); // Finally, render all UI changes
+        UIElements.travelModal.classList.add('hidden');
     }
 };

@@ -15,11 +15,11 @@
             <h1 class="text-4xl font-bold text-red-400">Soccer Card Trader</h1>
         </header>
 
-        <div id="player-stats-container" class="card mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div id="player-stats-container" class="card mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center sticky-header">
              <div><p class="text-sm text-gray-400">Cash</p><p id="cash" class="text-2xl font-semibold text-green-400">$0</p></div>
              <div><p class="text-sm text-gray-400">Days Remaining</p><p id="days" class="text-2xl font-semibold text-amber-400">0</p></div>
-             <div><p class="text-sm text-gray-400">Current Location</p><p id="current-location-name" class="text-xl font-semibold text-gray-300">-</p></div>
-             <div><button id="restart-game-btn" class="btn btn-danger w-full mt-2 md:mt-0">Restart Game</button></div>
+             <div><button id="display-cabinet-btn" class="btn btn-primary w-full mt-2 md:mt-0">Display Cabinet</button></div>
+             <div><button id="travel-btn" class="btn btn-primary w-full mt-2 md:mt-0">Travel</button></div>
         </div>
 
        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -32,7 +32,7 @@
                     <div class="md:table-cell table-cell">Card Type</div>
                     <div class="md:table-cell table-cell">Price</div>
                     <div class="md:table-cell table-cell">Supply</div>
-                    <div class="md:table-cell table-cell">Quantity</div>
+                    <div class="md:table-cell table-cell">Held</div>
                     <div class="md:table-cell table-cell">Actions</div>
                 </div>
             </div>
@@ -41,38 +41,12 @@
     </div>
 </div>
 
-            <div class="space-y-6">
-                <div id="travel-section" class="card">
-                    <h2 class="text-2xl font-semibold mb-3">Travel To:</h2>
-                    <div id="travel-options" class="space-y-2"></div>
-                </div>
-                <div id="log-section" class="card">
-                    <h2 class="text-2xl font-semibold mb-3">Game Log</h2>
-                    <div id="log-messages" class="h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-md p-2 text-sm"></div>
-                </div>
+            <div id="log-section" class="card">
+                <h2 class="text-2xl font-semibold mb-3">Game Log</h2>
+                <div id="log-messages" class="h-48 overflow-y-auto bg-gray-900 border border-gray-700 rounded-md p-2 text-sm"></div>
             </div>
         </div>
 
-        <div class="mt-6">
-            <div id="inventory-section" class="card">
-                <h2 class="text-2xl font-semibold mb-3">Your Portfolio & Selling</h2>
-    <div class="overflow-x-auto">
-        <div class="w-full min-w-max md:table">
-            <div class="bg-gray-700/50 hidden md:table-header-group">
-                <div class="md:table-row">
-                    <div class="md:table-cell table-cell">Card Type</div>
-                    <div class="md:table-cell table-cell">Held</div>
-                    <div class="md:table-cell table-cell">Avg. Buy Price</div>
-                    <div class="md:table-cell table-cell">Current Sell Price</div>
-                    <div class="md:table-cell table-cell">Quantity</div>
-                    <div class="md:table-cell table-cell">Actions</div>
-                </div>
-            </div>
-            <div id="inventory-items" class="md:table-row-group"></div>
-        </div>
-    </div>
-</div>
-        
         <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div id="display-cabinet-section" class="card lg:col-span-2">
                 <div class="flex justify-between items-center mb-3">
@@ -93,6 +67,49 @@
         </div>
 
         <div class="mt-6 text-center"><label class="flex items-center justify-center space-x-2"><input type="checkbox" id="help-text-toggle" class="form-checkbox h-5 w-5 bg-gray-700 border-gray-600 text-red-500 focus:ring-red-500" checked><span class="text-gray-400">Show Help Text</span></label></div>
+    </div>
+
+    <div id="buy-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="buy-modal-title" class="text-3xl font-bold mb-4">Buy Card</h2>
+            <p id="buy-modal-card-name" class="text-lg mb-2"></p>
+            <p id="buy-modal-card-price" class="text-lg mb-2"></p>
+            <div class="flex items-center space-x-2">
+                <label for="buy-quantity" class="text-lg">Quantity:</label>
+                <input type="number" id="buy-quantity" min="1" value="1" class="w-24 text-center">
+                <button id="buy-all-btn" class="btn btn-primary">All</button>
+            </div>
+            <div class="flex justify-end space-x-2 mt-4">
+                <button id="buy-confirm-btn" class="btn btn-success">Buy</button>
+                <button id="buy-cancel-btn" class="btn btn-danger">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sell-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="sell-modal-title" class="text-3xl font-bold mb-4">Sell Card</h2>
+            <p id="sell-modal-card-name" class="text-lg mb-2"></p>
+            <p id="sell-modal-avg-buy-price" class="text-lg mb-2"></p>
+            <p id="sell-modal-current-sell-price" class="text-lg mb-2"></p>
+            <div class="flex items-center space-x-2">
+                <label for="sell-quantity" class="text-lg">Quantity:</label>
+                <input type="number" id="sell-quantity" min="1" value="1" class="w-24 text-center">
+                <button id="sell-all-btn" class="btn btn-primary">All</button>
+            </div>
+            <div class="flex justify-end space-x-2 mt-4">
+                <button id="sell-confirm-btn" class="btn btn-success">Sell</button>
+                <button id="sell-cancel-btn" class="btn btn-danger">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="travel-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-semibold mb-3">Travel To:</h2>
+            <div id="travel-options" class="space-y-2"></div>
+            <button id="travel-cancel-btn" class="btn btn-danger mt-4">Cancel</button>
+        </div>
     </div>
 
     <div id="game-over-modal" class="modal hidden">

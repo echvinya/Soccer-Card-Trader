@@ -33,20 +33,8 @@ export const GameController = {
             const cardId = button.dataset.cardId;
             if (!action || !cardId) return;
 
-            if (action === 'buy-qty') Trading.buyItemQty(cardId);
-            else if (action === 'buy-all') Trading.buyAllItems(cardId);
-        });
-        
-        // Inventory click handler
-        UIElements.inventoryItems.addEventListener('click', (e) => {
-            const button = e.target.closest('button[data-action]');
-            if (!button) return;
-            const action = button.dataset.action;
-            const cardId = button.dataset.cardId;
-            if (!action || !cardId) return;
-
-            if (action === 'sell-qty') Trading.sellItemQty(cardId);
-            else if (action === 'sell-all') Trading.sellAllItems(cardId);
+            if (action === 'buy') Trading.openBuyModal(cardId);
+            else if (action === 'sell') Trading.openSellModal(cardId);
         });
 
         // Leaderboard click handler
@@ -65,9 +53,11 @@ export const GameController = {
         UIElements.gameOverLeaderboardList.addEventListener('click', handleLeaderboardClick);
 
         // Button handlers
-        UIElements.restartGameBtn.addEventListener('click', () => {
-            GameLogger.addLogMessage("Restarting game...");
-            this.initializeGame();
+        UIElements.travelBtn.addEventListener('click', () => {
+            UIElements.travelModal.classList.remove('hidden');
+        });
+        UIElements.displayCabinetBtn.addEventListener('click', () => {
+            document.getElementById('display-cabinet-section').scrollIntoView({ behavior: 'smooth' });
         });
         UIElements.playAgainBtn.addEventListener('click', () => {
             UIElements.gameOverModal.classList.add('hidden');
@@ -90,6 +80,9 @@ export const GameController = {
         UIElements.manageCabinetBtn.addEventListener('click', () => Cabinet.showManageCabinetModal());
         UIElements.closeViewCabinetBtn.addEventListener('click', () => {
             UIElements.viewCabinetModal.classList.add('hidden');
+        });
+        UIElements.travelCancelBtn.addEventListener('click', () => {
+            UIElements.travelModal.classList.add('hidden');
         });
     },
 
