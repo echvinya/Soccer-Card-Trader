@@ -90,6 +90,14 @@ export const BoosterPacks = {
         UIElements.packSummaryArea.innerHTML = '';
         UIElements.closePackModalBtn.style.display = 'none';
         UIElements.boosterPackModal.classList.remove('hidden');
+
+        UIElements.packSummaryArea.onclick = (e) => {
+            const button = e.target.closest('button');
+            if (button && button.dataset.cardId) {
+                Cabinet.addToDisplayCabinet(button.dataset.cardId, button);
+            }
+        };
+
         let revealIndex = 0;
 
         function revealNext() {
@@ -108,7 +116,7 @@ export const BoosterPacks = {
                 const cabinetButton = document.createElement('button');
                 cabinetButton.className = 'btn btn-secondary btn-sm text-xs mt-2 w-full';
                 cabinetButton.textContent = 'To Cabinet';
-                cabinetButton.onclick = () => Cabinet.addToDisplayCabinet(card.id, cabinetButton);
+                cabinetButton.dataset.cardId = card.id;
                 
                 // Updated to include game_worn_relic and autographed_jersey
                 const graphicCardTypes = [

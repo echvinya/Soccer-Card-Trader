@@ -3,8 +3,50 @@ import { GameConfig } from '../config/gameConfig.js';
 import { GameData } from '../config/gameData.js';
 import { GameLogger } from '../core/gameLogger.js';
 import { UIRenderer } from '../ui/uiRenderer.js';
+import { UIElements } from '../ui/uiElements.js';
 
 export const Trading = {
+    openBuyModal(cardId) {
+        const card = GameState.getCardDetails(cardId);
+        const marketInfo = GameState.market[GameState.current.currentLocationId]?.[cardId];
+        if (!marketInfo) return;
+
+        UIElements.buyModalTitle.textContent = `Buy ${card.name}`;
+        UIElements.buyModalCardName.textContent = card.name;
+        UIElements.buyModalCardPrice.textContent = `Price: $${marketInfo.price.toLocaleString()}`;
+        UIElements.buyQuantity.max = marketInfo.available;
+        UIElements.buyQuantity.value = 1;
+
+        UIElements.buyConfirmBtn.onclick = () => this.buyItem(cardId);
+        UIElements.buyCancelBtn.onclick = () => UIElements.buyModal.classList.add('hidden');
+        UIElements.buyAllBtn.onclick = () => UIElements.buyQuantity.value = marketInfo.available;
+
+        UIElements.buyModal.classList.remove('hidden');
+    },
+
+    openSellModal(cardId) {
+        const card = GameState.getCardDetails(cardId);
+        const inventoryItem = GameState.current.inventory.find(item => item.cardId === cardId);
+        if (!inventoryItem) return;
+
+        const marketInfo = GameState.market[GameState.current.currentLocationId]?.[cardId];
+        const avgBuyPrice = inventoryItem.totalCost / inventoryItem.quantity;
+        const currentSellPrice = marketInfo ? marketInfo.price : 0;
+
+        UIElements.sellModalTitle.textContent = `Sell ${card.name}`;
+        UIElements.sellModalCardName.textContent = card.name;
+        UIElements.sellModalAvgBuyPrice.textContent = `Avg. Buy Price: $${avgBuyPrice.toFixed(2)}`;
+        UIElements.sellModalCurrentSellPrice.textContent = `Current Sell Price: $${currentSellPrice.toLocaleString()}`;
+        UIElements.sellQuantity.max = inventoryItem.quantity;
+        UIElements.sellQuantity.value = 1;
+
+        UIElements.sellConfirmBtn.onclick = () => this.sellItem(cardId);
+        UIElements.sellCancelBtn.onclick = () => UIElements.sellModal.classList.add('hidden');
+        UIElements.sellAllBtn.onclick = () => UIElements.sellQuantity.value = inventoryItem.quantity;
+
+        UIElements.sellModal.classList.remove('hidden');
+    },
+
     buyPriceGuide() {
         if (GameState.current.cash < GameConfig.priceGuideCost) {
             GameLogger.addLogMessage(`Not enough cash.`);
@@ -16,8 +58,8 @@ export const Trading = {
         UIRenderer.renderAll();
     },
 
-    buyItemQty(cardId) {
-        const quantity = parseInt(document.getElementById(`buy-qty-${cardId}`).value);
+    buyItem(cardId) {
+        const quantity = parseInt(UIElements.buyQuantity.value);
         if (isNaN(quantity) || quantity <= 0) {
             GameLogger.addLogMessage(`Invalid quantity.`);
             return;
@@ -60,21 +102,12 @@ export const Trading = {
             GameState.current.inventory.push({ cardId, quantity, totalCost });
         }
         GameLogger.addLogMessage(`Bought ${quantity} ${card.name} for $${totalCost.toLocaleString()}.`);
+        UIElements.buyModal.classList.add('hidden');
         UIRenderer.renderAll();
     },
 
-    buyAllItems(cardId) {
-        const marketInfo = GameState.market[GameState.current.currentLocationId]?.[cardId];
-        if (!marketInfo || marketInfo.available <= 0) {
-            GameLogger.addLogMessage(`None available to buy.`);
-            return;
-        }
-        document.getElementById(`buy-qty-${cardId}`).value = marketInfo.available;
-        this.buyItemQty(cardId);
-    },
-
-    sellItemQty(cardId) {
-        const quantity = parseInt(document.getElementById(`sell-qty-${cardId}`).value);
+    sellItem(cardId) {
+        const quantity = parseInt(UIElements.sellQuantity.value);
         const inventoryItem = GameState.current.inventory.find(item => item.cardId === cardId);
 
         if (isNaN(quantity) || quantity <= 0) {
@@ -104,17 +137,8 @@ export const Trading = {
             GameState.current.inventory = GameState.current.inventory.filter(item => item.cardId !== cardId);
         }
         GameLogger.addLogMessage(`Sold ${quantity} ${card.name} for $${totalSaleValue.toLocaleString()}.`);
+        UIElements.sellModal.classList.add('hidden');
         UIRenderer.renderAll();
-    },
-
-    sellAllItems(cardId) {
-        const inventoryItem = GameState.current.inventory.find(item => item.cardId === cardId);
-        if (!inventoryItem || inventoryItem.quantity <= 0) {
-            GameLogger.addLogMessage(`None to sell.`);
-            return;
-        }
-        document.getElementById(`sell-qty-${cardId}`).value = inventoryItem.quantity;
-        this.sellItemQty(cardId);
     },
 
     executeTradeIn() {

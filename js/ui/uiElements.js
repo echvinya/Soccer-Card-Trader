@@ -4,23 +4,46 @@ export const UIElements = {
         // Stats
         this.cash = document.getElementById('cash');
         this.days = document.getElementById('days');
-        this.currentLocationName = document.getElementById('current-location-name');
         this.marketLocationName = document.getElementById('market-location-name');
         this.specialActionsContainer = document.getElementById('special-actions-container');
         
         // Tables
         this.marketItems = document.getElementById('market-items');
-        this.inventoryItems = document.getElementById('inventory-items');
         this.travelOptions = document.getElementById('travel-options');
         
         // Other UI
         this.logMessages = document.getElementById('log-messages');
-        this.restartGameBtn = document.getElementById('restart-game-btn');
         this.helpTextToggle = document.getElementById('help-text-toggle');
         this.leaderboardList = document.getElementById('leaderboard-list');
         this.inGameLeaderboardTitle = document.getElementById('in-game-leaderboard-title');
         
+        // Buttons
+        this.travelBtn = document.getElementById('travel-btn');
+        this.displayCabinetBtn = document.getElementById('display-cabinet-btn');
+
         // Modals
+        this.buyModal = document.getElementById('buy-modal');
+        this.buyModalTitle = document.getElementById('buy-modal-title');
+        this.buyModalCardName = document.getElementById('buy-modal-card-name');
+        this.buyModalCardPrice = document.getElementById('buy-modal-card-price');
+        this.buyQuantity = document.getElementById('buy-quantity');
+        this.buyAllBtn = document.getElementById('buy-all-btn');
+        this.buyConfirmBtn = document.getElementById('buy-confirm-btn');
+        this.buyCancelBtn = document.getElementById('buy-cancel-btn');
+
+        this.sellModal = document.getElementById('sell-modal');
+        this.sellModalTitle = document.getElementById('sell-modal-title');
+        this.sellModalCardName = document.getElementById('sell-modal-card-name');
+        this.sellModalAvgBuyPrice = document.getElementById('sell-modal-avg-buy-price');
+        this.sellModalCurrentSellPrice = document.getElementById('sell-modal-current-sell-price');
+        this.sellQuantity = document.getElementById('sell-quantity');
+        this.sellAllBtn = document.getElementById('sell-all-btn');
+        this.sellConfirmBtn = document.getElementById('sell-confirm-btn');
+        this.sellCancelBtn = document.getElementById('sell-cancel-btn');
+
+        this.travelModal = document.getElementById('travel-modal');
+        this.travelCancelBtn = document.getElementById('travel-cancel-btn');
+
         this.gameOverModal = document.getElementById('game-over-modal');
         this.finalScore = document.getElementById('final-score');
         this.playAgainBtn = document.getElementById('play-again-btn');
@@ -34,8 +57,8 @@ export const UIElements = {
         this.submitScoreBtn = document.getElementById('submit-score-btn');
         
         // Cabinet
-        this.displayCabinetList = document.getElementById('display-cabinet-list');         // <-- ADD THIS LINE
-        this.displayCabinetPlaceholder = document.getElementById('display-cabinet-placeholder'); // <-- ADD THIS LINE
+        this.displayCabinetList = document.getElementById('display-cabinet-list');
+        this.displayCabinetPlaceholder = document.getElementById('display-cabinet-placeholder');
         this.cabinetModal = document.getElementById('cabinet-modal');
         this.cabinetModalTitle = document.getElementById('cabinet-modal-title');
         this.cabinetModalMessage = document.getElementById('cabinet-modal-message');
@@ -54,7 +77,7 @@ export const UIElements = {
         this.gradingCompleteCardName = document.getElementById('grading-complete-card-name');
         this.gradingCompleteGradeName = document.getElementById('grading-complete-grade-name');
         this.gradingCompleteGradeValue = document.getElementById('grading-complete-grade-value');
-        this.gradingCompleteOldValue = document.getElementById('grading-complete-old-value'); // <<< ADD THIS LINE
+        this.gradingCompleteOldValue = document.getElementById('grading-complete-old-value');
         this.gradingCompleteNewValue = document.getElementById('grading-complete-new-value');
         this.closeGradingCompleteModalBtn = document.getElementById('close-grading-complete-modal-btn');
     }
