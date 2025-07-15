@@ -51,6 +51,7 @@ export const GameController = {
         
         UIElements.leaderboardList.addEventListener('click', handleLeaderboardClick);
         UIElements.gameOverLeaderboardList.addEventListener('click', handleLeaderboardClick);
+        UIElements.globalLeaderboardList.addEventListener('click', handleLeaderboardClick);
 
         // Button handlers
         UIElements.travelBtn.addEventListener('click', () => {

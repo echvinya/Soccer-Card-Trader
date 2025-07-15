@@ -190,11 +190,27 @@ export const Cabinet = {
                 const cardVisual = CardVisuals.createCardVisual(cabinetItem);
                 cardWrapper.appendChild(cardVisual);
                 
-                if (cabinetItem.capturedValue) {
-                    const valueDisplay = document.createElement('div');
-                    valueDisplay.className = 'text-sm font-semibold text-green-400 mt-1';
-                    valueDisplay.textContent = `$${cabinetItem.capturedValue}`;
-                    cardWrapper.appendChild(valueDisplay);
+                const valueDisplay = document.createElement('div');
+                valueDisplay.className = 'text-sm font-semibold mt-1';
+                let displayValue = 0;
+                let valueClass = 'text-green-400';
+
+                if (cabinetItem.isGraded && typeof cabinetItem.valueAfterGrading === 'number') {
+                    displayValue = cabinetItem.valueAfterGrading;
+                    valueClass = 'text-yellow-400'; // Or another color for graded value
+                } else {
+                    displayValue = cabinetItem.capturedValue || 0;
+                }
+
+                valueDisplay.textContent = `$${displayValue.toLocaleString()}`;
+                valueDisplay.classList.add(valueClass);
+                cardWrapper.appendChild(valueDisplay);
+
+                if (cabinetItem.isGraded) {
+                    const gradeInfo = document.createElement('div');
+                    gradeInfo.className = 'text-xs text-gray-400';
+                    gradeInfo.textContent = `Grade: ${cabinetItem.gradeName || 'N/A'}`;
+                    cardWrapper.appendChild(gradeInfo);
                 }
                 
                 UIElements.viewCabinetList.appendChild(cardWrapper);
