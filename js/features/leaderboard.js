@@ -36,7 +36,11 @@ export const Leaderboard = {
         
         let cabinetValue = 0;
         GameState.current.displayCabinet.forEach(item => {
-            cabinetValue += (item.capturedValue || 0);
+            if (item.isGraded && typeof item.valueAfterGrading === 'number') {
+                cabinetValue += item.valueAfterGrading;
+            } else {
+                cabinetValue += (item.capturedValue || 0);
+            }
         });
         const totalScore = GameState.current.cash + cabinetValue;
         
