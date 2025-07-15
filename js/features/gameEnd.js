@@ -40,6 +40,7 @@ export const GameEnd = {
     },
 
     async showGameOverScreen() {
+        UIElements.highScoreModal.classList.add('hidden');
         const gameOverCabinetList = document.getElementById('game-over-cabinet-list');
         gameOverCabinetList.innerHTML = '';
         
